@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    # Keep analysis active for every level of a stacked PR series.
   schedule:
     - cron: '23 7 * * 2'
 
