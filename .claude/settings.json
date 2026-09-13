@@ -1,26 +1,80 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(pnpm:*)",
-      "Bash(npm:*)",
-      "Bash(biome:*)",
-      "Bash(git:*)",
-      "Bash(cargo:*)",
-      "Bash(wasm-pack:*)",
-      "Bash(bun:*)",
-      "Bash(mise:*)",
-      "Bash(supabase:*)",
-      "Bash(wrangler:*)",
-      "Bash(infisical:*)"
+      "Bash(pnpm check:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm validate:*)",
+      "Bash(pnpm --filter:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo test:*)",
+      "Bash(cargo fmt:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(uv run:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)"
+    ],
+    "ask": [
+      "Bash(pnpm deploy*)",
+      "Bash(pnpm do:deploy*)",
+      "Bash(pnpm do:tail*)",
+      "Bash(pnpm pages:deploy*)",
+      "Bash(pnpm db:types*)",
+      "Bash(pnpm --filter * deploy*)",
+      "Bash(pnpm --filter * pages:deploy*)",
+      "Bash(pnpm --filter * tail*)",
+      "Bash(pnpm --dir * deploy*)",
+      "Bash(pnpm --dir * pages:deploy*)",
+      "Bash(pnpm --dir * tail*)",
+      "Bash(pnpm exec wrangler deploy*)",
+      "Bash(pnpm exec wrangler versions deploy*)",
+      "Bash(pnpm exec wrangler pages deploy*)",
+      "Bash(pnpm exec wrangler secret*)",
+      "Bash(pnpm exec wrangler tail*)",
+      "Bash(wrangler deploy*)",
+      "Bash(wrangler versions deploy*)",
+      "Bash(wrangler rollback*)",
+      "Bash(wrangler pages deploy*)",
+      "Bash(wrangler secret*)",
+      "Bash(wrangler tail*)",
+      "Bash(wrangler login*)",
+      "Bash(npx wrangler *)",
+      "Bash(mise exec -- wrangler *)",
+      "Bash(mise x -- wrangler *)",
+      "Bash(supabase db *)",
+      "Bash(supabase migration *)",
+      "Bash(supabase link*)",
+      "Bash(supabase secrets *)",
+      "Bash(supabase functions deploy*)",
+      "Bash(supabase gen types*)",
+      "Bash(./scripts/with-dicee-*)",
+      "Bash(scripts/with-dicee-*)",
+      "Bash(bash scripts/with-dicee-*)",
+      "Bash(op read*)",
+      "Bash(op run*)",
+      "Bash(gh workflow run*)",
+      "Bash(gh release *)",
+      "Bash(git push*)"
+    ],
+    "deny": [
+      "Bash(git reset --hard*)",
+      "Bash(git clean *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Read(./.dicee/**)",
+      "Edit(./.dicee/**)"
     ]
   },
+  "enabledMcpjsonServers": ["akg", "cloudflare-docs"],
   "hooks": {
     "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/verlyn13/Development/personal/dicee/scripts/hooks/session-init.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/session-init.sh",
             "timeout": 15
           }
         ]
@@ -31,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/verlyn13/Development/personal/dicee/scripts/hooks/session-finalize.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/session-finalize.sh",
             "timeout": 30
           }
         ]
@@ -43,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/verlyn13/Development/personal/dicee/scripts/hooks/log-tool-use.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/log-tool-use.sh",
             "timeout": 10
           }
         ]
@@ -54,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/verlyn13/Development/personal/dicee/scripts/hooks/pre-compact-archive.sh",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/pre-compact-archive.sh",
             "timeout": 30
           }
         ]

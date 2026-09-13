@@ -233,7 +233,7 @@ describe('AKGGraph schema', () => {
 	const validGraph = {
 		version: '1.0.0',
 		generatedAt: new Date().toISOString(),
-		projectRoot: '/Users/test/dicee',
+		projectRoot: '/workspace/dicee',
 		nodes: [],
 		edges: [],
 		metadata: {
@@ -316,6 +316,17 @@ describe('generateNodeId', () => {
 		expect(id).toContain('component::Die::');
 		expect(id.length).toBeGreaterThan('component::Die'.length);
 	});
+
+	it('should distinguish routes with identical trailing segments', () => {
+		const first = generateNodeId('Route', '+page', 'src/routes/game/[code]/+page.svelte');
+		const second = generateNodeId(
+			'Route',
+			'+page',
+			'src/routes/games/dicee/room/[code]/+page.svelte',
+		);
+
+		expect(first).not.toBe(second);
+	});
 });
 
 describe('generateEdgeId', () => {
@@ -323,6 +334,13 @@ describe('generateEdgeId', () => {
 		const id = generateEdgeId('imports', 'component::DiceTray::abc', 'component::Die::def');
 		expect(id).toContain('imports');
 		expect(id).toContain('->');
+	});
+
+	it('should distinguish edges between nodes with the same type and name', () => {
+		const first = generateEdgeId('imports', 'module::check::first', 'module::index::first');
+		const second = generateEdgeId('imports', 'module::check::first', 'module::index::second');
+
+		expect(first).not.toBe(second);
 	});
 });
 

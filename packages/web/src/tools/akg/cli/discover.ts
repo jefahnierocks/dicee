@@ -188,7 +188,10 @@ function createGraphEdges(
 	// Layer rule edges
 	edges.push(...createLayerRuleEdges(config));
 
-	return edges;
+	// The AKG models relationships as a set. Static and dynamic import analysis
+	// can discover the same relation more than once, so collapse exact edge IDs
+	// before persisting the graph.
+	return [...new Map(edges.map((edge) => [edge.id, edge])).values()];
 }
 
 /**
@@ -258,7 +261,7 @@ export async function discover(options: DiscoverOptions = {}): Promise<{
 		if (changedFiles.length === 0) {
 			if (verbose) log('No changed files detected, skipping discovery');
 			// Return empty stats - no work needed
-			const graph = createEmptyGraph(projectRoot);
+			const graph = createEmptyGraph('.');
 			return {
 				graph,
 				stats: {
@@ -276,7 +279,8 @@ export async function discover(options: DiscoverOptions = {}): Promise<{
 	}
 
 	// Initialize empty graph
-	const graph = createEmptyGraph(projectRoot);
+	// Committed graphs must be portable across worktrees and CI runners.
+	const graph = createEmptyGraph('.');
 
 	// Create ts-morph project
 	if (verbose) log('Initializing ts-morph project...');

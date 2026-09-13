@@ -8,8 +8,8 @@ use std::sync::LazyLock;
 
 use serde::{Deserialize, Serialize};
 
-use super::probability::{roll_outcome_probability, Probability};
-use crate::core::config::{ConfigIndex, DiceConfig, ALL_CONFIGS};
+use super::probability::{Probability, roll_outcome_probability};
+use crate::core::config::{ALL_CONFIGS, ConfigIndex, DiceConfig};
 use crate::core::keep::PartialDice;
 
 // =============================================================================
@@ -92,14 +92,14 @@ impl TransitionTable {
                 // For each possible target configuration
                 for (idx, target) in ALL_CONFIGS.iter().enumerate() {
                     // Compute probability of reaching this target from kept state
-                    if let Some(prob) = compute_transition_prob(&kept, target, to_roll) {
-                        if !prob.is_zero() {
-                            entries.push(TransitionEntry {
-                                // Safety: idx is always < 252
-                                target: unsafe { ConfigIndex::new_unchecked(idx as u8) },
-                                probability: prob,
-                            });
-                        }
+                    if let Some(prob) = compute_transition_prob(&kept, target, to_roll)
+                        && !prob.is_zero()
+                    {
+                        entries.push(TransitionEntry {
+                            // Safety: idx is always < 252
+                            target: unsafe { ConfigIndex::new_unchecked(idx as u8) },
+                            probability: prob,
+                        });
                     }
                 }
 

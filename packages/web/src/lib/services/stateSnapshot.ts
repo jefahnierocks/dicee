@@ -57,7 +57,6 @@ export interface UIStateSnapshot {
 export interface UserContextSnapshot {
 	isAuthenticated: boolean;
 	isAnonymous: boolean;
-	userId: string | null;
 }
 
 export interface FullStateSnapshot {
@@ -107,7 +106,6 @@ export function captureStateSnapshot(): FullStateSnapshot {
 		user: {
 			isAuthenticated: auth.isAuthenticated,
 			isAnonymous: auth.isAnonymous,
-			userId: auth.userId,
 		},
 		timestamp: new Date().toISOString(),
 	};

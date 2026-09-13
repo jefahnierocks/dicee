@@ -1,5 +1,10 @@
 # Debugging Protocol for Claude/Cascade
 
+> **Cloudflare operations warning:** Direct deployment and production log-tail
+> examples in this legacy protocol are not authorized workflow. Follow
+> `AGENTS.md` and `docs/cloudflare/README.md`; prefer local tests and dry runs,
+> and require explicit operator authority for live deployment or observability.
+
 ## The Anti-Pattern: Code Reading Loop
 
 ```

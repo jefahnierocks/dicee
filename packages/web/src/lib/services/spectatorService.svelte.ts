@@ -659,9 +659,10 @@ class SpectatorService {
 	 * Connect to watch a room as spectator
 	 *
 	 * @param roomCode - 6-character room code
-	 * @param accessToken - Supabase access token for authentication
+	 * @param _accessToken - Deprecated compatibility argument. Authentication
+	 * is resolved from the same-origin HttpOnly session cookie.
 	 */
-	async connect(roomCode: RoomCode, accessToken: string): Promise<void> {
+	async connect(roomCode: RoomCode, _accessToken: string): Promise<void> {
 		// Disconnect existing connection
 		if (this.socket) {
 			this.disconnect();
@@ -672,7 +673,7 @@ class SpectatorService {
 		this._error = null;
 
 		try {
-			this.connectToServer(roomCode, accessToken);
+			this.connectToServer(roomCode);
 		} catch (error) {
 			this._error = error instanceof Error ? error.message : 'Connection failed';
 			this.setStatus('error');
@@ -683,14 +684,14 @@ class SpectatorService {
 	/**
 	 * Connect to server as spectator
 	 */
-	private connectToServer(roomCode: RoomCode, accessToken: string): void {
+	private connectToServer(roomCode: RoomCode): void {
 		if (!browser) return;
 
 		log.debug('Connecting as spectator', { roomCode });
 
 		// Use same-origin WebSocket proxy with role=spectator
 		const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-		const wsUrl = `${protocol}//${location.host}/ws/room/${roomCode.toUpperCase()}?token=${encodeURIComponent(accessToken)}&role=spectator`;
+		const wsUrl = `${protocol}//${location.host}/ws/room/${roomCode.toUpperCase()}?role=spectator`;
 
 		const socket = new ReconnectingWebSocket(wsUrl, [], {
 			maxRetries: 10,

@@ -36,7 +36,7 @@ let error = $state<string | null>(null);
 // Permission-based derived state
 const canClearAll = $derived(profileStore.hasPermission('rooms:clear_all'));
 const canViewAudit = $derived(profileStore.hasPermission('audit:view'));
-const canViewConnections = $derived(profileStore.hasPermission('rooms:view'));
+const canViewConnections = $derived(profileStore.hasPermission('users:view'));
 
 interface RoomInfo {
 	code: string;

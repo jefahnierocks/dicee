@@ -282,11 +282,7 @@ fn score_small_straight(config: &DiceConfig) -> (u16, bool) {
         || (has(2) && has(3) && has(4) && has(5))
         || (has(3) && has(4) && has(5) && has(6));
 
-    if has_small {
-        (30, true)
-    } else {
-        (0, false)
-    }
+    if has_small { (30, true) } else { (0, false) }
 }
 
 /// Scores Large Straight (5 consecutive values).
@@ -299,11 +295,7 @@ fn score_large_straight(config: &DiceConfig) -> (u16, bool) {
     let has_large = (has(1) && has(2) && has(3) && has(4) && has(5))
         || (has(2) && has(3) && has(4) && has(5) && has(6));
 
-    if has_large {
-        (40, true)
-    } else {
-        (0, false)
-    }
+    if has_large { (40, true) } else { (0, false) }
 }
 
 /// Scores Dicee (all 5 dice the same).

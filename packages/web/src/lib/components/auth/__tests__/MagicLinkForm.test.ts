@@ -47,7 +47,7 @@ describe('MagicLinkForm', () => {
 	it('renders with link mode text', () => {
 		render(MagicLinkForm, { props: { mode: 'link' } });
 
-		expect(screen.getByPlaceholderText('your@email.com')).toBeInTheDocument();
+		expect(screen.getByPlaceholderText('user@example.com')).toBeInTheDocument();
 		expect(screen.getByRole('button', { name: 'Link Email' })).toBeInTheDocument();
 	});
 
@@ -78,12 +78,12 @@ describe('MagicLinkForm', () => {
 		render(MagicLinkForm);
 
 		const input = screen.getByPlaceholderText('Enter your email');
-		await fireEvent.input(input, { target: { value: 'test@example.com' } });
+		await fireEvent.input(input, { target: { value: 'user@example.com' } });
 
 		const button = screen.getByRole('button', { name: 'Send Magic Link' });
 		await fireEvent.click(button);
 
-		expect(auth.signInWithEmail).toHaveBeenCalledWith('test@example.com', undefined);
+		expect(auth.signInWithEmail).toHaveBeenCalledWith('user@example.com', undefined);
 	});
 
 	it('calls linkEmail on submit (link mode)', async () => {
@@ -91,13 +91,13 @@ describe('MagicLinkForm', () => {
 
 		render(MagicLinkForm, { props: { mode: 'link' } });
 
-		const input = screen.getByPlaceholderText('your@email.com');
-		await fireEvent.input(input, { target: { value: 'upgrade@example.com' } });
+		const input = screen.getByPlaceholderText('user@example.com');
+		await fireEvent.input(input, { target: { value: 'user@example.com' } });
 
 		const button = screen.getByRole('button', { name: 'Link Email' });
 		await fireEvent.click(button);
 
-		expect(auth.linkEmail).toHaveBeenCalledWith('upgrade@example.com');
+		expect(auth.linkEmail).toHaveBeenCalledWith('user@example.com');
 	});
 
 	it('passes redirectTo to signInWithEmail', async () => {
@@ -106,19 +106,19 @@ describe('MagicLinkForm', () => {
 		render(MagicLinkForm, { props: { redirectTo: '/game' } });
 
 		const input = screen.getByPlaceholderText('Enter your email');
-		await fireEvent.input(input, { target: { value: 'test@example.com' } });
+		await fireEvent.input(input, { target: { value: 'user@example.com' } });
 
 		const button = screen.getByRole('button', { name: 'Send Magic Link' });
 		await fireEvent.click(button);
 
-		expect(auth.signInWithEmail).toHaveBeenCalledWith('test@example.com', '/game');
+		expect(auth.signInWithEmail).toHaveBeenCalledWith('user@example.com', '/game');
 	});
 
 	it('shows success message after email sent', async () => {
 		render(MagicLinkForm);
 
 		const input = screen.getByPlaceholderText('Enter your email');
-		await fireEvent.input(input, { target: { value: 'test@example.com' } });
+		await fireEvent.input(input, { target: { value: 'user@example.com' } });
 
 		const button = screen.getByRole('button', { name: 'Send Magic Link' });
 		await fireEvent.click(button);
@@ -132,7 +132,7 @@ describe('MagicLinkForm', () => {
 		render(MagicLinkForm);
 
 		const input = screen.getByPlaceholderText('Enter your email');
-		await fireEvent.input(input, { target: { value: 'test@example.com' } });
+		await fireEvent.input(input, { target: { value: 'user@example.com' } });
 
 		const button = screen.getByRole('button', { name: 'Send Magic Link' });
 		await fireEvent.click(button);
@@ -152,7 +152,7 @@ describe('MagicLinkForm', () => {
 		const { container } = render(MagicLinkForm);
 
 		const input = screen.getByPlaceholderText('Enter your email');
-		await fireEvent.input(input, { target: { value: 'test@example.com' } });
+		await fireEvent.input(input, { target: { value: 'user@example.com' } });
 
 		// Submit the form directly to ensure handler runs
 		const form = container.querySelector('form');
@@ -231,7 +231,7 @@ describe('MagicLinkForm: Form Validation', () => {
 		const form = container.querySelector('form');
 
 		// First submission fails
-		await fireEvent.input(input, { target: { value: 'test@example.com' } });
+		await fireEvent.input(input, { target: { value: 'user@example.com' } });
 		await fireEvent.submit(form!);
 
 		await vi.waitFor(() => {

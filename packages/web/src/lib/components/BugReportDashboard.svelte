@@ -270,7 +270,7 @@ async function deleteReport(id: string) {
 									<div>
 										<h5 class="text-sm font-medium text-gray-700 mb-2">Reporter</h5>
 										<p class="text-sm text-gray-600">
-											{selectedReport.user_display_name || selectedReport.user_email || 'Unknown'}
+											Authenticated reporter
 										</p>
 									</div>
 									

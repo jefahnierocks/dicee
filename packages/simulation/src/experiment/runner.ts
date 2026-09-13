@@ -11,21 +11,21 @@
  * const results = await runner.run(simulationConfig);
  */
 
+import { runBatchSingleThreaded } from '../batch/single-threaded.js';
 import type {
+	DescriptiveStats,
 	ExperimentDefinition,
 	ExperimentResults,
-	StoppingRule,
+	GameResult,
 	Hypothesis,
 	HypothesisTestResult,
-	DescriptiveStats,
-	GameResult,
-	SimulationConfig,
 	MetricId,
 	ProfileId,
+	SimulationConfig,
+	StoppingRule,
 } from '../schemas/index.js';
-import { runBatchSingleThreaded } from '../batch/single-threaded.js';
+import { bonferroniCorrection, testHypothesis } from './hypothesis.js';
 import { calculateDescriptiveStats } from './statistics.js';
-import { testHypothesis, bonferroniCorrection } from './hypothesis.js';
 
 // =============================================================================
 // Types
@@ -276,7 +276,8 @@ export class ExperimentRunner {
 					seed: this.definition.masterSeed
 						? this.definition.masterSeed + totalGamesCompleted
 						: undefined,
-					onProgress: (p) => this.emitProgress(totalGamesCompleted, p.completedGames, metricsByProfile),
+					onProgress: (p) =>
+						this.emitProgress(totalGamesCompleted, p.completedGames, metricsByProfile),
 				});
 
 				// Collect results
@@ -404,7 +405,8 @@ export class ExperimentRunner {
 		const estimatedRemainingMs = gamesPerSecond > 0 ? (remainingGames / gamesPerSecond) * 1000 : 0;
 
 		// Profile progress
-		const profileProgress: Record<string, { games: number; meanScore: number; ciWidth: number }> = {};
+		const profileProgress: Record<string, { games: number; meanScore: number; ciWidth: number }> =
+			{};
 		for (const [profileId, metrics] of metricsByProfile) {
 			const scores = metrics.get('total_score') ?? [];
 			const stats = calculateDescriptiveStats(scores);

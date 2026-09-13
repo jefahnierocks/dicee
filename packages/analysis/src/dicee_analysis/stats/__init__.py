@@ -13,16 +13,16 @@ Example:
 """
 
 from dicee_analysis.stats.descriptive import (
-    describe_scores,
-    describe_by_category,
-    calculate_win_rates,
     calculate_bonus_rates,
+    calculate_win_rates,
+    describe_by_category,
+    describe_scores,
 )
 from dicee_analysis.stats.hypothesis import (
     compare_profiles,
-    test_calibration,
-    t_test,
     mann_whitney_test,
+    t_test,
+    test_calibration,
 )
 
 __all__ = [

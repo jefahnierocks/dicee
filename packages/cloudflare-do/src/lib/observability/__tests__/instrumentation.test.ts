@@ -5,37 +5,31 @@
  * Ensures all events are validated and emitted correctly.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { createInstrumentation } from '../instrumentation.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-	validateLogEntry,
-	safeValidateLogEntry,
-	LifecycleWakeEventSchema,
+	ErrorHandlerFailedEventSchema,
+	GameStartEventSchema,
 	LifecycleConnectEventSchema,
 	LifecycleDisconnectEventSchema,
+	LifecycleWakeEventSchema,
+	type LogEvent,
+	SeatAssignEventSchema,
 	StorageReadEndEventSchema,
 	StorageWriteEndEventSchema,
-	SeatAssignEventSchema,
-	GameStartEventSchema,
-	ErrorHandlerFailedEventSchema,
-	type LogEvent,
+	safeValidateLogEntry,
 } from '../events.schema.js';
-import {
-	createLifecycleWakeFixture,
-	createLifecycleConnectFixture,
-	createStorageReadEndFixture,
-} from './events.fixtures.js';
+import { createInstrumentation } from '../instrumentation.js';
 
 describe('Instrumentation', () => {
 	let consoleLogSpy: ReturnType<typeof vi.spyOn>;
 	let consoleInfoSpy: ReturnType<typeof vi.spyOn>;
-	let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+	let _consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
 	beforeEach(() => {
 		consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 		consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
-		consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		_consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 		consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 	});
 
@@ -363,4 +357,3 @@ describe('Instrumentation', () => {
 		});
 	});
 });
-

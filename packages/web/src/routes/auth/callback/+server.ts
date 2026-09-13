@@ -1,6 +1,15 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
+function safeRedirectTarget(value: string | null): string {
+	if (!value?.startsWith('/') || value.startsWith('//') || value.includes('\\')) return '/';
+	// Reject embedded control chars (TAB/CR/LF etc.). Browsers strip these from the
+	// Location header, so "/\t/evil.com" would otherwise become a protocol-relative
+	// "//evil.com" and open-redirect off-origin.
+	if ([...value].some((ch) => ch.charCodeAt(0) <= 0x1f || ch.charCodeAt(0) === 0x7f)) return '/';
+	return value;
+}
+
 /**
  * OAuth and Magic Link callback handler.
  *
@@ -21,15 +30,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const code = url.searchParams.get('code');
 	const token_hash = url.searchParams.get('token_hash');
 	const type = url.searchParams.get('type');
-	const next = url.searchParams.get('next') ?? '/';
+	const next = safeRedirectTarget(url.searchParams.get('next'));
 	const error = url.searchParams.get('error');
-	const error_description = url.searchParams.get('error_description');
 
 	// Handle OAuth errors
 	if (error) {
-		console.error('Auth callback error:', error, error_description);
-		const errorParam = encodeURIComponent(error_description || error);
-		redirect(303, `/?auth_error=${errorParam}`);
+		console.error('Auth callback rejected by provider');
+		redirect(303, '/?auth_error=provider_error');
 	}
 
 	// Handle OAuth code exchange
@@ -37,8 +44,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		const { error: exchangeError } = await locals.supabase.auth.exchangeCodeForSession(code);
 
 		if (exchangeError) {
-			console.error('Code exchange error:', exchangeError);
-			redirect(303, `/?auth_error=${encodeURIComponent(exchangeError.message)}`);
+			console.error('Auth code exchange failed');
+			redirect(303, '/?auth_error=exchange_failed');
 		}
 
 		// Successful OAuth - redirect to intended destination
@@ -53,8 +60,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		});
 
 		if (verifyError) {
-			console.error('OTP verification error:', verifyError);
-			redirect(303, `/?auth_error=${encodeURIComponent(verifyError.message)}`);
+			console.error('OTP verification failed');
+			redirect(303, '/?auth_error=verification_failed');
 		}
 
 		// Successful verification - redirect to intended destination

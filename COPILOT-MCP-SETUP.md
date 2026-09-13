@@ -10,14 +10,18 @@ Dicee no longer ships a repo script that edits `~/.copilot/mcp-config.json`.
 
 ## What `.copilot-mcp.json` Provides
 
-- `memory`
 - `akg`
 
-Deployment and quality-gate workflows are still handled by `scripts/copilot-mcp-wrapper.sh`.
+Local-only quality, public-safety, build/check, and Git-status workflows are
+handled by `scripts/copilot-mcp-wrapper.sh`. `public-safety` and `status` are
+read-only; quality/build checks may rebuild tracked generated output and require
+a diff review. The wrapper intentionally exposes no deployment or log-tail
+commands.
 
-## Secure Operator Prerequisites
+## Cloudflare operator boundary
 
-Before running deploy-oriented commands:
+Start at `docs/cloudflare/README.md`. Only for an explicitly authorized
+Cloudflare task:
 
 ```bash
 direnv allow
@@ -25,7 +29,9 @@ direnv allow
 ./scripts/with-dicee-cloudflare.sh -- wrangler whoami
 ```
 
-The wrapper script now resolves Cloudflare credentials from 1Password on demand. Dicee does not require project-local GitHub or Context7 tokens.
+The command-scoped wrapper resolves Cloudflare credentials from 1Password on
+demand. It does not grant deployment authority. Dicee does not require
+project-local GitHub or Context7 tokens.
 
 ## References
 

@@ -279,6 +279,15 @@ function getPackageName(relativePath: string): string {
 	if (relativePath.startsWith('packages/web/')) {
 		return '@dicee/web';
 	}
+	if (relativePath.startsWith('packages/cloudflare-do/')) {
+		return '@dicee/cloudflare-do';
+	}
+	if (relativePath.startsWith('packages/shared/')) {
+		return '@dicee/shared';
+	}
+	if (relativePath.startsWith('packages/simulation/')) {
+		return '@dicee/simulation';
+	}
 	if (relativePath.startsWith('packages/partykit/')) {
 		return '@dicee/partykit';
 	}

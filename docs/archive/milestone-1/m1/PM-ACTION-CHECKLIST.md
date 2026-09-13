@@ -67,7 +67,7 @@
 - [ ] Sign up (email or GitHub)
 - [ ] Create project: "dicee"
 - [ ] Select platform: "SvelteKit"
-- [ ] Save DSN: `https://xxx@xxx.ingest.sentry.io/xxx`
+- [ ] Save DSN: `https://user@example.com/xxx`
 - [ ] **Cost**: Free (5K events/month)
 
 **6. Analytics (PostHog or Plausible)**

@@ -4,38 +4,38 @@
  * Tests for statistical functions, hypothesis testing, and experiment runner.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
+	approximatePValue,
+	bonferroniCorrection,
+	calculateDescriptiveStats,
+	chiSquare2x2,
+	chiSquareTest,
+	cohensD,
+	confidenceInterval,
+	confidenceIntervalWidth,
+	interpretEffectSize,
 	// Statistics
 	mean,
 	median,
-	variance,
-	standardDeviation,
-	standardError,
-	percentile,
-	confidenceInterval,
-	confidenceIntervalWidth,
-	calculateDescriptiveStats,
-	cohensD,
-	pooledStandardDeviation,
-	interpretEffectSize,
-	sampleSizeOneSampleTTest,
-	sampleSizeTwoSampleTTest,
-	sampleSizeForCIWidth,
-	tStatisticOneSample,
-	tStatisticTwoSample,
-	approximatePValue,
-	chiSquare2x2,
 	// Hypothesis testing
 	oneSampleTTest,
-	twoSampleTTest,
-	welchTTest,
-	chiSquareTest,
+	percentile,
+	pooledStandardDeviation,
 	rangeTest,
-	testHypothesis,
-	bonferroniCorrection,
 	// Runner
 	runQuickExperiment,
+	sampleSizeForCIWidth,
+	sampleSizeOneSampleTTest,
+	sampleSizeTwoSampleTTest,
+	standardDeviation,
+	standardError,
+	testHypothesis,
+	tStatisticOneSample,
+	tStatisticTwoSample,
+	twoSampleTTest,
+	variance,
+	welchTTest,
 } from '../experiment/index.js';
 import type { Hypothesis } from '../schemas/index.js';
 
@@ -183,7 +183,7 @@ describe('Confidence Intervals', () => {
 
 describe('Effect Size', () => {
 	describe('cohensD', () => {
-		it('should calculate Cohen\'s d', () => {
+		it("should calculate Cohen's d", () => {
 			expect(cohensD(110, 100, 10)).toBe(1);
 			expect(cohensD(105, 100, 10)).toBe(0.5);
 			expect(cohensD(100, 100, 10)).toBe(0);
@@ -351,7 +351,9 @@ describe('Hypothesis Testing', () => {
 		});
 
 		it('should not reject when data matches target', () => {
-			const data = Array.from({ length: 100 }, () => 100 + (Math.random() - 0.5) * 10);
+			// Ten identical, symmetric cycles around 100 keep this assertion
+			// deterministic while retaining non-zero variance for the t-test.
+			const data = Array.from({ length: 100 }, (_, index) => 100 + ((index % 10) - 4.5));
 			const result = oneSampleTTest(data, 100, 'not_equal', 0.05);
 
 			expect(result.rejected).toBe(false);

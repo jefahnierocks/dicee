@@ -7,12 +7,12 @@
 
 import { z } from 'zod';
 import {
-	GameRecordSchema,
-	GamePlayerRecordSchema,
-	DomainEventSchema,
-	type GameRecord,
-	type GamePlayerRecord,
 	type DomainEvent,
+	DomainEventSchema,
+	type GamePlayerRecord,
+	GamePlayerRecordSchema,
+	type GameRecord,
+	GameRecordSchema,
 	type PersistenceResult,
 } from './schemas';
 

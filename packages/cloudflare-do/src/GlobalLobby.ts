@@ -95,17 +95,12 @@ interface LobbyCommand {
 		| 'LOBBY_CHAT'
 		| 'GET_ROOMS'
 		| 'GET_ONLINE_USERS'
-		| 'ROOM_CREATED'
-		| 'ROOM_UPDATED'
-		| 'ROOM_CLOSED'
 		| 'REQUEST_JOIN'
 		| 'CANCEL_JOIN_REQUEST'
 		| 'SEND_INVITE'
 		| 'CANCEL_INVITE';
 	payload?: {
 		content?: string;
-		room?: RoomInfo;
-		code?: string;
 		roomCode?: string;
 		requestId?: string;
 	};
@@ -118,6 +113,8 @@ interface LobbyCommand {
 const MAX_CHAT_MESSAGE_LENGTH = 500;
 const MAX_CHAT_HISTORY = 50;
 const RATE_LIMIT_MESSAGES_PER_MINUTE = 30;
+const MAX_WEBSOCKET_MESSAGE_BYTES = 16 * 1024;
+const SAFE_CORRELATION_ID = /^[A-Za-z0-9._:-]{1,64}$/;
 
 /** Storage keys for persistent data */
 const STORAGE_KEYS = {
@@ -179,13 +176,6 @@ export class GlobalLobby extends DurableObject<Env> {
 		// WebSocket upgrade for real-time connection
 		if (request.headers.get('Upgrade') === 'websocket') {
 			return this.handleWebSocketUpgrade(request);
-		}
-
-		// POST endpoints (called by GameRoom via RPC)
-		if (request.method === 'POST') {
-			if (url.pathname === '/user-room-status') {
-				return this.handleUserRoomStatus(request);
-			}
 		}
 
 		// REST endpoints
@@ -316,16 +306,11 @@ export class GlobalLobby extends DurableObject<Env> {
 		const pair = new WebSocketPair();
 		const [client, server] = Object.values(pair);
 
-		// Extract user info from headers (set by auth middleware or query params)
-		const url = new URL(request.url);
-		const userId =
-			url.searchParams.get('userId') || request.headers.get('X-User-Id') || crypto.randomUUID();
-		const displayName =
-			url.searchParams.get('displayName') ||
-			request.headers.get('X-Display-Name') ||
-			`Guest-${userId.slice(0, 4)}`;
-		const avatarSeed =
-			url.searchParams.get('avatarSeed') || request.headers.get('X-Avatar-Seed') || userId;
+		// The Worker is service-binding-only in production. Identity comes only
+		// from the authenticated web proxy, never from client-controlled URLs.
+		const userId = request.headers.get('X-User-Id') || crypto.randomUUID();
+		const displayName = request.headers.get('X-Display-Name') || `Guest-${userId.slice(0, 4)}`;
+		const avatarSeed = request.headers.get('X-Avatar-Seed') || userId;
 
 		// Accept with hibernation support and tags for efficient querying
 		// Tags survive hibernation and allow: getWebSockets('user:xyz')
@@ -429,6 +414,14 @@ export class GlobalLobby extends DurableObject<Env> {
 
 	async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
 		await this.ensureInstrumentation();
+		if (typeof message !== 'string') {
+			ws.close(1003, 'Binary messages not supported');
+			return;
+		}
+		if (new TextEncoder().encode(message).byteLength > MAX_WEBSOCKET_MESSAGE_BYTES) {
+			ws.close(1009, 'Message too large');
+			return;
+		}
 
 		const attachment = ws.deserializeAttachment() as UserPresence;
 
@@ -437,100 +430,75 @@ export class GlobalLobby extends DurableObject<Env> {
 		ws.serializeAttachment(attachment);
 
 		try {
-			const parsed = JSON.parse(message as string) as LobbyCommand & { correlationId?: string };
+			const parsed = JSON.parse(message) as LobbyCommand & { correlationId?: unknown };
+			if (!parsed || typeof parsed !== 'object' || typeof parsed.type !== 'string') {
+				throw new Error('Invalid lobby command');
+			}
 			const { correlationId, ...data } = parsed;
 
 			// Set correlation ID for this request (propagates to all events in this request)
-			if (correlationId) {
+			if (typeof correlationId === 'string' && SAFE_CORRELATION_ID.test(correlationId)) {
 				this.instr?.setCorrelationId(correlationId);
 			}
 
 			try {
+				// Extract from payload (UPPERCASE protocol)
+				const content = typeof data.payload?.content === 'string' ? data.payload.content : '';
+				const roomCode =
+					typeof data.payload?.roomCode === 'string' ? data.payload.roomCode : undefined;
+				const requestId =
+					typeof data.payload?.requestId === 'string' ? data.payload.requestId : undefined;
 
-			// Extract from payload (UPPERCASE protocol)
-			const content = data.payload?.content ?? '';
-			const room = data.payload?.room;
-			const code = data.payload?.code;
-			const roomCode = data.payload?.roomCode;
-			const requestId = data.payload?.requestId;
+				switch (data.type) {
+					case 'LOBBY_CHAT':
+						await this.handleChat(ws, attachment, content);
+						break;
+					case 'GET_ROOMS':
+						await this.sendRoomsList(ws);
+						break;
+					case 'GET_ONLINE_USERS':
+						this.sendOnlineUsers(ws);
+						break;
+					case 'REQUEST_JOIN':
+						if (roomCode) {
+							await this.handleRequestJoin(ws, attachment, roomCode);
+						} else {
+							ws.send(
+								JSON.stringify({
+									type: 'JOIN_REQUEST_ERROR',
+									payload: { message: 'roomCode is required for join requests' },
+									timestamp: new Date().toISOString(),
+								}),
+							);
+						}
+						break;
+					case 'CANCEL_JOIN_REQUEST':
+						if (requestId && roomCode) {
+							await this.handleCancelJoinRequest(ws, attachment, requestId, roomCode);
+						} else {
+							ws.send(
+								JSON.stringify({
+									type: 'LOBBY_ERROR',
+									payload: { message: 'requestId and roomCode are required' },
+									timestamp: new Date().toISOString(),
+								}),
+							);
+						}
+						break;
 
-			switch (data.type) {
-				case 'LOBBY_CHAT':
-					await this.handleChat(ws, attachment, content);
-					break;
-				case 'GET_ROOMS':
-					await this.sendRoomsList(ws);
-					break;
-				case 'GET_ONLINE_USERS':
-					this.sendOnlineUsers(ws);
-					break;
-				case 'ROOM_CREATED':
-					if (room) {
-						await this.roomDirectory.upsert(room);
-						this.broadcast({
-							type: 'LOBBY_ROOM_UPDATE',
-							payload: { action: 'created', room },
-							timestamp: new Date().toISOString(),
-						});
-					}
-					break;
-				case 'ROOM_UPDATED':
-					if (room) {
-						await this.roomDirectory.upsert(room);
-						this.broadcast({
-							type: 'LOBBY_ROOM_UPDATE',
-							payload: { action: 'updated', room },
-							timestamp: new Date().toISOString(),
-						});
-					}
-					break;
-				case 'ROOM_CLOSED':
-					if (code) {
-						await this.roomDirectory.remove(code);
-						this.broadcast({
-							type: 'LOBBY_ROOM_UPDATE',
-							payload: { action: 'closed', code },
-							timestamp: new Date().toISOString(),
-						});
-					}
-					break;
-				case 'REQUEST_JOIN':
-					if (roomCode) {
-						await this.handleRequestJoin(ws, attachment, roomCode);
-					} else {
-						ws.send(
-							JSON.stringify({
-								type: 'JOIN_REQUEST_ERROR',
-								payload: { message: 'roomCode is required for join requests' },
-								timestamp: new Date().toISOString(),
-							}),
+					default:
+						this.instr?.errorHandlerFailed(
+							`unknownCommand.${data.type}`,
+							new Error(`Unknown command type: ${data.type}`),
 						);
-					}
-					break;
-				case 'CANCEL_JOIN_REQUEST':
-					if (requestId && roomCode) {
-						await this.handleCancelJoinRequest(ws, attachment, requestId, roomCode);
-					} else {
-						ws.send(
-							JSON.stringify({
-								type: 'LOBBY_ERROR',
-								payload: { message: 'requestId and roomCode are required' },
-								timestamp: new Date().toISOString(),
-							}),
-						);
-					}
-					break;
-
-				default:
-					this.instr?.errorHandlerFailed(`unknownCommand.${data.type}`, new Error(`Unknown command type: ${data.type}`));
-			}
+				}
 			} catch (error) {
 				// Log handler errors with correlation ID preserved
 				this.instr?.errorHandlerFailed(`handleMessage.${data.type}`, error);
 				throw error;
 			} finally {
 				// Clear correlation ID after request handling (ensures clean state for next request)
-				if (correlationId) {
+				if (typeof correlationId === 'string' && SAFE_CORRELATION_ID.test(correlationId)) {
 					this.instr?.clearCorrelationId();
 				}
 			}
@@ -888,26 +856,6 @@ export class GlobalLobby extends DurableObject<Env> {
 		// Room status update logged via broadcast method
 	}
 
-	/**
-	 * HTTP handler for user room status (fallback for non-RPC callers).
-	 */
-	private async handleUserRoomStatus(request: Request): Promise<Response> {
-		try {
-			const body = (await request.json()) as {
-				userId: string;
-				roomCode: string;
-				action: 'entered' | 'left';
-			};
-
-			this.updateUserRoomStatus(body.userId, body.roomCode, body.action);
-			return new Response('OK');
-		} catch (err) {
-			await this.ensureInstrumentation();
-			this.instr?.errorHandlerFailed('handleUserRoomStatus', err);
-			return new Response('Bad Request', { status: 400 });
-		}
-	}
-
 	// =========================================================================
 	// RPC Methods (called by GameRoom DOs)
 	// =========================================================================
@@ -961,7 +909,6 @@ export class GlobalLobby extends DurableObject<Env> {
 			timestamp: new Date().toISOString(),
 		});
 
-		const roomCount = await this.roomDirectory.size();
 		// Room status update logged via broadcast method
 	}
 
@@ -1402,22 +1349,6 @@ export class GlobalLobby extends DurableObject<Env> {
 		}
 	}
 
-	/**
-	 * Instrumented storage.delete wrapper
-	 */
-	private async deleteStorage(key: string): Promise<boolean> {
-		await this.ensureInstrumentation();
-		try {
-			await this.ctx.storage.delete(key);
-			this.instr?.storageDelete(key, true);
-			return true;
-		} catch (error) {
-			this.instr?.errorStorageFailed('delete', key, error);
-			this.instr?.storageDelete(key, false);
-			throw error;
-		}
-	}
-
 	// =========================================================================
 	// Helpers
 	// =========================================================================
@@ -1438,11 +1369,7 @@ export class GlobalLobby extends DurableObject<Env> {
 					sentCount++;
 				} catch (error) {
 					const attachment = ws.deserializeAttachment() as UserPresence | null;
-					this.instr?.errorBroadcastFailed(
-						msgType,
-						attachment?.userId ?? 'unknown',
-						error,
-					);
+					this.instr?.errorBroadcastFailed(msgType, attachment?.userId ?? 'unknown', error);
 				}
 			}
 		}

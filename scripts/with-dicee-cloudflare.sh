@@ -23,5 +23,4 @@ token="$(dicee_op_read "$DICEE_OP_ITEM_CLOUDFLARE" api-token)"
 exec env \
 	CLOUDFLARE_ACCOUNT_ID="$DICEE_CLOUDFLARE_ACCOUNT_ID" \
 	CLOUDFLARE_API_TOKEN="$token" \
-	CF_BEARER_TOKEN="Bearer ${token}" \
 	"$@"

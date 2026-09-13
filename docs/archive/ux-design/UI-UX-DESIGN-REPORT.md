@@ -370,7 +370,7 @@ Traditional educational interfaces treat statistics as supplementary. Dicee **in
   - Border: 2px solid black
   - Padding: 12px
   - Font: 16px (prevents mobile zoom)
-  - Placeholder: "your@email.com"
+  - Placeholder: "user@example.com"
 - Submit button: Similar to PlayNowButton but secondary style
 
 **Flow**:

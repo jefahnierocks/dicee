@@ -95,10 +95,7 @@ export async function check(options: CheckOptions = {}): Promise<CheckSummary> {
 	// Validate graph integrity
 	const validationErrors = validateGraph(graph);
 	if (validationErrors.length > 0) {
-		logError('Graph validation warnings:');
-		for (const err of validationErrors) {
-			logError(`  - ${err}`);
-		}
+		throw new Error(`Graph integrity validation failed:\n- ${validationErrors.join('\n- ')}`);
 	}
 
 	// Run invariant checks

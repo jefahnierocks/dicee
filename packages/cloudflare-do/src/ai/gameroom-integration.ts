@@ -19,7 +19,7 @@
  */
 
 import type { MultiplayerGameState, PlayerGameState } from '../game';
-import { type Logger, createLogger } from '../lib/logger';
+import { createLogger, type Logger } from '../lib/logger';
 import { type AICommand, AIController } from './controller';
 import { getProfile } from './profiles';
 import type { AIEvent, AISpeedMode } from './types';

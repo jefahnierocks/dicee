@@ -10,10 +10,10 @@
 
 import type { AIBrain, AIProfile, GameContext, TurnDecision } from '@dicee/cloudflare-do';
 import {
-	initializeBrainFactory,
+	AI_PROFILES,
 	createBrain as createCFBrain,
 	getProfile as getCFProfile,
-	AI_PROFILES,
+	initializeBrainFactory,
 } from '@dicee/cloudflare-do';
 import type {
 	SimulationBrain,
@@ -21,11 +21,8 @@ import type {
 	SimulationDecision,
 	SimulationProfile,
 } from './brain-adapter.js';
+import { PhaseShiftingBrain, type PhaseShiftingVariant } from './phase-shifting-brain.js';
 import { SeededRandom } from './seeded-random.js';
-import {
-	PhaseShiftingBrain,
-	type PhaseShiftingVariant,
-} from './phase-shifting-brain.js';
 
 // Track initialization
 let initialized = false;

@@ -6,13 +6,13 @@
  */
 
 import type {
+	LobbyRoomStatus,
 	RoomIdentity,
 	// Re-export shared lobby types for use in this package
 	PlayerPresenceState as SharedPlayerPresenceState,
 	PlayerSummary as SharedPlayerSummary,
-	RoomStatusUpdate as SharedRoomStatusUpdate,
-	LobbyRoomStatus,
 	RoomInfo as SharedRoomInfo,
+	RoomStatusUpdate as SharedRoomStatusUpdate,
 } from '@dicee/shared';
 
 // Re-export shared types for internal use
@@ -27,18 +27,11 @@ export type { LobbyRoomStatus, SharedRoomInfo as RoomInfoFromShared };
 
 /**
  * Cloudflare Worker environment bindings.
- * Defined in wrangler.toml, populated at runtime.
+ * Non-secret bindings are generated from wrangler.jsonc into
+ * worker-configuration.d.ts. Secret names remain explicit here because
+ * Wrangler cannot infer bindings that are provisioned outside the config.
  */
-export interface Env {
-	/** GameRoom Durable Object namespace binding (per-room instances) */
-	GAME_ROOM: DurableObjectNamespace;
-
-	/** GlobalLobby Durable Object namespace binding (singleton) */
-	GLOBAL_LOBBY: DurableObjectNamespace;
-
-	/** Workers AI binding for audio transcription */
-	AI: Ai;
-
+interface SecretBindings {
 	/** Supabase project URL */
 	SUPABASE_URL: string;
 
@@ -50,10 +43,9 @@ export interface Env {
 
 	/** Supabase JWT secret for legacy HS256 token verification (optional if using asymmetric keys) */
 	SUPABASE_JWT_SECRET?: string;
-
-	/** Current environment (development, staging, production) */
-	ENVIRONMENT: 'development' | 'staging' | 'production';
 }
+
+export type Env = Cloudflare.Env & SecretBindings;
 
 // =============================================================================
 // Connection State (survives hibernation)

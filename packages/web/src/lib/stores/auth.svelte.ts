@@ -1,8 +1,5 @@
 import type { AuthChangeEvent, Session, SupabaseClient, User } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
-import { createServiceLogger } from '$lib/utils/logger';
-
-const log = createServiceLogger('AuthStore');
 
 /**
  * Auth state store using Svelte 5 runes.
@@ -193,23 +190,9 @@ class AuthState {
 		return data.identities;
 	}
 
-	/**
-	 * Sync the profiles table is_anonymous field after upgrade.
-	 * Call this after successfully linking an identity.
-	 */
-	async syncProfileAnonymousStatus(): Promise<void> {
-		if (!this.#supabase || !this.userId) return;
-
-		// Update profiles.is_anonymous to match auth.users.is_anonymous
-		const { error } = await this.#supabase
-			.from('profiles')
-			.update({ is_anonymous: this.isAnonymous })
-			.eq('id', this.userId);
-
-		if (error) {
-			log.error('Failed to sync profile anonymous status', error as Error);
-		}
-	}
+	// profiles.is_anonymous is not client-writable. The database syncs it from
+	// auth.users.is_anonymous when an identity is linked (see
+	// supabase/migrations/20260913000001_profiles_column_privileges.sql).
 
 	/**
 	 * Testing interface - DO NOT USE IN PRODUCTION CODE

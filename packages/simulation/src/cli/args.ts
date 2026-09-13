@@ -103,11 +103,7 @@ export function getNumber(
 /**
  * Get a boolean option value
  */
-export function getBoolean(
-	args: ParsedArgs,
-	key: string,
-	defaultValue = false,
-): boolean {
+export function getBoolean(args: ParsedArgs, key: string, defaultValue = false): boolean {
 	const value = args.options[key];
 	if (typeof value === 'boolean') return value;
 	if (typeof value === 'string') {
@@ -119,11 +115,7 @@ export function getBoolean(
 /**
  * Get a list option value (comma-separated)
  */
-export function getList(
-	args: ParsedArgs,
-	key: string,
-	defaultValue: string[] = [],
-): string[] {
+export function getList(args: ParsedArgs, key: string, defaultValue: string[] = []): string[] {
 	const value = args.options[key];
 	if (typeof value === 'string') {
 		return value.split(',').map((s) => s.trim());

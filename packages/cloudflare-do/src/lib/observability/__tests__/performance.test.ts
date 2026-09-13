@@ -4,9 +4,9 @@
  * Test-first implementation of performance tracking utilities.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createPerformanceTimer, measureOperation } from '../performance.js';
+import { describe, expect, it } from 'vitest';
 import { createInstrumentation } from '../instrumentation.js';
+import { createPerformanceTimer, measureOperation } from '../performance.js';
 
 describe('Performance Metrics', () => {
 	describe('createPerformanceTimer', () => {
@@ -67,4 +67,3 @@ describe('Performance Metrics', () => {
 		});
 	});
 });
-

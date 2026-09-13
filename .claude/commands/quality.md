@@ -1,6 +1,6 @@
 # Run Quality Gate
 
-Execute the quality gate checks before phase transition.
+Run the repository completion gate before handing off a change.
 
 ## Instructions
 
@@ -10,22 +10,22 @@ Run the quality gate script:
 ./scripts/quality-gate.sh
 ```
 
-This checks (7 steps):
-1. TypeScript & Rust - `pnpm check`
-2. AKG Invariants - `pnpm akg:check` (architectural rules)
-3. Biome Lint - `pnpm biome:check`
-4. Tests - `pnpm test`
-5. Secrets - `infisical scan` (if available)
-6. Build - `pnpm build`
-7. AKG Diagrams - Check if diagrams are current
+It runs `pnpm validate:ci`, which is the completion gate named in `AGENTS.md`:
+
+1. `pnpm validate`: `check` (Rust, TypeScript, Python, Worker types), `lint`
+   (Rust, Python, Biome, AKG), `test:agent`, and `build`
+2. `pnpm audit:dependencies`: high-severity dependency audit (queries the
+   package registry)
+3. `pnpm security:public`: public-safety scan of the publication candidate
+
+Pass `--fix` to run `pnpm format` first.
 
 If any check fails:
 1. Report which check failed
 2. Show the error output
 3. Suggest fixes
 
-If all pass:
-1. Report success
-2. Confirm ready for phase transition
+If a lane cannot run for environment reasons (no network, missing
+dependencies), name it and show the exact error instead of reporting a pass.
 
 Run the quality gate now and report results.

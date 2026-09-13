@@ -353,7 +353,7 @@ let ev_continue = TRANSITION_TABLE.expected_value(&partial, |config| {
 
 1. **Multinomial Distribution**: [Wikipedia](https://en.wikipedia.org/wiki/Multinomial_distribution)
 2. **Lazy Static Pattern**: Rust `std::sync::LazyLock` documentation
-3. **Source Implementation**: `/Users/verlyn13/00_inbox/dicee-engine-extracted/dicee-engine/src/transition/`
+3. **Source Implementation**: `<legacy-source-root>/dicee-engine-extracted/dicee-engine/src/transition/`
 
 ---
 

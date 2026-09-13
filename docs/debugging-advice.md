@@ -1,3 +1,9 @@
+# Legacy debugging advice
+
+> **Status:** historical prompt material. Its direct-deploy, production-tail, and
+> ad hoc logging instructions are superseded by `AGENTS.md`, current structured
+> logging, and [`docs/cloudflare/README.md`](cloudflare/README.md).
+
 You're right - the agent is thrashing. It's looking at code that "looks fine" without a systematic way to find the actual break point. This is exactly what the audit workflow should prevent.
 
 The problem: **The agent is reading code instead of tracing execution.**

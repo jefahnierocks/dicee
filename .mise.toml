@@ -2,12 +2,15 @@
 # Managed by mise (https://mise.jdx.dev)
 
 [tools]
-node = "24"
-pnpm = "10"
+node = "24.18.0"
+pnpm = "11.15.1"
 # Keep this pinned in sync with packages/engine/rust-toolchain.toml and CI.
-rust = "1.95.0"
-# Python available if needed for scripting
-# python = "3.12"
+rust = "1.97.1"
+python = "3.13.14"
+uv = "0.11.30"
+bun = "1.3.14"
+# Local Supabase stack CLI; pinned so db:* tasks do not float with Homebrew.
+"aqua:supabase/cli" = "2.117.0"
 
 [tasks]
 # Core development tasks
@@ -28,7 +31,7 @@ format = "pnpm format"
 
 # Engine (Rust/WASM)
 "engine:build" = "pnpm build:engine"
-"engine:test" = "cargo test --manifest-path packages/engine/Cargo.toml"
+"engine:test" = "pnpm test:rust"
 "engine:check" = "pnpm check:rust"
 
 # Database (local Supabase)
@@ -41,3 +44,6 @@ quality = "./scripts/quality-gate.sh"
 
 [env]
 DICEE_ENV = "development"
+# uv otherwise prefers an independently installed interpreter on clean clones.
+# Keep this in sync with tools.python and CI's python-version.
+UV_PYTHON = "3.13.14"

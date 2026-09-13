@@ -12,50 +12,48 @@
  * } from '@dicee/simulation/experiment';
  */
 
-// Statistics exports
-export {
-	mean,
-	median,
-	variance,
-	standardDeviation,
-	standardError,
-	percentile,
-	confidenceInterval,
-	confidenceIntervalWidth,
-	calculateDescriptiveStats,
-	cohensD,
-	pooledStandardDeviation,
-	interpretEffectSize,
-	sampleSizeOneSampleTTest,
-	sampleSizeTwoSampleTTest,
-	sampleSizeProportionTest,
-	sampleSizeForCIWidth,
-	getCriticalT,
-	tStatisticOneSample,
-	tStatisticTwoSample,
-	tStatisticWelch,
-	welchDF,
-	approximatePValue,
-	chiSquare2x2,
-	chiSquarePValue1DF,
-} from './statistics.js';
-
 // Hypothesis testing exports
 export {
-	oneSampleTTest,
-	twoSampleTTest,
-	welchTTest,
+	bonferroniCorrection,
 	chiSquareTest,
+	oneSampleTTest,
 	rangeTest,
 	testHypothesis,
-	bonferroniCorrection,
+	twoSampleTTest,
+	welchTTest,
 } from './hypothesis.js';
-
 // Runner exports
 export {
+	type ExperimentProgress,
+	type ExperimentProgressCallback,
 	ExperimentRunner,
 	runCalibrationExperiment,
 	runQuickExperiment,
-	type ExperimentProgress,
-	type ExperimentProgressCallback,
 } from './runner.js';
+// Statistics exports
+export {
+	approximatePValue,
+	calculateDescriptiveStats,
+	chiSquare2x2,
+	chiSquarePValue1DF,
+	cohensD,
+	confidenceInterval,
+	confidenceIntervalWidth,
+	getCriticalT,
+	interpretEffectSize,
+	mean,
+	median,
+	percentile,
+	pooledStandardDeviation,
+	sampleSizeForCIWidth,
+	sampleSizeOneSampleTTest,
+	sampleSizeProportionTest,
+	sampleSizeTwoSampleTTest,
+	standardDeviation,
+	standardError,
+	tStatisticOneSample,
+	tStatisticTwoSample,
+	tStatisticWelch,
+	variance,
+	welchDF,
+} from './statistics.js';

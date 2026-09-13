@@ -5,17 +5,12 @@
  * Requires moderator+ role for access.
  */
 
+import { requireAdminPermission } from '$lib/server/admin';
 import type { RequestHandler } from './$types';
 
 export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
-	// Check authentication
-	const { user } = await locals.safeGetSession();
-	if (!user) {
-		return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-			status: 401,
-			headers: { 'Content-Type': 'application/json' },
-		});
-	}
+	const authorization = await requireAdminPermission(locals, 'rooms:close');
+	if (authorization instanceof Response) return authorization;
 
 	const gameWorker = platform?.env?.GAME_WORKER;
 
@@ -28,6 +23,12 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 	}
 
 	const roomCode = params.code.toUpperCase();
+	if (!/^[A-Z0-9]{6}$/.test(roomCode)) {
+		return new Response(JSON.stringify({ error: 'Invalid room code' }), {
+			status: 400,
+			headers: { 'Content-Type': 'application/json' },
+		});
+	}
 
 	// Proxy to GlobalLobby debug endpoint
 	const response = await gameWorker.fetch(

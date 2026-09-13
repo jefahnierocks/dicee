@@ -9,14 +9,13 @@
 
 ## MCP Sources
 
-Project-managed:
+Project-managed (native HTTP/OAuth; see `docs/MCP-SETUP.md`):
 
 - `.mcp.json`
 - `.cursor/mcp.json`
 
 Manual/global:
 
-- Windsurf template in `docs/templates/windsurf-mcp-config.template.json`
 - Copilot template in `.copilot-mcp.json`
 - Context7 and GitHub via global user config
 
@@ -38,7 +37,6 @@ Archive snapshots under `.claude/state/archives/` are historical only.
 ./scripts/check-1password-setup.sh
 ./scripts/with-dicee-infisical-auth.sh dev -- <command>
 ./scripts/with-dicee-cloudflare.sh -- <command>
-./scripts/with-dicee-supabase-mcp.sh -- <command>
 infisical run --env=dev -- <command>
 ```
 

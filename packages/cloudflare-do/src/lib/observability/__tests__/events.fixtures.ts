@@ -14,41 +14,28 @@
  */
 
 import type {
-	LifecycleWakeEvent,
-	LifecycleConnectEvent,
-	LifecycleDisconnectEvent,
-	LifecycleReconnectEvent,
-	StorageReadStartEvent,
-	StorageReadEndEvent,
-	StorageWriteStartEvent,
-	StorageWriteEndEvent,
-	StorageDeleteEvent,
-	StorageListEvent,
-	StateTransitionEvent,
-	StateTransitionRejectedEvent,
-	SeatAssignEvent,
-	SeatReserveEvent,
-	SeatReclaimAttemptEvent,
-	SeatReclaimResultEvent,
-	SeatReleaseEvent,
-	GameStartEvent,
-	GameTurnStartEvent,
-	GameTurnEndEvent,
-	GameRollEvent,
-	GameScoreEvent,
-	GameCompleteEvent,
-	ConnectionAuthSuccessEvent,
-	ConnectionAuthFailureEvent,
-	ConnectionTokenExpiredEvent,
-	ConnectionRateLimitEvent,
 	BroadcastPrepareEvent,
 	BroadcastSentEvent,
 	ErrorHandlerFailedEvent,
 	ErrorStorageFailedEvent,
-	ErrorBroadcastFailedEvent,
-	ErrorStateCorruptionEvent,
-	DiagnosticSnapshotEvent,
-	DiagnosticHealthCheckEvent,
+	GameRollEvent,
+	GameScoreEvent,
+	GameStartEvent,
+	LifecycleConnectEvent,
+	LifecycleDisconnectEvent,
+	LifecycleReconnectEvent,
+	LifecycleWakeEvent,
+	SeatAssignEvent,
+	SeatReclaimAttemptEvent,
+	SeatReclaimResultEvent,
+	SeatReleaseEvent,
+	SeatReserveEvent,
+	StorageDeleteEvent,
+	StorageListEvent,
+	StorageReadEndEvent,
+	StorageReadStartEvent,
+	StorageWriteEndEvent,
+	StorageWriteStartEvent,
 } from '../events.schema.js';
 
 // =============================================================================
@@ -245,9 +232,7 @@ export function createStorageDeleteFixture(
 /**
  * Create a valid storage.list event fixture
  */
-export function createStorageListFixture(
-	overrides?: Partial<StorageListEvent>,
-): StorageListEvent {
+export function createStorageListFixture(overrides?: Partial<StorageListEvent>): StorageListEvent {
 	return {
 		_ts: Date.now(),
 		_level: 'debug',
@@ -521,9 +506,7 @@ export function createEventFixture<T extends string>(
 		case 'lifecycle.connect':
 			return createLifecycleConnectFixture(overrides as Partial<LifecycleConnectEvent>);
 		case 'lifecycle.disconnect':
-			return createLifecycleDisconnectFixture(
-				overrides as Partial<LifecycleDisconnectEvent>,
-			);
+			return createLifecycleDisconnectFixture(overrides as Partial<LifecycleDisconnectEvent>);
 		case 'lifecycle.reconnect':
 			return createLifecycleReconnectFixture(overrides as Partial<LifecycleReconnectEvent>);
 		case 'storage.read.start':
@@ -560,4 +543,3 @@ export function createEventFixture<T extends string>(
 			throw new Error(`No fixture creator for event type: ${eventType}`);
 	}
 }
-

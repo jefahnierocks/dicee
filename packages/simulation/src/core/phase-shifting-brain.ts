@@ -10,7 +10,6 @@
  * static approaches.
  */
 
-import type { SeededRandom } from './seeded-random.js';
 import type {
 	SimulationBrain,
 	SimulationContext,
@@ -18,16 +17,35 @@ import type {
 	SimulationProfile,
 } from './brain-adapter.js';
 import type { DiceArray, KeptMask } from './game-simulator.js';
-import { KEEP_NONE, countDice, hasNOfAKind, hasSmallStraight, hasLargeStraight } from './seeded-dice.js';
+import { countDice, hasLargeStraight, hasNOfAKind, hasSmallStraight } from './seeded-dice.js';
+import type { SeededRandom } from './seeded-random.js';
 
 // Categories and their scoring functions
 type Category =
-	| 'ones' | 'twos' | 'threes' | 'fours' | 'fives' | 'sixes'
-	| 'threeOfAKind' | 'fourOfAKind' | 'fullHouse'
-	| 'smallStraight' | 'largeStraight' | 'dicee' | 'chance';
+	| 'ones'
+	| 'twos'
+	| 'threes'
+	| 'fours'
+	| 'fives'
+	| 'sixes'
+	| 'threeOfAKind'
+	| 'fourOfAKind'
+	| 'fullHouse'
+	| 'smallStraight'
+	| 'largeStraight'
+	| 'dicee'
+	| 'chance';
 
 const UPPER_CATEGORIES: Category[] = ['ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
-const LOWER_CATEGORIES: Category[] = ['threeOfAKind', 'fourOfAKind', 'fullHouse', 'smallStraight', 'largeStraight', 'dicee', 'chance'];
+const LOWER_CATEGORIES: Category[] = [
+	'threeOfAKind',
+	'fourOfAKind',
+	'fullHouse',
+	'smallStraight',
+	'largeStraight',
+	'dicee',
+	'chance',
+];
 
 interface ScoringOption {
 	category: Category;
@@ -42,29 +60,44 @@ function calculateScore(dice: DiceArray, category: Category): number {
 	const sum = dice.reduce((a: number, b: number) => a + b, 0);
 
 	switch (category) {
-		case 'ones': return dice.filter((d: number) => d === 1).length * 1;
-		case 'twos': return dice.filter((d: number) => d === 2).length * 2;
-		case 'threes': return dice.filter((d: number) => d === 3).length * 3;
-		case 'fours': return dice.filter((d: number) => d === 4).length * 4;
-		case 'fives': return dice.filter((d: number) => d === 5).length * 5;
-		case 'sixes': return dice.filter((d: number) => d === 6).length * 6;
-		case 'threeOfAKind': return hasNOfAKind(dice, 3) ? sum : 0;
-		case 'fourOfAKind': return hasNOfAKind(dice, 4) ? sum : 0;
+		case 'ones':
+			return dice.filter((d: number) => d === 1).length * 1;
+		case 'twos':
+			return dice.filter((d: number) => d === 2).length * 2;
+		case 'threes':
+			return dice.filter((d: number) => d === 3).length * 3;
+		case 'fours':
+			return dice.filter((d: number) => d === 4).length * 4;
+		case 'fives':
+			return dice.filter((d: number) => d === 5).length * 5;
+		case 'sixes':
+			return dice.filter((d: number) => d === 6).length * 6;
+		case 'threeOfAKind':
+			return hasNOfAKind(dice, 3) ? sum : 0;
+		case 'fourOfAKind':
+			return hasNOfAKind(dice, 4) ? sum : 0;
 		case 'fullHouse': {
 			const values = Array.from(counts.values());
-			return (values.includes(3) && values.includes(2)) ? 25 : 0;
+			return values.includes(3) && values.includes(2) ? 25 : 0;
 		}
-		case 'smallStraight': return hasSmallStraight(dice) ? 30 : 0;
-		case 'largeStraight': return hasLargeStraight(dice) ? 40 : 0;
-		case 'dicee': return hasNOfAKind(dice, 5) ? 50 : 0;
-		case 'chance': return sum;
+		case 'smallStraight':
+			return hasSmallStraight(dice) ? 30 : 0;
+		case 'largeStraight':
+			return hasLargeStraight(dice) ? 40 : 0;
+		case 'dicee':
+			return hasNOfAKind(dice, 5) ? 50 : 0;
+		case 'chance':
+			return sum;
 	}
 }
 
 /**
  * Get all available scoring options for current dice
  */
-function getAvailableScoringOptions(dice: DiceArray, scorecard: Record<string, number | null>): ScoringOption[] {
+function getAvailableScoringOptions(
+	dice: DiceArray,
+	scorecard: Record<string, number | null>,
+): ScoringOption[] {
 	const options: ScoringOption[] = [];
 	const allCategories = [...UPPER_CATEGORIES, ...LOWER_CATEGORIES];
 
@@ -94,13 +127,17 @@ function getUpperSectionTotal(scorecard: Record<string, number | null>): number 
  * Count remaining upper section categories
  */
 function getRemainingUpperCategories(scorecard: Record<string, number | null>): number {
-	return UPPER_CATEGORIES.filter(cat => scorecard[cat] === undefined || scorecard[cat] === null).length;
+	return UPPER_CATEGORIES.filter((cat) => scorecard[cat] === undefined || scorecard[cat] === null)
+		.length;
 }
 
 /**
  * Determine best dice to keep for a target
  */
-function getBestKeepMask(dice: DiceArray, target: 'upper' | 'straight' | 'dicee' | 'fullhouse'): KeptMask {
+function getBestKeepMask(
+	dice: DiceArray,
+	target: 'upper' | 'straight' | 'dicee' | 'fullhouse',
+): KeptMask {
 	const mask: KeptMask = [false, false, false, false, false];
 
 	switch (target) {
@@ -157,14 +194,14 @@ function getBestKeepMask(dice: DiceArray, target: 'upper' | 'straight' | 'dicee'
 }
 
 export type PhaseShiftingVariant =
-	| 'greedy-to-strategic'    // Start greedy, shift based on position
-	| 'conservative-to-aggressive'  // Start safe, get risky if behind
-	| 'upper-first'           // Prioritize upper section early
-	| 'lower-first';          // Prioritize lower section early
+	| 'greedy-to-strategic' // Start greedy, shift based on position
+	| 'conservative-to-aggressive' // Start safe, get risky if behind
+	| 'upper-first' // Prioritize upper section early
+	| 'lower-first'; // Prioritize lower section early
 
 export interface PhaseShiftingConfig {
 	variant: PhaseShiftingVariant;
-	shiftRound?: number;  // When to evaluate and potentially shift (default: 5)
+	shiftRound?: number; // When to evaluate and potentially shift (default: 5)
 }
 
 /**
@@ -186,7 +223,7 @@ export class PhaseShiftingBrain implements SimulationBrain {
 
 	async decide(context: SimulationContext): Promise<SimulationDecision> {
 		const { dice, rollsRemaining, scorecard, round } = context;
-		const shiftRound = this.config.shiftRound ?? 5;
+		const _shiftRound = this.config.shiftRound ?? 5;
 
 		// Determine current phase
 		const phase = round <= 4 ? 'early' : round <= 9 ? 'mid' : 'late';
@@ -228,15 +265,13 @@ export class PhaseShiftingBrain implements SimulationBrain {
 	private greedyToStrategicDecision(
 		context: SimulationContext,
 		options: ScoringOption[],
-		phase: 'early' | 'mid' | 'late'
+		phase: 'early' | 'mid' | 'late',
 	): SimulationDecision {
 		const { dice, rollsRemaining, scorecard } = context;
 
 		if (phase === 'early') {
 			// Greedy: take any score >= 20, else reroll
-			const bestOption = options.reduce((best, opt) =>
-				opt.score > best.score ? opt : best
-			);
+			const bestOption = options.reduce((best, opt) => (opt.score > best.score ? opt : best));
 
 			if (bestOption.score >= 20) {
 				return { action: 'score', category: bestOption.category, confidence: 0.8 };
@@ -251,13 +286,14 @@ export class PhaseShiftingBrain implements SimulationBrain {
 			// Evaluate: can we still get upper bonus?
 			const upperTotal = getUpperSectionTotal(scorecard);
 			const remainingUpper = getRemainingUpperCategories(scorecard);
-			const upperBonusViable = upperTotal + (remainingUpper * 15) >= 63;
+			const upperBonusViable = upperTotal + remainingUpper * 15 >= 63;
 
 			if (upperBonusViable && remainingUpper > 0) {
 				// Prioritize upper section
-				const upperOptions = options.filter(o => UPPER_CATEGORIES.includes(o.category));
-				const bestUpper = upperOptions.reduce((best, opt) =>
-					opt.score > best.score ? opt : best, { category: 'chance' as Category, score: -1 }
+				const upperOptions = options.filter((o) => UPPER_CATEGORIES.includes(o.category));
+				const bestUpper = upperOptions.reduce(
+					(best, opt) => (opt.score > best.score ? opt : best),
+					{ category: 'chance' as Category, score: -1 },
 				);
 
 				if (bestUpper.score >= 10) {
@@ -266,9 +302,7 @@ export class PhaseShiftingBrain implements SimulationBrain {
 			}
 
 			// Otherwise take best available or reroll
-			const bestOption = options.reduce((best, opt) =>
-				opt.score > best.score ? opt : best
-			);
+			const bestOption = options.reduce((best, opt) => (opt.score > best.score ? opt : best));
 
 			if (bestOption.score >= 15 || rollsRemaining === 0) {
 				return { action: 'score', category: bestOption.category, confidence: 0.7 };
@@ -288,15 +322,15 @@ export class PhaseShiftingBrain implements SimulationBrain {
 	private conservativeToAggressiveDecision(
 		context: SimulationContext,
 		options: ScoringOption[],
-		phase: 'early' | 'mid' | 'late'
+		phase: 'early' | 'mid' | 'late',
 	): SimulationDecision {
-		const { dice, rollsRemaining, scorecard, scoreDifferential } = context;
+		const { dice, rollsRemaining, scoreDifferential } = context;
 
 		// Conservative: take safe scores early
 		if (phase === 'early' || phase === 'mid') {
-			const safeOptions = options.filter(o => o.score >= 15);
+			const safeOptions = options.filter((o) => o.score >= 15);
 			if (safeOptions.length > 0) {
-				const best = safeOptions.reduce((b, o) => o.score > b.score ? o : b);
+				const best = safeOptions.reduce((b, o) => (o.score > b.score ? o : b));
 				return { action: 'score', category: best.category, confidence: 0.8 };
 			}
 
@@ -309,8 +343,8 @@ export class PhaseShiftingBrain implements SimulationBrain {
 		// If behind in late game, get aggressive
 		if (phase === 'late' && scoreDifferential < -20) {
 			// Chase Dicee or large straight
-			const diceeOpt = options.find(o => o.category === 'dicee');
-			const lsOpt = options.find(o => o.category === 'largeStraight');
+			const diceeOpt = options.find((o) => o.category === 'dicee');
+			const lsOpt = options.find((o) => o.category === 'largeStraight');
 
 			if (diceeOpt && hasNOfAKind(dice, 4)) {
 				if (rollsRemaining > 0) {
@@ -332,15 +366,15 @@ export class PhaseShiftingBrain implements SimulationBrain {
 	private upperFirstDecision(
 		context: SimulationContext,
 		options: ScoringOption[],
-		phase: 'early' | 'mid' | 'late'
+		phase: 'early' | 'mid' | 'late',
 	): SimulationDecision {
-		const { dice, rollsRemaining, scorecard } = context;
+		const { dice, rollsRemaining } = context;
 
 		// Always prioritize upper section if available
-		const upperOptions = options.filter(o => UPPER_CATEGORIES.includes(o.category));
+		const upperOptions = options.filter((o) => UPPER_CATEGORIES.includes(o.category));
 
 		if (upperOptions.length > 0) {
-			const bestUpper = upperOptions.reduce((b, o) => o.score > b.score ? o : b);
+			const bestUpper = upperOptions.reduce((b, o) => (o.score > b.score ? o : b));
 
 			// Take if >= face value * 2 (e.g., 8 for fours)
 			const faceValue = UPPER_CATEGORIES.indexOf(bestUpper.category) + 1;
@@ -356,7 +390,7 @@ export class PhaseShiftingBrain implements SimulationBrain {
 		}
 
 		// Fall back to best available
-		const bestOption = options.reduce((b, o) => o.score > b.score ? o : b);
+		const bestOption = options.reduce((b, o) => (o.score > b.score ? o : b));
 		return { action: 'score', category: bestOption.category, confidence: 0.5 };
 	}
 
@@ -366,19 +400,19 @@ export class PhaseShiftingBrain implements SimulationBrain {
 	private lowerFirstDecision(
 		context: SimulationContext,
 		options: ScoringOption[],
-		phase: 'early' | 'mid' | 'late'
+		phase: 'early' | 'mid' | 'late',
 	): SimulationDecision {
-		const { dice, rollsRemaining, scorecard } = context;
+		const { dice, rollsRemaining } = context;
 
 		// Prioritize lower section
-		const lowerOptions = options.filter(o => LOWER_CATEGORIES.includes(o.category));
+		const lowerOptions = options.filter((o) => LOWER_CATEGORIES.includes(o.category));
 
 		if (lowerOptions.length > 0) {
 			// Check for valuable lower section opportunities
-			const diceeOpt = lowerOptions.find(o => o.category === 'dicee' && o.score > 0);
-			const lsOpt = lowerOptions.find(o => o.category === 'largeStraight' && o.score > 0);
-			const ssOpt = lowerOptions.find(o => o.category === 'smallStraight' && o.score > 0);
-			const fhOpt = lowerOptions.find(o => o.category === 'fullHouse' && o.score > 0);
+			const diceeOpt = lowerOptions.find((o) => o.category === 'dicee' && o.score > 0);
+			const lsOpt = lowerOptions.find((o) => o.category === 'largeStraight' && o.score > 0);
+			const ssOpt = lowerOptions.find((o) => o.category === 'smallStraight' && o.score > 0);
+			const fhOpt = lowerOptions.find((o) => o.category === 'fullHouse' && o.score > 0);
 
 			// Take high-value lower section scores
 			if (diceeOpt) return { action: 'score', category: 'dicee', confidence: 0.95 };
@@ -387,13 +421,13 @@ export class PhaseShiftingBrain implements SimulationBrain {
 			if (ssOpt) return { action: 'score', category: 'smallStraight', confidence: 0.8 };
 
 			// Chase straights if possible
-			if (rollsRemaining > 0 && lowerOptions.find(o => o.category === 'largeStraight')) {
+			if (rollsRemaining > 0 && lowerOptions.find((o) => o.category === 'largeStraight')) {
 				return { action: 'keep', keepMask: getBestKeepMask(dice, 'straight'), confidence: 0.6 };
 			}
 		}
 
 		// Fall back
-		const bestOption = options.reduce((b, o) => o.score > b.score ? o : b);
+		const bestOption = options.reduce((b, o) => (o.score > b.score ? o : b));
 		if (rollsRemaining > 0 && bestOption.score < 15) {
 			return { action: 'keep', keepMask: getBestKeepMask(dice, 'dicee'), confidence: 0.5 };
 		}
@@ -405,7 +439,7 @@ export class PhaseShiftingBrain implements SimulationBrain {
 	 */
 	private lateGameDecision(
 		context: SimulationContext,
-		options: ScoringOption[]
+		options: ScoringOption[],
 	): SimulationDecision {
 		const { dice, rollsRemaining, scorecard } = context;
 
@@ -413,7 +447,7 @@ export class PhaseShiftingBrain implements SimulationBrain {
 		const sorted = [...options].sort((a, b) => b.score - a.score);
 
 		// If Chance is available and we have high dice total, consider saving it
-		const chanceOpt = options.find(o => o.category === 'chance');
+		const _chanceOpt = options.find((o) => o.category === 'chance');
 		const diceTotal = dice.reduce((a: number, b: number) => a + b, 0);
 
 		// Take best score if good enough
@@ -439,7 +473,7 @@ export class PhaseShiftingBrain implements SimulationBrain {
 	private selectBestScore(
 		options: ScoringOption[],
 		scorecard: Record<string, number | null>,
-		phase: 'early' | 'mid' | 'late'
+		phase: 'early' | 'mid' | 'late',
 	): SimulationDecision {
 		const sorted = [...options].sort((a, b) => b.score - a.score);
 		return { action: 'score', category: sorted[0].category, confidence: 0.9 };
@@ -450,7 +484,7 @@ export class PhaseShiftingBrain implements SimulationBrain {
 	 */
 	private getGreedyKeepMask(dice: DiceArray, options: ScoringOption[]): KeptMask {
 		// Find category with highest potential
-		const bestOpt = options.reduce((b, o) => o.score > b.score ? o : b);
+		const bestOpt = options.reduce((b, o) => (o.score > b.score ? o : b));
 
 		if (UPPER_CATEGORIES.includes(bestOpt.category)) {
 			const faceValue = UPPER_CATEGORIES.indexOf(bestOpt.category) + 1;
@@ -471,10 +505,10 @@ export class PhaseShiftingBrain implements SimulationBrain {
 	private getStrategicKeepMask(
 		dice: DiceArray,
 		scorecard: Record<string, number | null>,
-		options: ScoringOption[]
+		options: ScoringOption[],
 	): KeptMask {
 		// Check for partial straights
-		if (options.find(o => o.category === 'largeStraight' || o.category === 'smallStraight')) {
+		if (options.find((o) => o.category === 'largeStraight' || o.category === 'smallStraight')) {
 			const sorted = [...dice].sort((a, b) => a - b);
 			const unique = new Set(sorted);
 			if (unique.size >= 4) {
@@ -511,7 +545,7 @@ export class PhaseShiftingBrain implements SimulationBrain {
  */
 export function createPhaseShiftingBrain(
 	rng: SeededRandom,
-	variant: PhaseShiftingVariant = 'greedy-to-strategic'
+	variant: PhaseShiftingVariant = 'greedy-to-strategic',
 ): PhaseShiftingBrain {
 	return new PhaseShiftingBrain(rng, { variant });
 }

@@ -7,8 +7,8 @@
  * Phase 4: Uses SupabaseRpcClient for atomic database operations.
  */
 
-import type { SupabaseRpcClient, DomainEventInput, RpcResult } from './supabase-rpc';
 import type { DomainEvent, PersistenceResult } from './schemas';
+import type { DomainEventInput, RpcResult, SupabaseRpcClient } from './supabase-rpc';
 
 // ============================================================================
 // Types

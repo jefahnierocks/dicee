@@ -2,32 +2,218 @@
 	"$schema": "https://dicee.games/schemas/akg-diagram.json",
 	"version": "1.0.0",
 	"diagramType": "dataflow",
-	"generatedAt": "2025-12-16T17:30:14.405Z",
-	"graphHash": "sha256:2d322e52cc62291b72f31a46e7c510d9182fb06df209d8f41ac8cb460ed56af6",
-	"sourceCommit": "15b429f",
+	"generatedAt": "2026-09-13T03:51:42.302Z",
+	"graphHash": "sha256:6288c69806c410dbbdd691b52c9683769028135c059bef9ac22f3a9985f59218",
+	"sourceCommit": "2c3e875",
 	"nodes": [
 		{
-			"id": "smartcontainer::LobbyLanding::_LobbyLanding_svelte",
-			"label": "LobbyLanding",
-			"type": "SmartContainer",
+			"id": "module::+layout::2281c5f534954443",
+			"label": "layout",
+			"type": "Module",
+			"layer": "routes"
+		},
+		{
+			"id": "module::+server::9da96ec21ff80c98",
+			"label": "+server",
+			"type": "Module",
+			"layer": "routes"
+		},
+		{
+			"id": "module::+page.server::89d24200f631fa99",
+			"label": "+page.server",
+			"type": "Module",
+			"layer": "routes"
+		},
+		{
+			"id": "module::+page.server::e8cebee8459c656a",
+			"label": "+page.server",
+			"type": "Module",
+			"layer": "routes"
+		},
+		{
+			"id": "module::+page.server::a4e25cc768dedea8",
+			"label": "+page.server",
+			"type": "Module",
+			"layer": "routes"
+		},
+		{
+			"id": "module::index::778bb80a88b12186",
+			"label": "index",
+			"type": "Module",
 			"layer": "components"
 		},
 		{
-			"id": "component::AIOpponentSelector::onentSelector_svelte",
-			"label": "AIOpponentSelector",
-			"type": "Component",
+			"id": "module::index::95da3133dc240d1b",
+			"label": "index",
+			"type": "Module",
 			"layer": "components"
 		},
 		{
-			"id": "smartcontainer::RoomCartridge::RoomCartridge_svelte",
-			"label": "RoomCartridge",
-			"type": "SmartContainer",
+			"id": "module::index::b499d73339b891be",
+			"label": "index",
+			"type": "Module",
 			"layer": "components"
+		},
+		{
+			"id": "module::index::5e4be84c5c93f936",
+			"label": "index",
+			"type": "Module",
+			"layer": "components"
+		},
+		{
+			"id": "module::index::4f48e0fd12229a4f",
+			"label": "index",
+			"type": "Module",
+			"layer": "components"
+		},
+		{
+			"id": "store::game.svelte::a023886b16c34777",
+			"label": "game",
+			"type": "Store",
+			"layer": "stores"
+		},
+		{
+			"id": "store::profile.svelte::7d7bc841db07cdde",
+			"label": "profile",
+			"type": "Store",
+			"layer": "stores"
+		},
+		{
+			"id": "store::lobby.svelte::906b6867cfa64be6",
+			"label": "lobby",
+			"type": "Store",
+			"layer": "stores"
+		},
+		{
+			"id": "store::room.svelte::96cf6a00bba18489",
+			"label": "room",
+			"type": "Store",
+			"layer": "stores"
+		},
+		{
+			"id": "store::multiplayerGame.svelte::c2ccf59ae56b91e3",
+			"label": "multiplayerGame",
+			"type": "Store",
+			"layer": "stores"
+		},
+		{
+			"id": "service::breadcrumbs::e7ef58232ea69282",
+			"label": "breadcrumbs",
+			"type": "Service",
+			"layer": "services"
+		},
+		{
+			"id": "service::audio::a8f4883e9ae429c3",
+			"label": "audio",
+			"type": "Service",
+			"layer": "services"
+		},
+		{
+			"id": "store::preferences.svelte::f86dc1afcca9bdf8",
+			"label": "preferences",
+			"type": "Store",
+			"layer": "services"
+		},
+		{
+			"id": "service::engine::b20032ebbac14fff",
+			"label": "engine",
+			"type": "Service",
+			"layer": "services"
+		},
+		{
+			"id": "store::spectatorService.svelte::6ccba42300d15650",
+			"label": "spectatorService",
+			"type": "Store",
+			"layer": "services"
+		},
+		{
+			"id": "supabasemodule::profiles::f8ec30f5b688f065",
+			"label": "profiles",
+			"type": "SupabaseModule",
+			"layer": "supabase"
+		},
+		{
+			"id": "supabasemodule::stats::f625a16b6e3db628",
+			"label": "stats",
+			"type": "SupabaseModule",
+			"layer": "supabase"
+		},
+		{
+			"id": "supabasemodule::generated-types::83d90f692105859f",
+			"label": "generated-types",
+			"type": "SupabaseModule",
+			"layer": "supabase"
+		},
+		{
+			"id": "supabasemodule::client::c0dbac7ccc438ed2",
+			"label": "client",
+			"type": "SupabaseModule",
+			"layer": "supabase"
+		},
+		{
+			"id": "supabasemodule::flags::0f394040bf5cce16",
+			"label": "flags",
+			"type": "SupabaseModule",
+			"layer": "supabase"
+		},
+		{
+			"id": "wasmbridge::dicee_engine.d::86feb8f4b568bfc7",
+			"label": "dicee_engine.d",
+			"type": "WASMBridge",
+			"layer": "wasm"
+		},
+		{
+			"id": "wasmbridge::dicee_engine_bg.wasm.d::3614101021e35b3b",
+			"label": "dicee_engine_bg.wasm.d",
+			"type": "WASMBridge",
+			"layer": "wasm"
+		},
+		{
+			"id": "wasmbridge::engine::626fe7d6a9a0c310",
+			"label": "engine",
+			"type": "WASMBridge",
+			"layer": "wasm"
 		}
 	],
-	"edges": [],
+	"edges": [
+		{
+			"from": "store::game.svelte::a023886b16c34777",
+			"to": "service::engine::b20032ebbac14fff",
+			"type": "imports"
+		},
+		{
+			"from": "store::game.svelte::a023886b16c34777",
+			"to": "service::engine::b20032ebbac14fff",
+			"type": "imports"
+		},
+		{
+			"from": "store::game.svelte::a023886b16c34777",
+			"to": "service::engine::b20032ebbac14fff",
+			"type": "imports"
+		},
+		{
+			"from": "store::profile.svelte::7d7bc841db07cdde",
+			"to": "supabasemodule::profiles::f8ec30f5b688f065",
+			"type": "imports"
+		},
+		{
+			"from": "store::multiplayerGame.svelte::c2ccf59ae56b91e3",
+			"to": "store::preferences.svelte::f86dc1afcca9bdf8",
+			"type": "imports"
+		},
+		{
+			"from": "store::multiplayerGame.svelte::c2ccf59ae56b91e3",
+			"to": "store::preferences.svelte::f86dc1afcca9bdf8",
+			"type": "imports"
+		},
+		{
+			"from": "service::engine::b20032ebbac14fff",
+			"to": "wasmbridge::engine::626fe7d6a9a0c310",
+			"type": "imports"
+		}
+	],
 	"metadata": {
-		"totalNodes": 3,
-		"totalEdges": 0
+		"totalNodes": 28,
+		"totalEdges": 7
 	}
 }

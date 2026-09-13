@@ -603,7 +603,10 @@ for (const [id, seat] of seats) {
 }
 ```
 
-**Deploy and tail**: `wrangler deploy && wrangler tail --format json`
+**Operational note:** The former direct deploy-and-tail command is superseded.
+Use [`docs/cloudflare/README.md`](../cloudflare/README.md); deployment and live
+observability are operator-gated, and the GitHub workflow is the canonical
+production path.
 
 ---
 

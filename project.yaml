@@ -1,5 +1,5 @@
 # Meta-inventory interop header; contract:
-# /Users/verlyn13/Repos/verlyn13/meta-inventory/docs/decisions/0002-project-intelligence-spec.md §D3
+# Conforms to the project-intelligence manifest contract.
 # (enum registry: meta-inventory docs/ontology/dimensions.yaml)
 spec_version: 0.1
 project:
@@ -10,10 +10,10 @@ role: canonical
 peers: []
 status:
   posture: deployed-system
-  local_phase: "phase-18-mobile-viewport-session-stability (investigation-complete); last substantive merge 2026-04-16 (config updates)"
-  as_of: "2026-06-11"
+  local_phase: "2026-09 modernization, Phase 1 PR review (no deployment)"
+  as_of: "2026-09-13"
 authority:
-  status_of_record: .claude/state/current-phase.json
+  status_of_record: docs/status.md
 presentation:
   visibility: public-promoted
   public_alias: null

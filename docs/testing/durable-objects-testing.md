@@ -1,5 +1,11 @@
 # Durable Objects Testing Guide
 
+> **Reconciliation pending:** Test counts, Wrangler APIs, global-tool installs,
+> token-extraction suggestions, and auth-bypass examples in this 2025 guide may
+> be stale or unsafe. Current tests, package scripts, `AGENTS.md`, and
+> [`docs/cloudflare/README.md`](../cloudflare/README.md) outrank it. Never add an
+> authentication bypass or expose a session token to follow this document.
+
 Comprehensive testing strategy for the `@dicee/cloudflare-do` package.
 
 ## Test Coverage Summary
@@ -135,32 +141,27 @@ For manual WebSocket testing during development:
 ### Prerequisites
 
 ```bash
-# Install wscat globally
-npm install -g wscat
-
 # Start the worker
 cd packages/cloudflare-do
 pnpm dev
 ```
 
+Use an already reviewed WebSocket client or the repository's automated test
+harness. Do not install an unpinned global package solely to follow this guide.
+
 ### Getting a Test Token
 
-For local development, you need a valid Supabase JWT. Options:
-
-1. **From browser DevTools**: Sign into the app and copy the `access_token` from localStorage
-2. **From Supabase Dashboard**: Use the SQL editor to generate a token
-3. **Mock token (requires code change)**: Add `TEST_MODE` env var to bypass auth
-
-```bash
-# Example: Copy token from browser console
-# localStorage.getItem('supabase.auth.token')
-```
+Manual authentication testing must use a dedicated local/test identity and the
+approved local credential flow. Never copy a live browser session token, mint a
+token through an ad hoc dashboard query, or add a code path that bypasses
+authentication. This legacy guide does not define credential issuance; prefer
+the automated auth and Worker integration tests.
 
 ### Connection Examples
 
 ```bash
 # Connect to a room (replace TOKEN with actual JWT)
-wscat -c 'ws://localhost:8787/room/TEST01?token=YOUR_JWT_TOKEN'
+wscat -H 'Authorization: Bearer YOUR_JWT_TOKEN' -c 'ws://localhost:8787/room/TEST01'
 
 # Once connected, send messages:
 # Join room

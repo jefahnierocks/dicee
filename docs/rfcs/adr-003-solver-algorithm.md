@@ -499,7 +499,7 @@ pub fn analyze_turn(
 1. **Dicee Optimal Strategy**: Woodward, "The Mathematics of Dicee" (2009)
 2. **Dynamic Programming**: Bellman, "Dynamic Programming" (1957)
 3. **Memoization**: Michie, "Memo Functions and Machine Learning" (1968)
-4. **Source Implementation**: `/Users/verlyn13/00_inbox/dicee-engine-extracted/dicee-engine/src/core/solver.rs`
+4. **Source Implementation**: `<legacy-source-root>/dicee-engine-extracted/dicee-engine/src/core/solver.rs`
 
 ---
 

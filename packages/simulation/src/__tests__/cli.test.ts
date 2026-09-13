@@ -6,14 +6,14 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-	parseArgs,
-	getString,
-	getNumber,
-	getBoolean,
-	getList,
-	parseDuration,
 	formatDuration,
 	formatNumber,
+	getBoolean,
+	getList,
+	getNumber,
+	getString,
+	parseArgs,
+	parseDuration,
 } from '../cli/args.js';
 
 describe('CLI Argument Parser', () => {

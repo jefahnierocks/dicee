@@ -381,7 +381,7 @@ jobs:
   android-test:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@<full-commit-sha>
       - name: Setup ADB
         run: brew install android-platform-tools
       - name: Connect Device
@@ -393,7 +393,7 @@ jobs:
       - name: Capture Logs
         if: failure()
         run: adb bugreport test-failure.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@<full-commit-sha>
         with:
           name: device-logs
           path: test-failure.zip

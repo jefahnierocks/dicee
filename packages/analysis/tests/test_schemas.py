@@ -5,35 +5,32 @@ Validates Python Pydantic schemas with fixtures matching TypeScript Zod schemas.
 Ensures cross-language consistency for JSON interchange.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
 from pydantic import ValidationError
 
 from dicee_analysis.schemas import (
-    # Enums
-    ProfileId,
+    AdaptiveStoppingRule,
+    BatchConfig,
     BrainType,
-    ExperimentType,
     Category,
+    DecisionResult,
+    ExperimentDefinition,
+    ExperimentType,
+    FixedStoppingRule,
+    GameResult,
+    Hypothesis,
+    ProfileId,
     # Models
     Scorecard,
-    PlayerResult,
-    GameResult,
-    TurnResult,
-    DecisionResult,
-    SimulationConfig,
-    BatchConfig,
-    PlayerConfig,
-    Hypothesis,
-    ExperimentDefinition,
-    FixedStoppingRule,
     SequentialStoppingRule,
-    AdaptiveStoppingRule,
+    SimulationConfig,
+    TurnResult,
+    parse_experiment_definition,
     # Validators
     parse_game_result,
-    parse_experiment_definition,
 )
-
 
 # =============================================================================
 # Test Fixtures (matching TypeScript fixtures)

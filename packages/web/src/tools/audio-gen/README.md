@@ -6,7 +6,7 @@ CLI support for generating audio assets with the ElevenLabs Sound Effects API.
 
 Local audio generation is an operator workflow, not a runtime/app secret workflow.
 
-- Store the local-only ElevenLabs key in 1Password item `dicee-elevenlabs-local`, field `api-key`
+- Store the local-only ElevenLabs key in an operator-selected credential-manager item
 - Run the generator through `./scripts/with-dicee-elevenlabs-local.sh`
 - Do not export `ELEVENLABS_API_KEY` into your shell startup files
 - If the application ever needs an ElevenLabs runtime key, store that separate key in Infisical instead

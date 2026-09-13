@@ -15,15 +15,12 @@
  */
 
 import type {
+	DecisionResult,
 	GameResult,
 	PlayerResult,
-	TurnResult,
-	DecisionResult,
 	SimulationConfig,
+	TurnResult,
 } from '../schemas/index.js';
-import type { RandomSource } from './seeded-random.js';
-import { SeededRandom } from './seeded-random.js';
-import { rollDice, rerollDice, KEEP_NONE } from './seeded-dice.js';
 import type {
 	SimulationBrain,
 	SimulationContext,
@@ -31,6 +28,9 @@ import type {
 	SimulationProfile,
 } from './brain-adapter.js';
 import { BrainRngAdapter } from './brain-adapter.js';
+import { KEEP_NONE, rerollDice, rollDice } from './seeded-dice.js';
+import type { RandomSource } from './seeded-random.js';
+import { SeededRandom } from './seeded-random.js';
 
 // =============================================================================
 // Types
@@ -541,7 +541,8 @@ export class GameSimulator {
 				})),
 			isFinalRound: round === 13,
 			scoreDifferential:
-				player.totalScore - Math.max(...allPlayers.filter((p) => p.id !== player.id).map((p) => p.totalScore), 0),
+				player.totalScore -
+				Math.max(...allPlayers.filter((p) => p.id !== player.id).map((p) => p.totalScore), 0),
 		});
 
 		let scoredCategory: Category | undefined;

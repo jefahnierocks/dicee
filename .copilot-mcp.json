@@ -1,17 +1,5 @@
 {
   "mcpServers": {
-    "memory": {
-      "type": "local",
-      "command": "node",
-      "args": [
-        "/absolute/path/to/dicee/node_modules/@modelcontextprotocol/server-memory/dist/index.js"
-      ],
-      "env": {
-        "MEMORY_FILE_PATH": "/absolute/path/to/dicee/.claude/state/memory.jsonl"
-      },
-      "description": "Dicee project knowledge graph for persistent state",
-      "tools": ["*"]
-    },
     "akg": {
       "type": "local",
       "command": "bun",

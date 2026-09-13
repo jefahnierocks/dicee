@@ -33,10 +33,10 @@ export const ProfileIdSchema = z.enum([
 	'charlie',
 	'custom',
 	// Phase-shifting strategy variants
-	'phase-greedy',       // Greedy early, strategic mid/late
+	'phase-greedy', // Greedy early, strategic mid/late
 	'phase-conservative', // Safe early, aggressive if behind
-	'phase-upper',        // Upper section priority
-	'phase-lower',        // Lower section priority
+	'phase-upper', // Upper section priority
+	'phase-lower', // Lower section priority
 ]);
 
 /**
@@ -47,7 +47,14 @@ export const ProfileIdSchema = z.enum([
  * - random: Uniform random decisions (baseline)
  * - llm: LLM-powered decisions (future enhancement)
  */
-export const BrainTypeSchema = z.enum(['optimal', 'probabilistic', 'personality', 'adaptive', 'random', 'llm']);
+export const BrainTypeSchema = z.enum([
+	'optimal',
+	'probabilistic',
+	'personality',
+	'adaptive',
+	'random',
+	'llm',
+]);
 
 /**
  * Metrics tracked during simulations

@@ -2,7 +2,7 @@
 /**
  * AKG MCP Server Test Harness
  *
- * Tests all 6 MCP tools via JSON-RPC over stdio.
+ * Tests all 7 MCP tools via JSON-RPC over stdio.
  */
 
 import { spawn } from 'node:child_process';
@@ -234,7 +234,7 @@ async function runTests(): Promise<void> {
 			} else {
 				const content = (response.result as { content: Array<{ text: string }> }).content[0].text;
 				const data = JSON.parse(content);
-				const passed = data.id && data.type && data.filePath;
+				const passed = Boolean(data.id && data.type && data.filePath);
 				results.push({
 					tool: 'akg_node_info',
 					passed,
@@ -268,8 +268,8 @@ async function runTests(): Promise<void> {
 		const start3 = Date.now();
 		try {
 			const response = await client.callTool('akg_check_import', {
-				fromPath: 'packages/web/src/lib/components/game/DiceDisplay.svelte',
-				toPath: 'packages/web/src/lib/stores/game.svelte.ts',
+				fromPath: 'packages/web/src/lib/components/dice/Die.svelte',
+				toPath: 'packages/web/src/lib/types.ts',
 			});
 			const duration = Date.now() - start3;
 			if (response.error) {
@@ -284,7 +284,8 @@ async function runTests(): Promise<void> {
 			} else {
 				const content = (response.result as { content: Array<{ text: string }> }).content[0].text;
 				const data = JSON.parse(content);
-				const passed = typeof data.allowed === 'boolean';
+				const passed =
+					data.allowed === true && data.fromLayer === 'components' && data.toLayer === 'types';
 				results.push({
 					tool: 'akg_check_import',
 					passed,

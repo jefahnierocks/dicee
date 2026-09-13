@@ -132,7 +132,7 @@ describe('Worker Integration Tests', () => {
 	// The Upgrade header causes "invalid upgrade header" errors.
 	//
 	// For WebSocket testing, use one of these approaches:
-	// 1. wscat for manual testing: wscat -c 'ws://localhost:8787/room/TEST01?token=...'
+	// 1. wscat with a bearer token in the Authorization header against a local worker
 	// 2. Playwright E2E tests with real browser WebSocket connections
 	// 3. Native Node.js WebSocket client against running worker
 	//

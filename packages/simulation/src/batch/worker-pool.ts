@@ -11,15 +11,15 @@
  * pool.shutdown();
  */
 
-import { Worker } from 'node:worker_threads';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { SimulationConfig, GameResult } from '../schemas/index.js';
+import { fileURLToPath } from 'node:url';
+import { Worker } from 'node:worker_threads';
+import type { GameResult, SimulationConfig } from '../schemas/index.js';
 import type {
-	WorkerMessage,
 	BatchCompleteMessage,
-	ProgressMessage,
 	ErrorMessage,
+	ProgressMessage,
+	WorkerMessage,
 	WorkerStats,
 } from './types.js';
 

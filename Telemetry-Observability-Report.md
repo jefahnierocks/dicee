@@ -1,5 +1,11 @@
 # Dicee Telemetry & Observability Framework Report
 
+> **Historical implementation report:** This predates the July 2026 logging
+> redaction and Cloudflare authority refresh. Do not use its production-tail
+> commands or identifier-based queries as current operating guidance. Start at
+> [`docs/cloudflare/README.md`](docs/cloudflare/README.md) and the current logger,
+> schemas, tests, and Worker configuration.
+
 **Generated:** January 4, 2026  
 **Version:** 1.0  
 **Scope:** Complete analysis of current telemetry, logging, and observability infrastructure

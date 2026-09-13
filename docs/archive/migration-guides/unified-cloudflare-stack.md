@@ -6,12 +6,12 @@
 
 ## Overview
 
-This guide migrates the Dicee application from a split architecture (Vercel frontend + Cloudflare Workers backend) to a unified Cloudflare stack where `gamelobby.jefahnierocks.com` serves as the single entry point for a multi-game lobby platform.
+This guide migrates the Dicee application from a split architecture (Vercel frontend + Cloudflare Workers backend) to a unified Cloudflare stack where `gamelobby.legacy.example` serves as the single entry point for a multi-game lobby platform.
 
 ```
 BEFORE                                    AFTER
 ┌─────────────────────────┐              ┌─────────────────────────────────────┐
-│ dicee.jefahnierocks.com │              │   gamelobby.jefahnierocks.com       │
+│ dicee.legacy.example │              │   gamelobby.legacy.example       │
 │ (Vercel - SvelteKit)    │              │                                     │
 ├─────────────────────────┤              │  ┌─────────────────────────────┐    │
 │ Separate deployment     │              │  │ Cloudflare Pages (SvelteKit)│    │
@@ -385,9 +385,9 @@ new_sqlite_classes = ["GameRoom", "GlobalLobby"]
 # Environment-specific config
 [env.production]
 routes = [
-  { pattern = "gamelobby.jefahnierocks.com/room/*", zone_name = "jefahnierocks.com" },
-  { pattern = "gamelobby.jefahnierocks.com/lobby/*", zone_name = "jefahnierocks.com" },
-  { pattern = "gamelobby.jefahnierocks.com/health", zone_name = "jefahnierocks.com" }
+  { pattern = "gamelobby.legacy.example/room/*", zone_name = "legacy.example" },
+  { pattern = "gamelobby.legacy.example/lobby/*", zone_name = "legacy.example" },
+  { pattern = "gamelobby.legacy.example/health", zone_name = "legacy.example" }
 ]
 ```
 
@@ -976,7 +976,7 @@ cd apps/gamelobby
 pnpm wrangler deploy --env production
 
 # Verify
-curl https://gamelobby.jefahnierocks.com/health
+curl https://gamelobby.legacy.example/health
 ```
 
 ### 6.2 Create Cloudflare Pages Project
@@ -1000,7 +1000,7 @@ In Cloudflare Dashboard:
 
 1. Go to **Workers & Pages** → **gamelobby-pages**
 2. Go to **Custom domains** → **Set up a custom domain**
-3. Enter `gamelobby.jefahnierocks.com`
+3. Enter `gamelobby.legacy.example`
 4. Cloudflare will update DNS automatically
 
 ### 6.4 Set Environment Variables
@@ -1021,14 +1021,14 @@ wrangler pages secret put SUPABASE_SERVICE_KEY --project-name gamelobby-pages
    - Service: `gamelobby`
    - Environment: Production
 
-### 6.6 Set Up dicee.jefahnierocks.com Redirect
+### 6.6 Set Up dicee.legacy.example Redirect
 
 Option A: Cloudflare Redirect Rule (recommended)
 
 1. Go to **Rules** → **Redirect Rules**
 2. Create rule:
-   - When: Hostname equals `dicee.jefahnierocks.com`
-   - Then: Dynamic redirect to `https://gamelobby.jefahnierocks.com${http.request.uri.path}`
+   - When: Hostname equals `dicee.legacy.example`
+   - Then: Dynamic redirect to `https://gamelobby.legacy.example${http.request.uri.path}`
    - Status code: 301
 
 Option B: Worker redirect
@@ -1039,7 +1039,7 @@ Create a simple redirect worker:
 export default {
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    url.hostname = 'gamelobby.jefahnierocks.com';
+    url.hostname = 'gamelobby.legacy.example';
     return Response.redirect(url.toString(), 301);
   }
 };
@@ -1053,17 +1053,17 @@ export default {
 
 ```bash
 # Health check
-curl https://gamelobby.jefahnierocks.com/health
+curl https://gamelobby.legacy.example/health
 
 # Lobby WebSocket
-wscat -c wss://gamelobby.jefahnierocks.com/ws/lobby
+wscat -c wss://gamelobby.legacy.example/ws/lobby
 
 # Room WebSocket
-wscat -c wss://gamelobby.jefahnierocks.com/ws/room/TEST01
+wscat -c wss://gamelobby.legacy.example/ws/room/TEST01
 
 # Old URL redirects
-curl -I https://dicee.jefahnierocks.com/lobby/ABC123
-# Should return 301 → gamelobby.jefahnierocks.com/games/dicee/room/ABC123
+curl -I https://dicee.legacy.example/lobby/ABC123
+# Should return 301 → gamelobby.legacy.example/games/dicee/room/ABC123
 ```
 
 ### 7.2 Test Matrix
@@ -1085,7 +1085,7 @@ curl -I https://dicee.jefahnierocks.com/lobby/ABC123
 
 ```bash
 # Cold start time
-time curl -o /dev/null -s -w '%{time_total}\n' https://gamelobby.jefahnierocks.com
+time curl -o /dev/null -s -w '%{time_total}\n' https://gamelobby.legacy.example
 
 # WebSocket latency
 # In browser devtools, measure time from send to receive
@@ -1108,7 +1108,7 @@ time curl -o /dev/null -s -w '%{time_total}\n' https://gamelobby.jefahnierocks.c
 ```bash
 # Update README
 # Update any hardcoded URLs in docs
-grep -rn "dicee.jefahnierocks.com" . --include="*.md"
+grep -rn "dicee.legacy.example" . --include="*.md"
 ```
 
 ### 8.3 Clean Up Repository
@@ -1132,7 +1132,7 @@ If issues arise after migration:
 
 ### Immediate (< 1 hour)
 
-1. Point `gamelobby.jefahnierocks.com` back to Vercel (if kept)
+1. Point `gamelobby.legacy.example` back to Vercel (if kept)
 2. Revert Cloudflare DNS changes
 3. Remove redirect rules
 

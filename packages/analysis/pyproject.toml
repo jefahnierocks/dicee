@@ -3,8 +3,8 @@ name = "dicee-analysis"
 version = "0.1.0"
 description = "Python analysis stack for Dicee AI simulation results"
 readme = "README.md"
-requires-python = ">=3.11"
-license = { text = "MIT" }
+requires-python = ">=3.13,<3.15"
+license = "MIT"
 authors = [
     { name = "Dicee Team" }
 ]
@@ -13,8 +13,8 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [
@@ -29,12 +29,15 @@ dependencies = [
     "numpy>=1.26",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=4.0",
     "ruff>=0.4",
     "mypy>=1.10",
+    "scipy-stubs>=1.16",
+    "types-seaborn>=0.13",
+    "types-tqdm>=4.66",
 ]
 
 [project.scripts]
@@ -50,17 +53,18 @@ packages = ["src/dicee_analysis"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py313"
+extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
-ignore = ["E501"]
+ignore = ["E501", "W291", "W293"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["dicee_analysis"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 strict = true
 warn_return_any = true
 warn_unused_ignores = true

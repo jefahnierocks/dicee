@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Simulation Runner CLI
  *
@@ -15,17 +16,17 @@
  * pnpm sim:run --profiles professor --games 10000 --output ./results
  */
 
+import { runBatchSingleThreaded } from '../batch/index.js';
+import { runQuickExperiment } from '../experiment/index.js';
+import type { DescriptiveStats, ExperimentResults, ProfileId } from '../schemas/index.js';
 import {
-	parseArgs,
-	getString,
-	getNumber,
-	getBoolean,
 	formatDuration,
 	formatNumber,
+	getBoolean,
+	getNumber,
+	getString,
+	parseArgs,
 } from './args.js';
-import { runQuickExperiment } from '../experiment/index.js';
-import { runBatchSingleThreaded } from '../batch/index.js';
-import type { ProfileId, ExperimentResults, DescriptiveStats } from '../schemas/index.js';
 
 const VALID_PROFILES = [
 	'riley',
@@ -109,9 +110,7 @@ function printStats(label: string, stats: DescriptiveStats): void {
 	console.log(
 		`    Mean: ${stats.mean.toFixed(2)} ± ${stats.stdDev.toFixed(2)} (95% CI: ${stats.ci95Lower.toFixed(2)}-${stats.ci95Upper.toFixed(2)})`,
 	);
-	console.log(
-		`    Median: ${stats.median.toFixed(2)} | Range: ${stats.min}-${stats.max}`,
-	);
+	console.log(`    Median: ${stats.median.toFixed(2)} | Range: ${stats.min}-${stats.max}`);
 }
 
 function printResults(results: ExperimentResults, verbose: boolean): void {
@@ -215,10 +214,7 @@ async function runSimulation(options: RunOptions): Promise<void> {
 			outputDir: options.output,
 			onProgress: (progress) => {
 				if (options.verbose || progress.completedGames - lastProgress >= 100) {
-					const pct = (
-						(progress.completedGames / progress.totalGames) *
-						100
-					).toFixed(1);
+					const pct = ((progress.completedGames / progress.totalGames) * 100).toFixed(1);
 					const rate = progress.gamesPerSecond.toFixed(1);
 					process.stdout.write(
 						`\r  Progress: ${formatNumber(progress.completedGames)}/${formatNumber(progress.totalGames)} (${pct}%) | ${rate} games/sec`,
@@ -241,11 +237,7 @@ async function runSimulation(options: RunOptions): Promise<void> {
 	// Otherwise, use the experiment runner
 	console.log('Running experiment...\n');
 
-	const results = await runQuickExperiment(
-		options.profiles,
-		options.games,
-		options.seed,
-	);
+	const results = await runQuickExperiment(options.profiles, options.games, options.seed);
 
 	const elapsed = Date.now() - startTime;
 

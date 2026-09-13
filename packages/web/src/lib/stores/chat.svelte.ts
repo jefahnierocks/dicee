@@ -933,6 +933,12 @@ export function getChatStoreOptional(): ChatStore | undefined {
 // Utility Exports
 // =============================================================================
 
-export { QUICK_CHAT_MESSAGES, REACTION_EMOJIS, CHAT_RATE_LIMITS };
-export { SHOUT_COOLDOWN_MS, SHOUT_DISPLAY_DURATION_MS, SHOUT_MAX_LENGTH };
-export type { QuickChatKey, ReactionEmoji, ChatMessage, TypingState, ShoutMessage };
+export type { ChatMessage, QuickChatKey, ReactionEmoji, ShoutMessage, TypingState };
+export {
+	CHAT_RATE_LIMITS,
+	QUICK_CHAT_MESSAGES,
+	REACTION_EMOJIS,
+	SHOUT_COOLDOWN_MS,
+	SHOUT_DISPLAY_DURATION_MS,
+	SHOUT_MAX_LENGTH,
+};

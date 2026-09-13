@@ -104,9 +104,10 @@ class RoomService {
 	 * Connect to a room
 	 *
 	 * @param roomCode - 6-character room code
-	 * @param accessToken - Supabase access token for authentication
+	 * @param _accessToken - Deprecated compatibility argument. Authentication
+	 * is resolved from the same-origin HttpOnly session cookie.
 	 */
-	async connect(roomCode: RoomCode, accessToken: string): Promise<void> {
+	async connect(roomCode: RoomCode, _accessToken: string): Promise<void> {
 		// Disconnect existing connection
 		if (this.socket) {
 			this.disconnect();
@@ -117,7 +118,7 @@ class RoomService {
 		this._error = null;
 
 		try {
-			this.connectToServer(roomCode, accessToken);
+			this.connectToServer(roomCode);
 		} catch (error) {
 			this._error = error instanceof Error ? error.message : 'Connection failed';
 			this.setStatus('error');
@@ -129,17 +130,16 @@ class RoomService {
 	 * Connect to Durable Objects multiplayer server via same-origin WebSocket proxy
 	 *
 	 * Uses /ws/room/[code] endpoint which proxies to the GameRoom DO via Service Binding.
-	 * Authentication is handled via token query parameter (cookies unreliable in CF WebSocket).
+	 * Authentication is handled server-side from the same-origin session cookie.
 	 */
-	private connectToServer(roomCode: RoomCode, accessToken: string): void {
+	private connectToServer(roomCode: RoomCode): void {
 		if (!browser) return;
 
 		log.debug('Connecting to room', { roomCode });
 
 		// Use same-origin WebSocket proxy for zero-CORS connection
-		// Pass token as query param since cookies don't work reliably with CF WebSocket
 		const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-		const wsUrl = `${protocol}//${location.host}/ws/room/${roomCode.toUpperCase()}?token=${encodeURIComponent(accessToken)}`;
+		const wsUrl = `${protocol}//${location.host}/ws/room/${roomCode.toUpperCase()}`;
 
 		const socket = new ReconnectingWebSocket(wsUrl, [], {
 			maxRetries: 10,
@@ -542,11 +542,7 @@ class RoomService {
 			case 'CONNECTED': {
 				// Convert CONNECTED payload to room structure
 				const payload = (event as { payload: Record<string, unknown> }).payload;
-				console.log('[DEBUG] CONNECTED received - payload:', JSON.stringify(payload, null, 2));
-				console.log('[DEBUG] CONNECTED received - payload.isHost:', payload.isHost);
-				console.log('[DEBUG] CONNECTED received - payload.players:', payload.players);
 				this._room = this.convertDOPayloadToRoom(payload);
-				console.log('[DEBUG] CONNECTED processed - room.hostId:', this._room?.hostId);
 				break;
 			}
 

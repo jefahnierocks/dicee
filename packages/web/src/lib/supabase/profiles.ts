@@ -81,38 +81,81 @@ export async function updateProfile(
 }
 
 /**
- * Create or upsert a profile for a user
+ * Profile columns an authenticated user may write on their own row.
+ * Mirrors the column grants in supabase/migrations/20260913000001_profiles_column_privileges.sql;
+ * role, rating, badge and is_anonymous columns are server-managed.
+ */
+export const PROFILE_USER_WRITABLE_COLUMNS = [
+	'username',
+	'display_name',
+	'bio',
+	'avatar_seed',
+	'avatar_style',
+	'is_public',
+	'last_seen_at',
+	'preferences',
+] as const;
+
+type ProfileUserWritableColumn = (typeof PROFILE_USER_WRITABLE_COLUMNS)[number];
+
+function pickUserWritableProfileFields(
+	profileData: Partial<ProfileUpdate> | undefined,
+): Pick<ProfileUpdate, ProfileUserWritableColumn> {
+	const fields: Pick<ProfileUpdate, ProfileUserWritableColumn> = {};
+	if (!profileData) return fields;
+	for (const column of PROFILE_USER_WRITABLE_COLUMNS) {
+		if (profileData[column] !== undefined) {
+			Object.assign(fields, { [column]: profileData[column] });
+		}
+	}
+	return fields;
+}
+
+/**
+ * Ensure a profile exists for a user
  * Note: Profiles are auto-created by trigger on auth.users insert,
- * but this can be used to ensure a profile exists or update initial values
+ * so this only inserts when the row is missing. An existing profile is
+ * never modified (INSERT ... ON CONFLICT DO NOTHING) and is returned as-is.
  *
- * Also syncs display_name to auth.users.user_metadata if provided.
+ * Only user-writable columns are sent; anything else (for example
+ * is_anonymous or role) is dropped because the database derives it and
+ * denies client writes to it.
+ *
+ * Also syncs display_name to auth.users.user_metadata when a new profile is created.
  */
 export async function createProfile(
 	supabase: SupabaseClient<Database>,
 	userId: string,
 	profileData?: Partial<ProfileUpdate>,
 ): Promise<{ data: Profile | null; error: Error | null }> {
-	const { data, error } = await supabase
+	const insertFields = pickUserWritableProfileFields(profileData);
+
+	const { data: inserted, error } = await supabase
 		.from('profiles')
 		.upsert(
 			{
+				...insertFields,
 				id: userId,
-				...profileData,
 			},
-			{ onConflict: 'id' },
+			{ onConflict: 'id', ignoreDuplicates: true },
 		)
 		.select()
-		.single();
+		.maybeSingle();
 
 	if (error) {
 		return { data: null, error: new Error(error.message) };
 	}
 
+	// Duplicate ignored: the profile already existed, so return it unchanged
+	if (!inserted) {
+		return getProfile(supabase, userId);
+	}
+
 	// Sync display_name to auth user metadata so JWT contains it
-	if (profileData?.display_name !== undefined && supabase.auth?.updateUser) {
+	if (insertFields.display_name !== undefined && supabase.auth?.updateUser) {
 		try {
 			const { error: authError } = await supabase.auth.updateUser({
-				data: { display_name: profileData.display_name },
+				data: { display_name: insertFields.display_name },
 			});
 
 			if (authError) {
@@ -123,7 +166,7 @@ export async function createProfile(
 		}
 	}
 
-	return { data, error: null };
+	return { data: inserted, error: null };
 }
 
 /**

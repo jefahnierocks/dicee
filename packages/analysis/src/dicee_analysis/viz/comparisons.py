@@ -5,10 +5,8 @@ Comparison and rate visualization functions.
 import matplotlib.pyplot as plt
 import numpy as np
 import polars as pl
-import seaborn as sns
 
 from dicee_analysis.stats.descriptive import calculate_bonus_rates, calculate_win_rates
-
 
 # Profile colors
 PROFILE_COLORS = {
@@ -41,9 +39,9 @@ def plot_profile_comparison(
         Matplotlib Figure
     """
     fig, ax = plt.subplots(figsize=figsize)
-    
+
     pdf = df.to_pandas()
-    
+
     # Calculate statistics per profile
     stats_data = []
     for profile in pdf["profile_id"].unique():
@@ -59,20 +57,20 @@ def plot_profile_comparison(
             "ci": ci,
             "n": n,
         })
-    
+
     # Sort by mean
     stats_data.sort(key=lambda x: x["mean"], reverse=True)
-    
+
     profiles = [s["profile"] for s in stats_data]
     means = [s["mean"] for s in stats_data]
     cis = [s["ci"] for s in stats_data]
     colors = [PROFILE_COLORS.get(p, "#808080") for p in profiles]
-    
+
     # Plot bars with error bars
     bars = ax.barh(profiles, means, xerr=cis, color=colors, alpha=0.7, capsize=5)
-    
+
     # Add value labels
-    for i, (bar, mean, ci) in enumerate(zip(bars, means, cis)):
+    for bar, mean, ci in zip(bars, means, cis, strict=True):
         ax.text(
             mean + ci + 2,
             bar.get_y() + bar.get_height() / 2,
@@ -80,11 +78,11 @@ def plot_profile_comparison(
             va="center",
             fontsize=10,
         )
-    
+
     ax.set_xlabel("Mean Score")
     ax.set_ylabel("Profile")
     ax.set_title(title or "Profile Comparison (Mean ± 95% CI)")
-    
+
     plt.tight_layout()
     return fig
 
@@ -107,20 +105,20 @@ def plot_win_rates(
         Matplotlib Figure
     """
     fig, ax = plt.subplots(figsize=figsize)
-    
+
     win_rates = calculate_win_rates(df)
     pdf = win_rates.to_pandas()
-    
+
     # Sort by win rate
     pdf = pdf.sort_values("win_rate", ascending=True)
-    
+
     colors = [PROFILE_COLORS.get(p, "#808080") for p in pdf["profile_id"]]
-    
+
     bars = ax.barh(pdf["profile_id"], pdf["win_rate"] * 100, color=colors, alpha=0.7)
-    
+
     # Add value labels
     for bar, rate, wins, games in zip(
-        bars, pdf["win_rate"], pdf["wins"], pdf["games"]
+        bars, pdf["win_rate"], pdf["wins"], pdf["games"], strict=True
     ):
         ax.text(
             bar.get_width() + 1,
@@ -129,15 +127,15 @@ def plot_win_rates(
             va="center",
             fontsize=10,
         )
-    
+
     ax.set_xlabel("Win Rate (%)")
     ax.set_ylabel("Profile")
     ax.set_title(title or "Win Rates by Profile")
     ax.set_xlim(0, 100)
-    
+
     # Add 50% reference line for equal win rate
     ax.axvline(50, color="gray", linestyle="--", alpha=0.5, label="50%")
-    
+
     plt.tight_layout()
     return fig
 
@@ -160,20 +158,20 @@ def plot_bonus_rates(
         Matplotlib Figure
     """
     fig, ax = plt.subplots(figsize=figsize)
-    
+
     bonus_rates = calculate_bonus_rates(df)
     pdf = bonus_rates.to_pandas()
-    
+
     # Sort by bonus rate
     pdf = pdf.sort_values("bonus_rate", ascending=True)
-    
+
     colors = [PROFILE_COLORS.get(p, "#808080") for p in pdf["profile_id"]]
-    
+
     bars = ax.barh(pdf["profile_id"], pdf["bonus_rate"] * 100, color=colors, alpha=0.7)
-    
+
     # Add value labels
     for bar, rate, bonuses, games in zip(
-        bars, pdf["bonus_rate"], pdf["bonuses"], pdf["games"]
+        bars, pdf["bonus_rate"], pdf["bonuses"], pdf["games"], strict=True
     ):
         ax.text(
             bar.get_width() + 1,
@@ -182,11 +180,11 @@ def plot_bonus_rates(
             va="center",
             fontsize=10,
         )
-    
+
     ax.set_xlabel("Bonus Rate (%)")
     ax.set_ylabel("Profile")
     ax.set_title(title or "Upper Bonus Achievement Rate by Profile")
     ax.set_xlim(0, 100)
-    
+
     plt.tight_layout()
     return fig

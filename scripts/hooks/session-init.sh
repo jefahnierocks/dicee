@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/Users/verlyn13/Development/personal/dicee}"
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)}"
 AGENT_NAME="${AGENT_NAME:-claude-code}"
 cd "$PROJECT_DIR"
 

@@ -11,12 +11,11 @@ secret_authority:
 
   local_operator_bootstrap:
     source: "1Password"
-    account: "my.1password.com"
-    vault: "Dev"
+    account: "Operator-selected account"
+    vault: "Operator-selected vault"
     usage:
       - "Infisical universal auth client credentials"
       - "Cloudflare operator token"
-      - "Supabase MCP token"
       - "Optional local-only ElevenLabs key"
 
   non_secret_metadata:
@@ -43,16 +42,13 @@ local_bootstrap:
   wrappers:
     infisical_auth: "./scripts/with-dicee-infisical-auth.sh <dev|staging|prod> -- <command>"
     cloudflare: "./scripts/with-dicee-cloudflare.sh -- <command>"
-    supabase_mcp: "./scripts/with-dicee-supabase-mcp.sh -- <command>"
     elevenlabs_local: "./scripts/with-dicee-elevenlabs-local.sh -- <command>"
 
 mcp:
   project_managed:
     - ".mcp.json"
     - ".cursor/mcp.json"
-  project_local_auth:
-    supabase: "scripts/mcp-wrappers/supabase-wrapper.sh"
-    cloudflare: "scripts/mcp-wrappers/cloudflare-wrapper.sh"
+  remote_auth: "Native HTTP transport with per-client OAuth; no token wrappers (docs/MCP-SETUP.md)"
   global_user_baseline:
     - "Context7"
     - "GitHub"
@@ -62,4 +58,4 @@ local_development:
     command: "infisical run --env=dev -- <command>"
   operator_examples:
     - "./scripts/with-dicee-cloudflare.sh -- wrangler whoami"
-    - "./scripts/with-dicee-infisical-auth.sh dev -- infisical login --method=universal-auth --domain=https://infisical.jefahnierocks.com"
+    - "./scripts/with-dicee-infisical-auth.sh dev -- infisical login --method=universal-auth --domain=$INFISICAL_API_URL"

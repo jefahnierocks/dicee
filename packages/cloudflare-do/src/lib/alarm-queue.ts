@@ -14,7 +14,7 @@
  */
 
 import type { AlarmType, ScheduledAlarm } from '../types';
-import { createLogger, Loggers } from './logger';
+import { Loggers } from './logger';
 
 const STORAGE_KEY = 'alarm_queue';
 
@@ -60,9 +60,7 @@ export class AlarmQueue {
 		const queue = await this.getQueue();
 
 		// Remove any existing alarm of same type+target to prevent duplicates
-		const filtered = queue.filter(
-			(a) => !(a.type === alarm.type && a.targetId === alarm.targetId),
-		);
+		const filtered = queue.filter((a) => !(a.type === alarm.type && a.targetId === alarm.targetId));
 
 		// Add new alarm with creation timestamp
 		const newAlarm: ScheduledAlarm = {
@@ -101,9 +99,7 @@ export class AlarmQueue {
 		const initialLength = queue.length;
 
 		// Filter out matching alarm(s)
-		const filtered = queue.filter(
-			(a) => !(a.type === type && a.targetId === targetId),
-		);
+		const filtered = queue.filter((a) => !(a.type === type && a.targetId === targetId));
 
 		if (filtered.length === initialLength) {
 			// No alarm was cancelled
@@ -204,10 +200,7 @@ export class AlarmQueue {
 	/**
 	 * Get the scheduled time for a specific alarm (if it exists).
 	 */
-	async getScheduledTime(
-		type: AlarmType,
-		targetId: string | null = null,
-	): Promise<number | null> {
+	async getScheduledTime(type: AlarmType, targetId: string | null = null): Promise<number | null> {
 		const queue = await this.getQueue();
 		const alarm = queue.find((a) => a.type === type && a.targetId === targetId);
 		return alarm?.scheduledFor ?? null;

@@ -3,17 +3,16 @@ Descriptive statistics for Dicee simulation results.
 """
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal, overload
 
 import numpy as np
 import polars as pl
-from scipy import stats as scipy_stats
 
 
 @dataclass
 class ScoreStats:
     """Descriptive statistics for a score distribution."""
-    
+
     n: int
     mean: float
     std: float
@@ -24,17 +23,17 @@ class ScoreStats:
     q3: float
     ci95_lower: float
     ci95_upper: float
-    
+
     @property
     def iqr(self) -> float:
         """Interquartile range."""
         return self.q3 - self.q1
-    
+
     @property
     def ci_width(self) -> float:
         """Width of 95% confidence interval."""
         return self.ci95_upper - self.ci95_lower
-    
+
     def __repr__(self) -> str:
         return (
             f"ScoreStats(n={self.n}, mean={self.mean:.2f}±{self.std:.2f}, "
@@ -50,14 +49,14 @@ def _calculate_stats(values: np.ndarray) -> ScoreStats:
             n=0, mean=0, std=0, median=0, min=0, max=0,
             q1=0, q3=0, ci95_lower=0, ci95_upper=0
         )
-    
+
     mean = float(np.mean(values))
     std = float(np.std(values, ddof=1)) if n > 1 else 0.0
-    
+
     # Confidence interval
     se = std / np.sqrt(n) if n > 0 else 0
     ci_margin = 1.96 * se
-    
+
     return ScoreStats(
         n=n,
         mean=mean,
@@ -70,6 +69,33 @@ def _calculate_stats(values: np.ndarray) -> ScoreStats:
         ci95_lower=mean - ci_margin,
         ci95_upper=mean + ci_margin,
     )
+
+
+@overload
+def describe_scores(
+    df: pl.DataFrame,
+    *,
+    score_col: str = "final_score",
+    by_profile: Literal[True],
+) -> dict[str, ScoreStats]: ...
+
+
+@overload
+def describe_scores(
+    df: pl.DataFrame,
+    *,
+    score_col: str = "final_score",
+    by_profile: Literal[False] = False,
+) -> ScoreStats: ...
+
+
+@overload
+def describe_scores(
+    df: pl.DataFrame,
+    *,
+    score_col: str = "final_score",
+    by_profile: bool,
+) -> dict[str, ScoreStats] | ScoreStats: ...
 
 
 def describe_scores(
@@ -119,24 +145,24 @@ def describe_by_category(
     """
     if profile_id:
         df = df.filter(pl.col("profile_id") == profile_id)
-    
+
     categories = [
         "ones", "twos", "threes", "fours", "fives", "sixes",
         "three_of_a_kind", "four_of_a_kind", "full_house",
         "small_straight", "large_straight", "dicee", "chance",
     ]
-    
+
     stats_data: list[dict[str, Any]] = []
-    
+
     for cat in categories:
         if cat not in df.columns:
             continue
-        
+
         # Filter out nulls
         values = df[cat].drop_nulls().to_numpy()
         if len(values) == 0:
             continue
-            
+
         stats_data.append({
             "category": cat,
             "n": len(values),
@@ -146,7 +172,7 @@ def describe_by_category(
             "min": float(np.min(values)),
             "max": float(np.max(values)),
         })
-    
+
     return pl.DataFrame(stats_data)
 
 
@@ -167,14 +193,14 @@ def calculate_win_rates(
         df.group_by("profile_id")
         .agg(pl.len().alias("games"))
     )
-    
+
     # Count wins per profile
     wins_per_profile = (
         df.filter(pl.col("profile_id") == pl.col("winner_profile_id"))
         .group_by("profile_id")
         .agg(pl.len().alias("wins"))
     )
-    
+
     # Join and calculate rate
     result = (
         games_per_profile
@@ -185,7 +211,7 @@ def calculate_win_rates(
         )
         .sort("win_rate", descending=True)
     )
-    
+
     return result
 
 
@@ -212,5 +238,5 @@ def calculate_bonus_rates(
         )
         .sort("bonus_rate", descending=True)
     )
-    
+
     return result

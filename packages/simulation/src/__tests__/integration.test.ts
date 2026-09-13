@@ -8,11 +8,11 @@
  * - Profile behavior differentiation
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runBatchSingleThreaded } from '../batch/single-threaded.js';
-import type { SimulationConfig, GameResult } from '../schemas/index.js';
+import type { GameResult, SimulationConfig } from '../schemas/index.js';
 
 // =============================================================================
 // Test Setup

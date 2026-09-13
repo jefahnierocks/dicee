@@ -14,7 +14,7 @@ Dicee uses the ElevenLabs Sound Effects API through the `audio-gen` CLI in `pack
 
 The ElevenLabs key used for local generation is a local operator/bootstrap secret.
 
-- source of truth: 1Password item `dicee-elevenlabs-local`
+- source of truth: the operator-selected item named in the ignored metadata file
 - field: `api-key`
 - entrypoint: `./scripts/with-dicee-elevenlabs-local.sh`
 

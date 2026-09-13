@@ -2,6 +2,6 @@
 # Ensures consistent builds across all environments (CI, local, mise, standalone)
 
 [toolchain]
-channel = "1.95.0"
+channel = "1.97.1"
 targets = ["wasm32-unknown-unknown"]
 components = ["rustfmt", "clippy"]

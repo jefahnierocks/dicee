@@ -1,175 +1,37 @@
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                   GITHUB COPILOT CLI - DICEE DEVOPS                          ║
-║                              Quick Reference                                 ║
-╚══════════════════════════════════════════════════════════════════════════════╝
+DICEE COPILOT CLI — CURRENT QUICK REFERENCE
+Last reviewed: 2026-07-21
 
-┌─ SETUP ────────────────────────────────────────────────────────────────────┐
-│                                                                              │
-│  ./scripts/setup-copilot-mcp.sh        # One-time setup                     │
-│                                                                              │
-│  Prerequisites:                                                              │
-│    • GitHub Copilot CLI installed (gh copilot --version)                    │
-│    • jq installed (brew install jq)                                         │
-│    • Bun installed (for AKG server)                                         │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+Repository authority
+  AGENTS.md
 
-┌─ QUALITY & ERROR CHECKING ─────────────────────────────────────────────────┐
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh quality-gate                              │
-│    → Run full 7-check quality gate (TS, Rust, AKG, Biome, tests, build)    │
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh check-errors                              │
-│    → Quick scan for TypeScript/lint/build errors                            │
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh fix-errors                                │
-│    → Auto-fix Biome linting issues + Rust formatting                        │
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh check-secrets                             │
-│    → Scan for leaked secrets (Infisical)                                    │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+Cloudflare authority and operator boundary
+  docs/cloudflare/README.md
 
-┌─ DEPLOYMENT ───────────────────────────────────────────────────────────────┐
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh deploy-check                              │
-│    → Pre-deployment verification (quality gate + git status + auth)         │
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh deploy-do                                 │
-│    → Deploy Durable Objects worker only                                     │
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh deploy-pages                              │
-│    → Deploy Cloudflare Pages only                                           │
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh deploy-full                               │
-│    → Full deployment: quality-gate → deploy-do → deploy-pages               │
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh tail-logs                                 │
-│    → Stream production logs from dicee worker                               │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+Supported local-only wrapper commands
+  ./scripts/copilot-mcp-wrapper.sh quality-gate
+  ./scripts/copilot-mcp-wrapper.sh public-safety
+  ./scripts/copilot-mcp-wrapper.sh check-errors
+  ./scripts/copilot-mcp-wrapper.sh status
 
-┌─ ENVIRONMENT ──────────────────────────────────────────────────────────────┐
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh check-env                                 │
-│    → Verify 1Password bootstrap readiness and DICEE_ENV                     │
-│                                                                              │
-│  ./scripts/copilot-mcp-wrapper.sh status                                    │
-│    → Project status (git, phase, services, recent deployments)              │
-│                                                                              │
-│  Load credentials before deployment:                                        │
-│    ./scripts/check-1password-setup.sh                                       │
-│    ./scripts/with-dicee-cloudflare.sh -- wrangler whoami                    │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+  public-safety and status are read-only.
+  quality-gate and check-errors may rebuild tracked generated output;
+  always review the resulting diff.
 
-┌─ AKG MCP SERVER (7 TOOLS) ─────────────────────────────────────────────────┐
-│                                                                              │
-│  When dicee-akg server is active in Copilot CLI:                            │
-│                                                                              │
-│  Tool                  Purpose                                              │
-│  ────────────────────  ───────────────────────────────────────────────────  │
-│  akg_layer_rules       Get allowed/forbidden imports for layers            │
-│  akg_node_info         File metadata (type, layer, dependencies)           │
-│  akg_check_import      Validate a proposed import before writing           │
-│  akg_invariants        Run 6 architectural invariant checks                │
-│  akg_diagram           Generate Mermaid diagrams                           │
-│  akg_path_exists       Find dependency path between files                  │
-│  akg_cache_status      Reload graph cache                                  │
-│                                                                              │
-│  Example prompts in Copilot CLI:                                            │
-│    "What architecture layers exist?"                                        │
-│    "Can I import authStore in DumbButton component?"                        │
-│    "Show me the store dependency graph"                                     │
-│    "Are there any architectural violations?"                                │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+Project MCP template
+  .copilot-mcp.json provides the local AKG server only.
+  Personal/global client configuration remains operator-managed.
 
-┌─ TYPICAL WORKFLOWS ────────────────────────────────────────────────────────┐
-│                                                                              │
-│  PRE-COMMIT CHECK                                                            │
-│    copilot > "Check for errors before I commit"                             │
-│    → Runs check-errors (TS, lint, build scan)                               │
-│                                                                              │
-│  PRE-DEPLOYMENT                                                              │
-│    copilot > "Run quality gate and verify deployment readiness"             │
-│    → Runs quality-gate + deploy-check                                       │
-│                                                                              │
-│  DEPLOY TO PRODUCTION                                                        │
-│    copilot > "Deploy to production"                                         │
-│    → Runs deploy-full (quality-gate → deploy-do → deploy-pages)             │
-│                                                                              │
-│  FIX LINTING                                                                 │
-│    copilot > "Fix all linting errors"                                       │
-│    → Runs fix-errors (Biome + Rust fmt)                                     │
-│                                                                              │
-│  ARCHITECTURE VALIDATION                                                     │
-│    copilot > "Can I import this here?"                                      │
-│    → Uses akg_check_import tool                                             │
-│                                                                              │
-│  MONITOR PRODUCTION                                                          │
-│    copilot > "Tail production logs"                                         │
-│    → Runs tail-logs (wrangler tail dicee)                                   │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+Cloudflare and Supabase project MCP servers are documented in:
+  docs/PROJECT-MCP-CONFIG.md
+  docs/MCP-SETUP.md
 
-┌─ QUALITY GATE CHECKS (7 TOTAL) ────────────────────────────────────────────┐
-│                                                                              │
-│  1. TypeScript & Rust     → Type checking (pnpm check)                      │
-│  2. AKG Invariants        → 6 architectural rules                           │
-│  3. Biome Lint            → Code quality (errors fail, warnings OK)         │
-│  4. Test Suite            → All unit tests (pnpm test)                      │
-│  5. Secrets Scan          → Infisical leak detection                        │
-│  6. Build                 → Production build (pnpm build)                   │
-│  7. Diagram Staleness     → AKG diagrams are current                        │
-│                                                                              │
-│  Exit: 0 = Passed, 1 = Failed                                               │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+SAFETY
+  The Copilot wrapper intentionally exposes no deploy, secret-change,
+  migration, production-log, or provider-mutation commands.
 
-┌─ AGENT DIVISION OF LABOR ──────────────────────────────────────────────────┐
-│                                                                              │
-│  CLAUDE CODE CLI (Primary)                                                  │
-│    • Architecture, complex logic, debugging                                 │
-│    • MCP: memory, supabase, github, akg                                     │
-│                                                                              │
-│  GITHUB COPILOT CLI (DevOps)                                                │
-│    • Error checking, quality gates, deployment                              │
-│    • MCP: dicee-akg (queries), dicee-devops (commands)                      │
-│                                                                              │
-│  WINDSURF/CASCADE                                                            │
-│    • UI components, Svelte, CSS                                             │
-│    • No MCP (IDE-based)                                                     │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+  Do not treat package deploy scripts as routine agent commands.
+  The manually dispatched GitHub workflow is the canonical production path,
+  and live operations require explicit operator authority.
 
-┌─ FILES CREATED ────────────────────────────────────────────────────────────┐
-│                                                                              │
-│  .copilot-mcp.json                   # MCP server definitions               │
-│  .copilot-mcp-README.md              # Full usage documentation             │
-│  COPILOT-MCP-SETUP.md                # Setup summary                        │
-│  scripts/copilot-mcp-wrapper.sh      # DevOps commands (11 total)           │
-│  scripts/setup-copilot-mcp.sh        # One-time setup script                │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-┌─ TROUBLESHOOTING ──────────────────────────────────────────────────────────┐
-│                                                                              │
-│  AKG Server Won't Start:                                                    │
-│    pnpm akg:discover        # Regenerate graph                              │
-│    pnpm akg:test            # Test server                                   │
-│                                                                              │
-│  Commands Not Found:                                                        │
-│    cd /path/to/dicee        # Ensure in project root                        │
-│    chmod +x scripts/*.sh    # Make scripts executable                       │
-│                                                                              │
-│  Deployment Auth Failed:                                                    │
-│    dicee-cf                 # Load Cloudflare credentials                   │
-│    wrangler whoami          # Verify authentication                         │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
-
-╔══════════════════════════════════════════════════════════════════════════════╗
-║  For full documentation, see: .copilot-mcp-README.md                         ║
-║  For setup instructions, see: COPILOT-MCP-SETUP.md                           ║
-╚══════════════════════════════════════════════════════════════════════════════╝
+The previous DevOps quick reference advertised commands that no longer exist.
+Its text remains recoverable from Git history.

@@ -76,10 +76,7 @@ $effect(() => {
 	const user = auth.user;
 	const displayName = auth.isAnonymous
 		? 'Guest'
-		: (user?.user_metadata?.display_name as string) ||
-			(user?.user_metadata?.full_name as string) ||
-			auth.email?.split('@')[0] ||
-			'Player';
+		: (user?.user_metadata?.display_name as string) || `Player-${auth.userId.slice(0, 6)}`;
 
 	// Create chat store with appropriate connection based on role
 	// Spectators use spectatorService, players use roomService

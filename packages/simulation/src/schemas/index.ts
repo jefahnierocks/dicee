@@ -101,56 +101,50 @@ export {
 // =============================================================================
 
 export {
-	// Factor schemas
-	StrategyTypeSchema,
-	type StrategyType,
-	PersonalityProfileSchema,
-	type PersonalityProfile,
-	MatchupTypeSchema,
-	type MatchupType,
-	GamePhaseSchema,
-	type GamePhase,
-	GranularitySchema,
-	type Granularity,
-
+	// Helpers
+	calculateRequiredSampleSize,
+	type ExperimentCondition,
+	ExperimentConditionSchema,
+	type ExperimentDefinition as DesignExperimentDefinition,
+	ExperimentDefinitionSchema as DesignExperimentDefinitionSchema,
+	type ExperimentLineage,
+	ExperimentLineageSchema,
+	type ExperimentPlayer,
 	// Player and condition schemas
 	ExperimentPlayerSchema,
-	type ExperimentPlayer,
-	ExperimentConditionSchema,
-	type ExperimentCondition,
-
-	// Hypothesis schemas (extended)
-	StatisticalTestSchema as DesignStatisticalTestSchema,
-	type StatisticalTest as DesignStatisticalTest,
-	HypothesisDirectionSchema as DesignHypothesisDirectionSchema,
-	type HypothesisDirection as DesignHypothesisDirection,
-	HypothesisSchema as DesignHypothesisSchema,
-	type Hypothesis as DesignHypothesis,
-
-	// Experiment definition (extended)
-	ExperimentTypeSchema as DesignExperimentTypeSchema,
-	type ExperimentType as DesignExperimentType,
-	ExperimentStatusSchema,
-	type ExperimentStatus,
-	ExperimentLineageSchema,
-	type ExperimentLineage,
-	ExperimentDefinitionSchema as DesignExperimentDefinitionSchema,
-	type ExperimentDefinition as DesignExperimentDefinition,
-
+	type ExperimentRegistry,
+	ExperimentRegistrySchema,
+	type ExperimentResultSummary,
 	// Registry schemas
 	ExperimentResultSummarySchema,
-	type ExperimentResultSummary,
-	ExperimentRegistrySchema,
-	type ExperimentRegistry,
-
+	type ExperimentStatus,
+	ExperimentStatusSchema,
+	type ExperimentType as DesignExperimentType,
+	// Experiment definition (extended)
+	ExperimentTypeSchema as DesignExperimentTypeSchema,
+	type GamePhase,
+	GamePhaseSchema,
+	type Granularity,
+	GranularitySchema,
+	generateFactorialConditions,
+	type Hypothesis as DesignHypothesis,
+	type HypothesisDirection as DesignHypothesisDirection,
+	HypothesisDirectionSchema as DesignHypothesisDirectionSchema,
+	HypothesisSchema as DesignHypothesisSchema,
+	isValidExperiment,
+	type MatchupType,
+	MatchupTypeSchema,
+	type PersonalityProfile,
+	PersonalityProfileSchema,
 	// Validators
 	parseExperimentDefinition as parseDesignExperimentDefinition,
 	parseExperimentRegistry,
-	isValidExperiment,
-
-	// Helpers
-	calculateRequiredSampleSize,
-	generateFactorialConditions,
+	type StatisticalTest as DesignStatisticalTest,
+	// Hypothesis schemas (extended)
+	StatisticalTestSchema as DesignStatisticalTestSchema,
+	type StrategyType,
+	// Factor schemas
+	StrategyTypeSchema,
 } from './experiment-design.schema.js';
 
 // =============================================================================

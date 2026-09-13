@@ -22,8 +22,8 @@ export type AISpeedMode = 'normal' | 'fast';
  * Speed multipliers applied to base timing values.
  */
 export const SPEED_MULTIPLIERS: Record<AISpeedMode, number> = {
-    normal: 1.0,
-    fast: 0.6, // 40% reduction
+	normal: 1.0,
+	fast: 0.6, // 40% reduction
 };
 
 // ============================================================================

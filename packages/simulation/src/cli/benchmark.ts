@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 /**
  * Simulation Benchmark CLI
  *
@@ -15,24 +16,18 @@
  * pnpm sim:bench --profile professor --duration 60s
  */
 
-import {
-	parseArgs,
-	getString,
-	getBoolean,
-	parseDuration,
-	formatDuration,
-	formatNumber,
-} from './args.js';
 import { benchmark } from '../batch/index.js';
 import type { ProfileId } from '../schemas/index.js';
+import {
+	formatDuration,
+	formatNumber,
+	getBoolean,
+	getString,
+	parseArgs,
+	parseDuration,
+} from './args.js';
 
-const VALID_PROFILES = [
-	'riley',
-	'carmen',
-	'liam',
-	'professor',
-	'charlie',
-] as const;
+const VALID_PROFILES = ['riley', 'carmen', 'liam', 'professor', 'charlie'] as const;
 
 interface BenchmarkOptions {
 	duration: number;
@@ -93,8 +88,7 @@ function parseOptions(): BenchmarkOptions | null {
 		process.exit(1);
 	}
 
-	const profile = (getString(args, 'profile', 'professor') ??
-		'professor') as ProfileId;
+	const profile = (getString(args, 'profile', 'professor') ?? 'professor') as ProfileId;
 	if (!VALID_PROFILES.includes(profile as (typeof VALID_PROFILES)[number])) {
 		console.error(`Error: Invalid profile '${profile}'`);
 		console.error(`Valid profiles: ${VALID_PROFILES.join(', ')}`);
@@ -183,16 +177,14 @@ async function runBenchmark(options: BenchmarkOptions): Promise<void> {
 	}
 
 	// Calculate statistics
-	const avgGamesPerSecond =
-		samples.reduce((a, b) => a + b, 0) / samples.length;
+	const avgGamesPerSecond = samples.reduce((a, b) => a + b, 0) / samples.length;
 	const peakGamesPerSecond = Math.max(...samples);
 	const minGamesPerSecond = Math.min(...samples);
 	const avgGameTimeMs = 1000 / avgGamesPerSecond;
 
 	// Calculate standard deviation
 	const variance =
-		samples.reduce((sum, s) => sum + (s - avgGamesPerSecond) ** 2, 0) /
-		samples.length;
+		samples.reduce((sum, s) => sum + (s - avgGamesPerSecond) ** 2, 0) / samples.length;
 	const stdDev = Math.sqrt(variance);
 
 	const result: BenchmarkResult = {
@@ -215,9 +207,7 @@ async function runBenchmark(options: BenchmarkOptions): Promise<void> {
 	// Print results
 	console.log('--- Results ---\n');
 	console.log(`Total Games: ${formatNumber(totalGames)}`);
-	console.log(
-		`Throughput: ${avgGamesPerSecond.toFixed(1)} ± ${stdDev.toFixed(1)} games/second`,
-	);
+	console.log(`Throughput: ${avgGamesPerSecond.toFixed(1)} ± ${stdDev.toFixed(1)} games/second`);
 	console.log(`Average Game Time: ${avgGameTimeMs.toFixed(3)} ms`);
 	console.log('');
 	console.log(
@@ -234,9 +224,7 @@ async function runBenchmark(options: BenchmarkOptions): Promise<void> {
 	} else if (avgGamesPerSecond >= 500) {
 		console.log('Moderate performance. Consider smaller batch sizes.');
 	} else {
-		console.log(
-			'Lower performance detected. Check system resources or optimize configuration.',
-		);
+		console.log('Lower performance detected. Check system resources or optimize configuration.');
 	}
 
 	// Estimate run times

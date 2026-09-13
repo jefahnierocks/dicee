@@ -99,7 +99,7 @@ If large, recommend running the archive hook manually or note it for next sessio
 
 ### State Updates
 - ✓ Updated current-phase.json (lastUpdated: [timestamp])
-- ✓ Updated MCP memory graph ([X] observations added)
+- ✓ Updated durable handoff artifacts
 - ✓ Generated handoff notes
 
 ### Session Summary
@@ -132,4 +132,4 @@ Run `/tidyup` when:
 - Always run `/tidyup` before ending a session
 - Handoff notes are critical for session continuity
 - Update timestamps ensure accurate state tracking
-- MCP memory updates help future sessions understand context
+- Durable handoffs, source, tests, and Git history provide cross-session context

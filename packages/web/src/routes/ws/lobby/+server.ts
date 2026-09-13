@@ -9,6 +9,7 @@
  * to the dicee Worker.
  */
 
+import { proxyServiceResponse } from '$lib/server/ws-proxy';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ request, platform, locals }) => {
@@ -21,6 +22,15 @@ export const GET: RequestHandler = async ({ request, platform, locals }) => {
 
 	// Build headers with user info from session
 	const headers = new Headers(request.headers);
+
+	// Identity headers are server-authoritative. Strip any client-supplied values
+	// before deriving identity, so an unauthenticated caller cannot impersonate
+	// another user by injecting X-User-Id/X-Display-Name/X-Avatar-Seed/Authorization.
+	// (GlobalLobby trusts these headers verbatim.)
+	headers.delete('X-User-Id');
+	headers.delete('X-Display-Name');
+	headers.delete('X-Avatar-Seed');
+	headers.delete('Authorization');
 
 	// Get user info from Supabase session
 	const { session, user } = await locals.safeGetSession();
@@ -35,12 +45,8 @@ export const GET: RequestHandler = async ({ request, platform, locals }) => {
 			.eq('id', user.id)
 			.single();
 
-		// Use profile display_name first, then fall back to metadata, email, or Guest
-		const displayName =
-			profile?.display_name ||
-			(user.user_metadata?.full_name as string) ||
-			user.email?.split('@')[0] ||
-			'Guest';
+		// Never infer a public display name from provider identity or email fields.
+		const displayName = profile?.display_name || `Player-${user.id.slice(0, 6)}`;
 		headers.set('X-Display-Name', displayName);
 
 		// Use profile avatar_seed if available, otherwise user id
@@ -61,5 +67,7 @@ export const GET: RequestHandler = async ({ request, platform, locals }) => {
 		duplex: 'half',
 	});
 
-	return gameWorker.fetch(proxyRequest);
+	// Service-binding responses have immutable headers; re-wrap so SvelteKit
+	// cookies and the hook's headers can be applied without breaking the upgrade.
+	return proxyServiceResponse(await gameWorker.fetch(proxyRequest));
 };

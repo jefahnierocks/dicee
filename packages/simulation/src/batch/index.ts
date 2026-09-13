@@ -32,41 +32,37 @@
  * });
  */
 
-// Types
-export type {
-	BatchRunConfig,
-	ResolvedBatchRunConfig,
-	BatchRunProgress,
-	BatchResult,
-	ProgressCallback,
-	WorkerStats,
-	WorkerMessage,
-	InitMessage,
-	RunBatchMessage,
-	BatchCompleteMessage,
-	ProgressMessage,
-	ErrorMessage,
-	ShutdownMessage,
-} from './types.js';
-
-// Single-threaded runner (recommended for most use cases)
-export {
-	runBatchSingleThreaded,
-	benchmark,
-	type SingleThreadedBatchOptions,
-} from './single-threaded.js';
-
-// NDJSON streaming I/O
-export {
-	NdjsonWriter,
-	NdjsonReader,
-	SimulationOutputWriter,
-	getProcessedGameCount,
-	getProcessedSeeds,
-} from './ndjson-writer.js';
-
-// Worker pool (experimental - for multi-core scaling)
-export { WorkerPool, getRecommendedWorkerCount } from './worker-pool.js';
-
 // Batch coordinator (experimental)
 export { BatchCoordinator, runBatch } from './coordinator.js';
+// NDJSON streaming I/O
+export {
+	getProcessedGameCount,
+	getProcessedSeeds,
+	NdjsonReader,
+	NdjsonWriter,
+	SimulationOutputWriter,
+} from './ndjson-writer.js';
+// Single-threaded runner (recommended for most use cases)
+export {
+	benchmark,
+	runBatchSingleThreaded,
+	type SingleThreadedBatchOptions,
+} from './single-threaded.js';
+// Types
+export type {
+	BatchCompleteMessage,
+	BatchResult,
+	BatchRunConfig,
+	BatchRunProgress,
+	ErrorMessage,
+	InitMessage,
+	ProgressCallback,
+	ProgressMessage,
+	ResolvedBatchRunConfig,
+	RunBatchMessage,
+	ShutdownMessage,
+	WorkerMessage,
+	WorkerStats,
+} from './types.js';
+// Worker pool (experimental - for multi-core scaling)
+export { getRecommendedWorkerCount, WorkerPool } from './worker-pool.js';

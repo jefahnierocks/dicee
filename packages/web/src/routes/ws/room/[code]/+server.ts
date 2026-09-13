@@ -8,14 +8,14 @@
  * The Service Binding (GAME_WORKER) provides zero-latency RPC
  * to the dicee Worker.
  *
- * Auth: Token passed via query param (cookies unreliable for CF WebSocket)
+ * Auth: the same-origin session cookie is validated server-side. Access tokens
+ * never appear in the browser URL, proxy URL, or request logs.
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { proxyServiceResponse } from '$lib/server/ws-proxy';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ request, params, platform, url }) => {
+export const GET: RequestHandler = async ({ request, params, platform, url, locals }) => {
 	const { code } = params;
 	const gameWorker = platform?.env?.GAME_WORKER;
 
@@ -29,51 +29,37 @@ export const GET: RequestHandler = async ({ request, params, platform, url }) =>
 		return new Response('Invalid room code format', { status: 400 });
 	}
 
-	// Get token from query param (cookies unreliable for WebSocket on CF)
-	const token = url.searchParams.get('token');
-	if (!token) {
+	const { session, user } = await locals.safeGetSession();
+	if (!session?.access_token || !user) {
 		return new Response('Authentication required', { status: 401 });
 	}
 
-	// Validate the token and get user info
-	const supabase = createClient(PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY);
-	const {
-		data: { user },
-		error,
-	} = await supabase.auth.getUser(token);
-
-	if (error || !user) {
-		console.error('[ws/room] Token validation failed:', error?.message);
-		return new Response('Invalid token', { status: 401 });
-	}
-
-	// Build headers with user info
+	// Build headers with user info. Strip any client-supplied identity headers
+	// first so they can only ever be set server-side from the validated session.
 	const headers = new Headers(request.headers);
+	headers.delete('X-User-Id');
+	headers.delete('X-Display-Name');
+	headers.delete('X-Avatar-Seed');
+	headers.delete('Authorization');
 	headers.set('X-User-Id', user.id);
 
 	// Fetch profile from database for display name (prefer over Google metadata)
-	const { data: profile } = await supabase
+	const { data: profile } = await locals.supabase
 		.from('profiles')
 		.select('display_name, avatar_seed')
 		.eq('id', user.id)
 		.single();
 
-	// Use profile display_name first, then fall back to metadata, email, or Guest
-	const displayName =
-		profile?.display_name ||
-		(user.user_metadata?.full_name as string) ||
-		user.email?.split('@')[0] ||
-		'Guest';
+	// Never infer a public display name from provider identity or email fields.
+	const displayName = profile?.display_name || `Player-${user.id.slice(0, 6)}`;
 	headers.set('X-Display-Name', displayName);
 
 	// Use profile avatar_seed if available, otherwise user id
 	headers.set('X-Avatar-Seed', profile?.avatar_seed || user.id);
-	headers.set('Authorization', `Bearer ${token}`);
+	headers.set('Authorization', `Bearer ${session.access_token}`);
 
 	// Proxy to the GameRoom DO via service binding
-	// Preserve the token query param for the DO to verify
 	const proxyUrl = new URL(`/room/${code.toUpperCase()}`, 'https://internal');
-	proxyUrl.searchParams.set('token', token);
 
 	// Forward role param if present
 	const role = url.searchParams.get('role');
@@ -89,5 +75,7 @@ export const GET: RequestHandler = async ({ request, params, platform, url }) =>
 		duplex: 'half',
 	});
 
-	return gameWorker.fetch(proxyRequest);
+	// Service-binding responses have immutable headers; re-wrap so SvelteKit
+	// cookies and the hook's headers can be applied without breaking the upgrade.
+	return proxyServiceResponse(await gameWorker.fetch(proxyRequest));
 };

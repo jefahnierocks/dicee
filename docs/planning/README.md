@@ -1,10 +1,25 @@
-# Observability Planning Documents
+# Dicee planning documents
 
-> **Quick Start**: Read **[observability-workflow.md](observability-workflow.md)** for complete step-by-step implementation guide
+Planning documents describe proposed or in-progress work. They do not outrank
+`AGENTS.md`, current source and tests, executable configuration, or verified live
+evidence.
+
+## Cloudflare authority consolidation
+
+- **[dicee-cloudflare-resource-guidance.md](dicee-cloudflare-resource-guidance.md)**
+  is the researched target-state proposal and consolidation plan.
+- **[../cloudflare/README.md](../cloudflare/README.md)** is the current authority
+  map and required entry point for Cloudflare work.
+- The proposed D1/R2/OpenTofu, Worker split, binding rename, Durable Object
+  rename, and Supabase migration remain decision-gated.
+
+## Observability planning
+
+> **Quick Start**: Read **[observability-workflow.md](observability-workflow.md)** for the observability implementation workflow.
 
 ---
 
-## Document Overview
+### Document overview
 
 This directory contains comprehensive planning documents for implementing type-safe, test-first observability across the Dicee project.
 
@@ -87,7 +102,7 @@ Week 4: Cleanup
 | **Context7** | Library docs | Before implementing features |
 | **AKG** | Architecture validation | Before creating files |
 | **Memory** | Store decisions | After each milestone |
-| **cloudflare-observability** | Verify logs | After migration |
+| **cloudflare-api** (opt-in OAuth; replaces the retired `cloudflare-observability`) | Verify logs | After migration |
 
 ### Quality Gates
 
@@ -138,4 +153,3 @@ Week 4: Cleanup
 
 **Last Updated**: 2025-01-XX  
 **Status**: Ready for Implementation
-

@@ -63,19 +63,19 @@ describe('AuthHeader', () => {
 		expect(screen.getByText('Guest')).toBeInTheDocument();
 	});
 
-	it('shows email prefix for authenticated users', () => {
+	it('does not expose an email prefix for authenticated users', () => {
 		mockAuth = createMockAuth({
 			isAuthenticated: true,
 			isAnonymous: false,
-			user: { id: '123', email: 'john@example.com' },
-			email: 'john@example.com',
+			user: { id: '123', email: 'user@example.com' },
+			email: 'user@example.com',
 		});
 		render(AuthHeader);
 
-		expect(screen.getByText('john')).toBeInTheDocument();
+		expect(screen.getByText('Player-123')).toBeInTheDocument();
 	});
 
-	it('shows "User" fallback when no email', () => {
+	it('shows a neutral fallback when no display name is set', () => {
 		mockAuth = createMockAuth({
 			isAuthenticated: true,
 			isAnonymous: false,
@@ -84,7 +84,7 @@ describe('AuthHeader', () => {
 		});
 		render(AuthHeader);
 
-		expect(screen.getByText('User')).toBeInTheDocument();
+		expect(screen.getByText('Player-123')).toBeInTheDocument();
 	});
 });
 
@@ -184,8 +184,8 @@ describe('AuthHeader: Styling', () => {
 		mockAuth = createMockAuth({
 			isAuthenticated: true,
 			isAnonymous: false,
-			user: { id: '123', email: 'test@example.com' },
-			email: 'test@example.com',
+			user: { id: '123', email: 'user@example.com' },
+			email: 'user@example.com',
 		});
 		const { container } = render(AuthHeader);
 
@@ -229,19 +229,19 @@ describe('AuthHeader: Display Name Derivation', () => {
 		vi.clearAllMocks();
 	});
 
-	it('extracts username from email correctly', () => {
+	it('ignores an email when deriving the public display name', () => {
 		mockAuth = createMockAuth({
 			isAuthenticated: true,
 			isAnonymous: false,
-			user: { id: '123', email: 'jane.doe@company.org' },
-			email: 'jane.doe@company.org',
+			user: { id: '123', email: 'user@example.com' },
+			email: 'user@example.com',
 		});
 		render(AuthHeader);
 
-		expect(screen.getByText('jane.doe')).toBeInTheDocument();
+		expect(screen.getByText('Player-123')).toBeInTheDocument();
 	});
 
-	it('handles email with multiple @ symbols', () => {
+	it('ignores malformed email identity data', () => {
 		mockAuth = createMockAuth({
 			isAuthenticated: true,
 			isAnonymous: false,
@@ -250,7 +250,6 @@ describe('AuthHeader: Display Name Derivation', () => {
 		});
 		render(AuthHeader);
 
-		// split('@')[0] would return 'weird'
-		expect(screen.getByText('weird')).toBeInTheDocument();
+		expect(screen.getByText('Player-123')).toBeInTheDocument();
 	});
 });

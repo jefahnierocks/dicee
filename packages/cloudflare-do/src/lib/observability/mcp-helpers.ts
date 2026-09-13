@@ -33,7 +33,21 @@ export interface QueryTimeframe {
  */
 export interface QueryFilter {
 	key: string;
-	operation: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'includes' | 'not_includes' | 'starts_with' | 'regex' | 'exists' | 'is_null' | 'in' | 'not_in';
+	operation:
+		| 'eq'
+		| 'neq'
+		| 'gt'
+		| 'gte'
+		| 'lt'
+		| 'lte'
+		| 'includes'
+		| 'not_includes'
+		| 'starts_with'
+		| 'regex'
+		| 'exists'
+		| 'is_null'
+		| 'in'
+		| 'not_in';
 	type: 'string' | 'number' | 'boolean';
 	value: string | number | boolean;
 }
@@ -51,7 +65,19 @@ export interface ObservabilityQuery {
 		calculations?: Array<{
 			key: string;
 			keyType: 'string' | 'number' | 'boolean';
-			operator: 'count' | 'avg' | 'max' | 'min' | 'sum' | 'p99' | 'p95' | 'p90' | 'median' | 'stddev' | 'variance' | 'uniq';
+			operator:
+				| 'count'
+				| 'avg'
+				| 'max'
+				| 'min'
+				| 'sum'
+				| 'p99'
+				| 'p95'
+				| 'p90'
+				| 'median'
+				| 'stddev'
+				| 'variance'
+				| 'uniq';
 			alias?: string;
 		}>;
 		groupBys?: Array<{
@@ -212,7 +238,10 @@ export function queryByCorrelationId(correlationId: string, timeframe: string): 
  * @param timeframe - Timeframe for query
  * @returns Query configuration
  */
-export function queryStorageReadPerformance(roomCode: string, timeframe: string): ObservabilityQuery {
+export function queryStorageReadPerformance(
+	roomCode: string,
+	timeframe: string,
+): ObservabilityQuery {
 	return {
 		queryId: 'storage-read-performance',
 		view: 'calculations',
@@ -325,4 +354,3 @@ export function queryGameEvents(roomCode: string, timeframe: string): Observabil
 		limit: 100,
 	};
 }
-

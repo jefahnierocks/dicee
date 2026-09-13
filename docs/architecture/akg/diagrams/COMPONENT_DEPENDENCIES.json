@@ -2,20 +2,194 @@
 	"$schema": "https://dicee.games/schemas/akg-diagram.json",
 	"version": "1.0.0",
 	"diagramType": "component_dependencies",
-	"generatedAt": "2025-12-16T17:30:14.405Z",
-	"graphHash": "sha256:2d322e52cc62291b72f31a46e7c510d9182fb06df209d8f41ac8cb460ed56af6",
-	"sourceCommit": "15b429f",
+	"generatedAt": "2026-09-13T03:51:42.301Z",
+	"graphHash": "sha256:6288c69806c410dbbdd691b52c9683769028135c059bef9ac22f3a9985f59218",
+	"sourceCommit": "2c3e875",
 	"nodes": [
 		{
-			"id": "component::AIOpponentSelector::onentSelector_svelte",
+			"id": "component::Avatar::194cf1187692d0b2",
+			"label": "Avatar",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::BottomSheet::fceb7b49ad2de3f9",
+			"label": "BottomSheet",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::SettingsPanel::d9b36e4dce4ce2a3",
+			"label": "SettingsPanel",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::SettingsButton::49da9a4a2a0be41a",
+			"label": "SettingsButton",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::ReactionFloat::293914ff96f194fd",
+			"label": "ReactionFloat",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::ScorecardSkeleton::1331e79a1ac3d688",
+			"label": "ScorecardSkeleton",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::GameViewSkeleton::b27eb1fed6c34bdd",
+			"label": "GameViewSkeleton",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::GalleryLeaderboard::07c183435d7756cb",
+			"label": "GalleryLeaderboard",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::BugReportTrigger::dcc976ab368816c5",
+			"label": "BugReportTrigger",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::PlayerListItem::fcb21a478823a2a4",
+			"label": "PlayerListItem",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::EmptyRooms::751ee637f5f85d3a",
+			"label": "EmptyRooms",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::AIOpponentSelector::c5b7a8f0647a2b49",
 			"label": "AIOpponentSelector",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::CreateRoomModal::486a0ad15c30524f",
+			"label": "CreateRoomModal",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::JoinRoomModal::2d198194d5173a24",
+			"label": "JoinRoomModal",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::OpponentPanel::6b0a7b4e60d22414",
+			"label": "OpponentPanel",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::MultiplayerGameOverModal::063b91805685b476",
+			"label": "MultiplayerGameOverModal",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::GameOverModal::e11b40555391665a",
+			"label": "GameOverModal",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::EndGameSummary::a315ff517bc4a0ec",
+			"label": "EndGameSummary",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::MultiplayerScorecard::0c80e09b5cc2b63e",
+			"label": "MultiplayerScorecard",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::AIBadge::b3aa993b7444b466",
+			"label": "AIBadge",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::GameHistory::a3931bf01a449479",
+			"label": "GameHistory",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::SetupModal::2beccf984dddd4a8",
+			"label": "SetupModal",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::StatsDashboard::88c699659d4b5de4",
+			"label": "StatsDashboard",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::ProfileForm::33d3353403a7d6c5",
+			"label": "ProfileForm",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::BugReportAdmin::7a7a109210e309ef",
+			"label": "BugReportAdmin",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::AllScorecards::5c234fd2d0157d0d",
+			"label": "AllScorecards",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::SpectatorHeader::4070c05cd34d671a",
+			"label": "SpectatorHeader",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::ScorecardLegend::040dede40436cd2c",
+			"label": "ScorecardLegend",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::HeroGame::0ed92ae9437b6613",
+			"label": "HeroGame",
+			"type": "Component",
+			"layer": "components"
+		},
+		{
+			"id": "component::NewsDev::f0fda94ccf847704",
+			"label": "NewsDev",
 			"type": "Component",
 			"layer": "components"
 		}
 	],
 	"edges": [],
 	"metadata": {
-		"totalNodes": 1,
+		"totalNodes": 30,
 		"totalEdges": 0
 	}
 }

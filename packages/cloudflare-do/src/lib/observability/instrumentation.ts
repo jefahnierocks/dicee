@@ -19,47 +19,47 @@
  * - Correlation ID can be set per request
  */
 
+import { sanitizeLogValue } from '../logger.js';
 import {
-	validateLogEntry,
-	type LogEvent,
-	type EventType,
-	type LogLevel,
+	BroadcastPrepareEventSchema,
+	BroadcastSentEventSchema,
 	type Component,
-	LifecycleWakeEventSchema,
+	ConnectionAuthFailureEventSchema,
+	ConnectionAuthSuccessEventSchema,
+	ConnectionRateLimitEventSchema,
+	ConnectionTokenExpiredEventSchema,
+	DiagnosticHealthCheckEventSchema,
+	DiagnosticSnapshotEventSchema,
+	ErrorBroadcastFailedEventSchema,
+	ErrorHandlerFailedEventSchema,
+	ErrorStateCorruptionEventSchema,
+	ErrorStorageFailedEventSchema,
+	type EventType,
+	GameCompleteEventSchema,
+	GameRollEventSchema,
+	GameScoreEventSchema,
+	GameStartEventSchema,
+	GameTurnEndEventSchema,
+	GameTurnStartEventSchema,
 	LifecycleConnectEventSchema,
 	LifecycleDisconnectEventSchema,
 	LifecycleReconnectEventSchema,
-	StorageReadStartEventSchema,
-	StorageReadEndEventSchema,
-	StorageWriteStartEventSchema,
-	StorageWriteEndEventSchema,
-	StorageDeleteEventSchema,
-	StorageListEventSchema,
-	StateTransitionEventSchema,
-	StateTransitionRejectedEventSchema,
+	LifecycleWakeEventSchema,
+	type LogEvent,
+	type LogLevel,
 	SeatAssignEventSchema,
-	SeatReserveEventSchema,
 	SeatReclaimAttemptEventSchema,
 	SeatReclaimResultEventSchema,
 	SeatReleaseEventSchema,
-	GameStartEventSchema,
-	GameTurnStartEventSchema,
-	GameTurnEndEventSchema,
-	GameRollEventSchema,
-	GameScoreEventSchema,
-	GameCompleteEventSchema,
-	ConnectionAuthSuccessEventSchema,
-	ConnectionAuthFailureEventSchema,
-	ConnectionTokenExpiredEventSchema,
-	ConnectionRateLimitEventSchema,
-	BroadcastPrepareEventSchema,
-	BroadcastSentEventSchema,
-	ErrorHandlerFailedEventSchema,
-	ErrorStorageFailedEventSchema,
-	ErrorBroadcastFailedEventSchema,
-	ErrorStateCorruptionEventSchema,
-	DiagnosticSnapshotEventSchema,
-	DiagnosticHealthCheckEventSchema,
+	SeatReserveEventSchema,
+	StateTransitionEventSchema,
+	StateTransitionRejectedEventSchema,
+	StorageDeleteEventSchema,
+	StorageListEventSchema,
+	StorageReadEndEventSchema,
+	StorageReadStartEventSchema,
+	StorageWriteEndEventSchema,
+	StorageWriteStartEventSchema,
 } from './events.schema.js';
 
 /**
@@ -129,7 +129,7 @@ export function createInstrumentation(component: Component, roomCode?: string) {
 		const validated = schema.parse(entry);
 
 		// Output to console (structured JSON for Cloudflare Logs)
-		const json = JSON.stringify(validated);
+		const json = JSON.stringify(sanitizeLogValue(validated));
 		switch (level) {
 			case 'debug':
 				console.log(json);
@@ -299,11 +299,7 @@ export function createInstrumentation(component: Component, roomCode?: string) {
 			);
 		},
 
-		stateTransitionRejected(
-			current: string,
-			attempted: string,
-			reason: string,
-		): LogEvent {
+		stateTransitionRejected(current: string, attempted: string, reason: string): LogEvent {
 			return emit(
 				'warn',
 				'state.transition.rejected',
@@ -363,7 +359,11 @@ export function createInstrumentation(component: Component, roomCode?: string) {
 			);
 		},
 
-		seatReclaimResult(userId: string, result: 'reclaimed' | 'spectator', reason?: string): LogEvent {
+		seatReclaimResult(
+			userId: string,
+			result: 'reclaimed' | 'spectator',
+			reason?: string,
+		): LogEvent {
 			return emit(
 				'info',
 				'seat.reclaim.result',
@@ -638,4 +638,3 @@ export function createInstrumentation(component: Component, roomCode?: string) {
  * Instrumentation interface
  */
 export type Instrumentation = ReturnType<typeof createInstrumentation>;
-

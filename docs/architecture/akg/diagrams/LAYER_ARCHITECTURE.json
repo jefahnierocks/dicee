@@ -2,54 +2,54 @@
 	"$schema": "https://dicee.games/schemas/akg-diagram.json",
 	"version": "1.0.0",
 	"diagramType": "layer_architecture",
-	"generatedAt": "2025-12-16T17:30:14.404Z",
-	"graphHash": "sha256:2d322e52cc62291b72f31a46e7c510d9182fb06df209d8f41ac8cb460ed56af6",
-	"sourceCommit": "15b429f",
+	"generatedAt": "2026-09-13T03:51:42.298Z",
+	"graphHash": "sha256:6288c69806c410dbbdd691b52c9683769028135c059bef9ac22f3a9985f59218",
+	"sourceCommit": "2c3e875",
 	"nodes": [
 		{
 			"id": "layer::shared",
 			"label": "shared",
-			"nodeCount": 2
+			"nodeCount": 25
 		},
 		{
 			"id": "layer::cloudflare-do",
 			"label": "cloudflare-do",
-			"nodeCount": 1
+			"nodeCount": 48
 		},
 		{
 			"id": "layer::routes",
 			"label": "routes",
-			"nodeCount": 0
+			"nodeCount": 30
 		},
 		{
 			"id": "layer::components",
 			"label": "components",
-			"nodeCount": 3
+			"nodeCount": 108
 		},
 		{
 			"id": "layer::stores",
 			"label": "stores",
-			"nodeCount": 0
+			"nodeCount": 15
 		},
 		{
 			"id": "layer::services",
 			"label": "services",
-			"nodeCount": 0
+			"nodeCount": 11
 		},
 		{
 			"id": "layer::types",
 			"label": "types",
-			"nodeCount": 0
+			"nodeCount": 11
 		},
 		{
 			"id": "layer::supabase",
 			"label": "supabase",
-			"nodeCount": 0
+			"nodeCount": 8
 		},
 		{
 			"id": "layer::wasm",
 			"label": "wasm",
-			"nodeCount": 0
+			"nodeCount": 3
 		}
 	],
 	"edges": [

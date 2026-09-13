@@ -1,0 +1,242 @@
+# Dicee status of record
+
+- **Status:** tracked status of record for agents, operators, and the meta-inventory manifest (`project.yaml`)
+- **As of:** 2026-09-13 (UTC)
+- **Current phase:** 2026-09 modernization, Phase 1 PR review
+
+This file replaces the private `.claude/state/current-phase.json` as the status
+of record. `.claude/state/` is private and archival only. Update this file,
+`project.yaml` `status.local_phase`, and `status.as_of` together.
+
+## Current phase
+
+Phase 1 fixes the blockers in the July 2026 toolchain and agent-framework
+refresh. The original 19-commit handoff remains on
+`work/2026-09-modernization`; review work is grouped into two branches:
+[`review/2026-09-baseline` (PR #3)](https://github.com/verlyn13/dicee/pull/3),
+followed by [`review/2026-09-database-privacy` (PR #4)](https://github.com/verlyn13/dicee/pull/4).
+See [the PR review guide](development/modernization-pr-series.md) for scope,
+dependencies, and the distinction between merge and rollout.
+
+- The owner explicitly authorized grouping, branch pushes, and PR publication
+  on 2026-09-13 UTC. This supersedes the previous publication hold; production
+  migration, deployment, ingress, credential, and governance changes remain
+  separate operator work. No deployment or hosted migration is recorded.
+- PRs remain drafts while the operator follow-ups below are open. Publishing
+  a PR does not establish production remediation or authorize a merge/deploy.
+- Completion gate: `pnpm validate:ci`. The original handoff and the reviewed
+  baseline have separate local results below. Pull-request CI still has to pass
+  after publication; local success does not establish hosted CI success.
+
+Cloudflare work starts at [`docs/cloudflare/README.md`](cloudflare/README.md).
+
+## Decisions
+
+Owner decisions recorded 2026-09-12:
+
+1. **Durable Objects.** The baseline keeps the legacy `migrations` v1
+   (`GameRoom`) and v2 (`GlobalLobby`) with `new_sqlite_classes`. Declarative
+   `exports` is deferred to a standalone operator deploy after
+   [ADR-005](rfcs/adr-005-durable-object-lifecycle.md) is accepted. The first
+   baseline deploy is gated on OPS-02: if the live namespaces belong to a
+   different Worker script than `dicee`, a deploy would create empty namespaces
+   instead of being a no-op.
+2. **MCP.** Native HTTP/OAuth and minimal. `akg` (stdio) and unauthenticated
+   `cloudflare-docs` are enabled. `cloudflare-api`
+   (`https://mcp.cloudflare.com/mcp`) and read-only Supabase
+   (`https://mcp.supabase.com/mcp`, `read_only=true`) are opt-in OAuth servers.
+   All bearer-token MCP wrappers and credential-forwarding bridges are deleted.
+3. **Secrets.** Infisical is retired for Dicee. The detailed retirement is
+   Phase 6; Phase 1 adds no new Infisical references.
+4. **Database.** The July privacy migration (`public_security_hardening`) is
+   approved but ships separately, after the urgent profiles privilege fix. It
+   is renumbered to sort after that migration.
+5. **Wrangler.** Stay on the miniflare 4 line: wrangler 4.113.0 with
+   `compatibility_date` 2026-07-21.
+6. **Status of record.** This tracked file.
+
+Under evaluation (owner intent, not yet decided): the data platform and an
+organization move. A 2026-09-12 read-only evaluation recommends staying on
+Supabase, hardened and minimized, and meeting the governance goal with a GitHub
+organization transfer, an organization-governed Cloudflare account, and
+OpenTofu with policy checks. Its RFC-005 revision, a new RFC-006, and an
+ADR-005 addendum are drafts pending owner review and are not yet in this
+repository. Until an RFC is accepted, none of this changes current architecture.
+
+## Open operator follow-ups
+
+These require operator authority and live access. Agents must not mark them done
+without a first-hand readback recorded below.
+
+- [ ] Database migrations, in this order. Both migrations and both pgTAP files
+      pass on a local stack (see [Local verification](#local-verification)); none
+      has run against the hosted project.
+      1. Read back the Supabase plan tier, then take an off-site
+         `supabase db dump` and a Storage export. Free projects have no
+         platform backups.
+      2. Apply only `20260913000001_profiles_column_privileges.sql` live.
+         `supabase db push` applies every pending file, so either push from a
+         tree that does not yet contain `20260913000002`, or run `000001` in the
+         SQL editor and record it with
+         `supabase migration repair --status applied 20260913000001`. Check for
+         unexpected admin accounts (role counts only) and revoke any unexpected
+         elevation.
+      3. Deploy Pages from the new baseline.
+      4. Only then apply `20260913000002_public_security_hardening.sql`. It
+         drops the `bug_reports` columns `user_email`, `user_display_name`,
+         `user_context`, and `console_capture`, which the web app built from the
+         previous HEAD still writes. Applied before step 3, bug-report
+         submission fails.
+- [ ] OPS-02, before any baseline deploy of `packages/cloudflare-do`: record
+      which Worker script holds the live `GameRoom` and `GlobalLobby` namespaces
+      (OPS-03), their legacy migration tag if a confirmed read-only source exists
+      (OPS-04), and what the Pages `GAME_WORKER` binding targets (OPS-08).
+      See [`docs/cloudflare/operator-evidence.md`](cloudflare/operator-evidence.md).
+- [ ] Prepare future-table migrations for Supabase's 2026-10-30 default-grants
+      change (P6-01). Existing tables retain their grants; the change affects
+      the defaults for newly created tables in existing projects. Review
+      current privileges separately. See the
+      [official change notice](https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically).
+- [ ] Complete migration from legacy `anon`/`service_role` API keys ahead of
+      the announced end-of-2026 deprecation. Verify the final retirement
+      schedule before cutover; the current
+      [migration guide](https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys)
+      does not establish an exact universal shutdown date.
+- [ ] Disable workers.dev and Preview URLs on every Dicee Worker script.
+- [ ] Undeploy the `aggregate-game-stats` Edge Function, which P6-02 retires.
+      It runs with the service role for any caller that has the public anon key
+      and a game id. The Worker treats the resulting 404 as a non-retriable
+      failure, so undeploying it does not cause retry loops.
+- [ ] Find legacy Worker scripts that still hold Supabase secrets, and remove
+      their routes and custom domains or undeploy them until the Supabase key
+      migration retires those keys.
+- [ ] Opt-in MCP servers: sign in with `claude mcp login cloudflare-api` and
+      `claude mcp login supabase` (or `/mcp`) only when a task needs them, and
+      use the equivalent Cursor OAuth flow. See [`MCP-SETUP.md`](MCP-SETUP.md).
+- [ ] Rotate or revoke the Cloudflare API token and the Supabase personal access
+      token used by the retired bearer MCP wrappers.
+- [ ] GitHub governance: a `main` ruleset that requires the GitHub Actions check
+      **Full repository validation** (the job display name, not `validate`),
+      a `Production` environment with required reviewers and a main-only
+      deployment branch policy, and Dependabot alerts plus security updates.
+- [ ] Revoke the Infisical machine identities whose identifiers were published
+      in repository history.
+- [ ] Update the meta-inventory registry so `status_of_record` is
+      `docs/status.md`.
+
+## Known local limitations
+
+- **Authenticated Worker WebSockets in local development.**
+  `packages/cloudflare-do/wrangler.jsonc` declares `secrets.required` without
+  `SUPABASE_JWT_SECRET`. Once `secrets` is declared, Wrangler loads only the
+  listed keys from `.dev.vars` and `.env`. `pnpm dev:do`
+  (`wrangler dev --env development`) therefore has no HS256 fallback, and
+  authenticated room WebSockets and transcription fail against a local Supabase
+  stack that still signs HS256 tokens. That is the case while
+  `[auth] signing_keys_path` in `supabase/config.toml` is unset. Interim step:
+  for authenticated local Worker testing, use a Supabase stack configured with
+  asymmetric JWT signing keys, so verification uses JWKS. Do not add
+  `SUPABASE_JWT_SECRET` to `secrets.required`, because deploy validation would
+  then fail wherever it is unset. Phase 6 (P6-03) removes the HS256 fallback.
+- **Supabase CLI configuration.** Supabase CLI 2.117.0 reports that the
+  `[inbucket]` section in `supabase/config.toml` is deprecated in favor of
+  `[local_smtp]`. Rename it in the Phase 3 toolchain refresh.
+- **Clean clones need public Supabase settings.** `packages/web` imports
+  `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` from
+  `$env/static/public`, so `svelte-check` fails in a fresh clone without them.
+  Copy `packages/web/.env.example` to `packages/web/.env` for local work, or set
+  the same non-secret placeholders CI uses (`.github/workflows/ci.yml`). The
+  Phase 5 clean-clone work should remove this manual step.
+- **Preview traffic reaches production Durable Objects.** In
+  `packages/web/wrangler.jsonc`, `env.preview` binds `GAME_WORKER` to the
+  production Worker `dicee` (`cloudflare-config-audit` F7). Give preview a
+  separate backend in the Cloudflare current-state phase.
+- **Config audit advisories.** `node scripts/cloudflare-config-audit.mjs --strict`
+  reports 29 passes and 3 advisory warnings: F7 (above), B8 (the legacy
+  `SUPABASE_JWT_SECRET`, removed by P6-03), and B11 (the `ENVIRONMENT` variable
+  is declared but never read). The strict audit is not part of `validate:ci`.
+- **Agent execution permissions.** File and network permissions depend on the
+  active client. This review uses an unrestricted local session; restricted
+  clients may need approved access to dependency caches and local containers.
+  Inspect the active policy rather than assuming a repository-wide sandbox.
+
+## Local verification
+
+Local evidence only; the historical handoff checks and the current review checks
+are identified separately. None establishes live-environment remediation.
+
+- 2026-09-13T04:43Z: reviewed baseline `0c11d5a` passed frozen installation and
+  `pnpm validate:ci` in a clean worktree using CI's synthetic public Supabase
+  settings, with no tracked or untracked output. Results: 120 Rust, 1,600 web
+  (3 skipped), 522 Worker, 204 simulation, and 26 Python tests; 2,472 passed in
+  total, plus AKG/MCP and script checks. Production builds, dependency audit
+  (no known vulnerabilities), and publication scan passed. The initial uv run
+  selected Python 3.13.6; mypy, Ruff, and all 26 Python tests were then rerun
+  successfully with Python 3.13.14. `.mise.toml` now sets `UV_PYTHON` to keep
+  clean-worktree validation on the project pin.
+- 2026-09-13: a task-isolated local Supabase stack reset through only
+  `20260913000001` contained 22 migrations and passed the 47 baseline pgTAP
+  tests. A separate reset through `20260913000002` contained 23 migrations and
+  passed 146 tests, including 99 new privacy/grant assertions owned by the
+  second PR. Its public-schema types were generated locally with Supabase CLI
+  2.117.0. The task's containers and volumes were removed afterwards.
+- Independent follow-up review found no remaining blockers in the telemetry,
+  publication scanner, stacked-PR workflow, or database privacy changes.
+  `actionlint` accepted both workflows. Operator follow-ups remain open.
+
+Historical handoff checks:
+
+- 2026-09-13T03:51Z–03:54Z UTC: `pnpm akg:discover && pnpm akg:mermaid` then
+  `pnpm validate:ci` passed (exit 0). Rust fmt, Clippy with warnings denied, and
+  120 tests; Python Ruff, mypy, and 26 tests; Biome with no errors; AKG 8/8
+  invariants and 10/10 MCP protocol tests; script tests; web 1,588 tests passed
+  and 3 skipped; Worker 522; simulation 204; WASM and production builds;
+  `pnpm audit` with no known vulnerabilities; public-safety scan passed.
+- 2026-09-13T03:51Z UTC: `pnpm --filter @dicee/web exec vitest run
+  src/lib/server/ws-proxy` passed 13 tests in 2 files, including the workerd
+  runtime test for the immutable-header WebSocket re-wrap (P1-02).
+- 2026-09-13T03:51Z UTC: `wrangler deploy --dry-run` for `packages/cloudflare-do`
+  passed for the default (production) and `staging` targets on wrangler 4.113.0,
+  with the `GAME_ROOM`, `GLOBAL_LOBBY`, `AI`, and `ENVIRONMENT` bindings.
+- 2026-09-13T03:55Z UTC: `supabase db reset --local` applied all 23 migrations,
+  including `20260913000001` and `20260913000002`, and `supabase test db` passed
+  2 files and 47 tests.
+- 2026-09-13T04:04Z–04:07Z UTC: the committed tip `9ec6d7b` passed
+  `pnpm install --frozen-lockfile` and `pnpm validate:ci` in a clean worktree
+  with no `packages/web/.env`, using CI's placeholder public Supabase values.
+  Test counts matched the working-tree run, `svelte-check` reported 0 errors,
+  and the gate left no tracked or untracked changes, so the committed WASM and
+  AKG artifacts are reproducible.
+- `.claude/settings.json` sets `enabledMcpjsonServers` to `akg` and
+  `cloudflare-docs` and adds ask rules for deploy, secret, tail, migration,
+  1Password, and push commands plus deny rules for destructive Git commands.
+
+## Live readbacks
+
+A readback is URL or query, result (counts only for data), and timestamp from a
+command run by the operator or agent that records it. Never record secret values
+or account identifiers here.
+
+- 2026-09-13T04:32:34Z–04:32:35Z: GitHub
+  `GET https://api.github.com/repos/verlyn13/dicee/rulesets` returned HTTP 200
+  with zero rulesets; `GET .../branches/main/protection` returned HTTP 404
+  (unprotected); `GET .../environments` returned HTTP 200 with no required
+  reviewers or deployment branch policy on `Production`. Read-only observation;
+  no governance settings changed.
+- 2026-09-13T04:35:13Z–04:35:14Z: authenticated Cloudflare
+  `GET https://api.cloudflare.com/client/v4/accounts/{account}/pages/projects/dicee`
+  returned HTTP 200, `source: null`, production branch `main`.
+  `GET .../workers/scripts` returned HTTP 200 with `dicee` and
+  `dicee-production`. Their Workers Builds trigger reads returned HTTP 403
+  (error code 10000); trigger configuration remains unverified through this token.
+  Account identifiers are omitted. These reads do not prove ingress containment,
+  secret rotation, database remediation, or production deployment.
+- 2026-09-13T04:49:47Z: authenticated
+  `GET https://github.com/verlyn13/dicee/settings/installations` returned HTTP
+  200. The repository's Installed GitHub Apps page listed no Cloudflare Workers
+  and Pages app. Together with Pages `source: null`, this rules out the documented
+  native GitHub build integration for these branch pushes. This is an inference
+  from the repository access readback and Cloudflare's
+  [GitHub integration requirements](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/github-integration/).
+  The token's Workers Builds API access remains unverified; no app installation,
+  permission, or provider setting was changed.

@@ -6,9 +6,9 @@
  * - /room/:code → GameRoom (per-room for game state)
  */
 
+import { handleTranscribe } from './api/transcribe';
 import { GameRoom } from './GameRoom';
 import { GlobalLobby } from './GlobalLobby';
-import { handleTranscribe } from './api/transcribe';
 import type { Env } from './types';
 
 // Export Durable Object classes for Cloudflare

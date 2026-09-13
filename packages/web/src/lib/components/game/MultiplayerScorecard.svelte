@@ -5,6 +5,7 @@
  * Enhanced scorecard for multiplayer games with WASM analysis integration.
  * Shows scores, potential values, and statistical indicators (EV, optimal).
  */
+import { untrack } from 'svelte';
 import CategoryRow from '$lib/components/scorecard/CategoryRow.svelte';
 import ScorecardLegend from '$lib/components/scorecard/ScorecardLegend.svelte';
 import type { StatsProfile, TurnAnalysis } from '$lib/types';
@@ -39,7 +40,7 @@ let {
 }: Props = $props();
 
 // Local state for stats toggle (user can show/hide stats)
-let statsEnabled = $state(initialStatsEnabled);
+let statsEnabled = $state(untrack(() => initialStatsEnabled));
 
 function toggleStats() {
 	statsEnabled = !statsEnabled;

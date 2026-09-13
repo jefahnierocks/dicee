@@ -12,22 +12,18 @@
  * }
  */
 
-import type {
-	Hypothesis,
-	HypothesisTestResult,
-	HypothesisDirection,
-} from '../schemas/index.js';
+import type { Hypothesis, HypothesisDirection, HypothesisTestResult } from '../schemas/index.js';
 import {
+	approximatePValue,
 	calculateDescriptiveStats,
+	chiSquare2x2,
+	chiSquarePValue1DF,
+	cohensD,
+	interpretEffectSize,
+	pooledStandardDeviation,
 	tStatisticOneSample,
 	tStatisticTwoSample,
 	tStatisticWelch,
-	approximatePValue,
-	cohensD,
-	pooledStandardDeviation,
-	interpretEffectSize,
-	chiSquare2x2,
-	chiSquarePValue1DF,
 } from './statistics.js';
 
 // Note: welchDF is available in statistics.ts if exact t-distribution is needed
@@ -153,14 +149,7 @@ export function twoSampleTTest(
 	}
 
 	// Calculate t-statistic
-	const tStat = tStatisticTwoSample(
-		stats1.mean,
-		stats2.mean,
-		stats1.stdDev,
-		stats2.stdDev,
-		n1,
-		n2,
-	);
+	const tStat = tStatisticTwoSample(stats1.mean, stats2.mean, stats1.stdDev, stats2.stdDev, n1, n2);
 	// Note: df = n1 + n2 - 2 would be used with exact t-distribution
 
 	// Calculate p-value
@@ -234,14 +223,7 @@ export function welchTTest(
 	}
 
 	// Calculate t-statistic using Welch's formula
-	const tStat = tStatisticWelch(
-		stats1.mean,
-		stats2.mean,
-		stats1.stdDev,
-		stats2.stdDev,
-		n1,
-		n2,
-	);
+	const tStat = tStatisticWelch(stats1.mean, stats2.mean, stats1.stdDev, stats2.stdDev, n1, n2);
 	// Note: Welch-Satterthwaite df would be used with exact t-distribution
 
 	// Calculate p-value
@@ -439,7 +421,10 @@ export function testHypothesis(
 
 	switch (hypothesis.test) {
 		case 't_test_one_sample': {
-			const target = typeof hypothesis.target === 'number' ? hypothesis.target : (hypothesis.target.low + hypothesis.target.high) / 2;
+			const target =
+				typeof hypothesis.target === 'number'
+					? hypothesis.target
+					: (hypothesis.target.low + hypothesis.target.high) / 2;
 			baseResult = oneSampleTTest(values, target, hypothesis.direction, hypothesis.alpha);
 			break;
 		}
@@ -483,7 +468,10 @@ export function testHypothesis(
 			if (comparisonValues) {
 				baseResult = welchTTest(values, comparisonValues, hypothesis.direction, hypothesis.alpha);
 			} else {
-				const target = typeof hypothesis.target === 'number' ? hypothesis.target : (hypothesis.target.low + hypothesis.target.high) / 2;
+				const target =
+					typeof hypothesis.target === 'number'
+						? hypothesis.target
+						: (hypothesis.target.low + hypothesis.target.high) / 2;
 				baseResult = oneSampleTTest(values, target, hypothesis.direction, hypothesis.alpha);
 			}
 			break;
@@ -522,8 +510,12 @@ export function bonferroniCorrection(
 	return results.map((result) => ({
 		...result,
 		rejected: result.pValue < adjustedAlpha,
-		conclusion: result.pValue < adjustedAlpha
-			? result.conclusion.replace(/p=[\d.]+/, `p=${result.pValue.toFixed(4)}, adjusted α=${adjustedAlpha.toFixed(4)}`)
-			: `${result.conclusion} (Bonferroni adjusted α=${adjustedAlpha.toFixed(4)})`,
+		conclusion:
+			result.pValue < adjustedAlpha
+				? result.conclusion.replace(
+						/p=[\d.]+/,
+						`p=${result.pValue.toFixed(4)}, adjusted α=${adjustedAlpha.toFixed(4)}`,
+					)
+				: `${result.conclusion} (Bonferroni adjusted α=${adjustedAlpha.toFixed(4)})`,
 	}));
 }

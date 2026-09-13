@@ -1,5 +1,10 @@
 # Dicee Bug Reporter: Evidence-Based Implementation Plan
 
+> **Historical planning scope:** Cloudflare topology, `wrangler.toml`, binding,
+> AI, secret, and deployment examples in this January 2026 plan are not current
+> project authority. Use [`docs/cloudflare/README.md`](cloudflare/README.md) and
+> current source/configuration before implementing related work.
+
 **Document Type:** Implementation Design Document
 **Version:** 1.1
 **Date:** January 4, 2026

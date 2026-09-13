@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Literal
 
 import polars as pl
-from tqdm import tqdm
 
 from dicee_analysis.loaders.ndjson import load_decisions, load_games, load_turns
 
@@ -37,10 +36,10 @@ def games_to_parquet(
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     df = load_games(ndjson_path, progress=progress)
     df.write_parquet(output_path, compression=compression)
-    
+
     return output_path
 
 
@@ -65,10 +64,10 @@ def turns_to_parquet(
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     df = load_turns(ndjson_path, progress=progress)
     df.write_parquet(output_path, compression=compression)
-    
+
     return output_path
 
 
@@ -93,10 +92,10 @@ def decisions_to_parquet(
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     df = load_decisions(ndjson_path, progress=progress)
     df.write_parquet(output_path, compression=compression)
-    
+
     return output_path
 
 
@@ -122,9 +121,9 @@ def convert_to_parquet(
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     results: dict[str, Path] = {}
-    
+
     # Convert games
     games_ndjson = input_dir / "games.ndjson"
     if games_ndjson.exists():
@@ -135,7 +134,7 @@ def convert_to_parquet(
             compression=compression,
         )
         print(f"  → {results['games']}")
-    
+
     # Convert turns
     turns_ndjson = input_dir / "turns.ndjson"
     if turns_ndjson.exists():
@@ -146,7 +145,7 @@ def convert_to_parquet(
             compression=compression,
         )
         print(f"  → {results['turns']}")
-    
+
     # Convert decisions
     decisions_ndjson = input_dir / "decisions.ndjson"
     if decisions_ndjson.exists():
@@ -157,7 +156,7 @@ def convert_to_parquet(
             compression=compression,
         )
         print(f"  → {results['decisions']}")
-    
+
     return results
 
 

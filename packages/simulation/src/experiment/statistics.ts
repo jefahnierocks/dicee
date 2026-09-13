@@ -131,7 +131,11 @@ export function confidenceInterval(
 /**
  * Calculate width of a confidence interval
  */
-export function confidenceIntervalWidth(stdDev: number, n: number, confidence: 0.9 | 0.95 | 0.99 = 0.95): number {
+export function confidenceIntervalWidth(
+	stdDev: number,
+	n: number,
+	confidence: 0.9 | 0.95 | 0.99 = 0.95,
+): number {
 	const z = Z_VALUES[confidence];
 	const se = standardError(stdDev, n);
 	return 2 * z * se;
@@ -199,12 +203,7 @@ export function cohensD(mean1: number, mean2: number, pooledStdDev: number): num
 /**
  * Calculate pooled standard deviation for two groups
  */
-export function pooledStandardDeviation(
-	n1: number,
-	sd1: number,
-	n2: number,
-	sd2: number,
-): number {
+export function pooledStandardDeviation(n1: number, sd1: number, n2: number, sd2: number): number {
 	if (n1 + n2 <= 2) return 0;
 	const pooledVariance = ((n1 - 1) * sd1 ** 2 + (n2 - 1) * sd2 ** 2) / (n1 + n2 - 2);
 	return Math.sqrt(pooledVariance);
@@ -234,11 +233,7 @@ export function interpretEffectSize(d: number): EffectInterpretation {
  * @param power - Statistical power (default 0.80)
  * @returns Required sample size
  */
-export function sampleSizeOneSampleTTest(
-	effectSize: number,
-	alpha = 0.05,
-	power = 0.8,
-): number {
+export function sampleSizeOneSampleTTest(effectSize: number, alpha = 0.05, power = 0.8): number {
 	// Using simplified formula: n = (z_alpha + z_beta)^2 / d^2
 	// Where z_alpha is two-tailed and z_beta is one-tailed
 
@@ -247,7 +242,7 @@ export function sampleSizeOneSampleTTest(
 
 	if (effectSize === 0) return Infinity;
 
-	const n = ((zAlpha + zBeta) ** 2) / (effectSize ** 2);
+	const n = (zAlpha + zBeta) ** 2 / effectSize ** 2;
 	return Math.ceil(n);
 }
 
@@ -259,11 +254,7 @@ export function sampleSizeOneSampleTTest(
  * @param power - Statistical power (default 0.80)
  * @returns Required sample size per group
  */
-export function sampleSizeTwoSampleTTest(
-	effectSize: number,
-	alpha = 0.05,
-	power = 0.8,
-): number {
+export function sampleSizeTwoSampleTTest(effectSize: number, alpha = 0.05, power = 0.8): number {
 	// n per group = 2 * (z_alpha + z_beta)^2 / d^2
 	return Math.ceil(2 * sampleSizeOneSampleTTest(effectSize, alpha, power));
 }
@@ -292,8 +283,10 @@ export function sampleSizeProportionTest(
 	if (effect === 0) return Infinity;
 
 	const n =
-		((zAlpha * Math.sqrt(2 * pBar * (1 - pBar)) + zBeta * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) ** 2) /
-		(effect ** 2);
+		(zAlpha * Math.sqrt(2 * pBar * (1 - pBar)) +
+			zBeta * Math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))) **
+			2 /
+		effect ** 2;
 
 	return Math.ceil(n);
 }
@@ -327,7 +320,9 @@ export function sampleSizeForCIWidth(
  */
 export function getCriticalT(df: number, alpha: number): number {
 	// Find closest df in table
-	const dfs = Object.keys(T_TABLE).map(Number).sort((a, b) => a - b);
+	const dfs = Object.keys(T_TABLE)
+		.map(Number)
+		.sort((a, b) => a - b);
 	let closestDf = dfs[0];
 	for (const tableDf of dfs) {
 		if (tableDf <= df) closestDf = tableDf;
@@ -380,7 +375,7 @@ export function tStatisticWelch(
 	n1: number,
 	n2: number,
 ): number {
-	const se = Math.sqrt((sd1 ** 2) / n1 + (sd2 ** 2) / n2);
+	const se = Math.sqrt(sd1 ** 2 / n1 + sd2 ** 2 / n2);
 	if (se === 0) return 0;
 	return (mean1 - mean2) / se;
 }
@@ -389,10 +384,10 @@ export function tStatisticWelch(
  * Calculate Welch-Satterthwaite degrees of freedom
  */
 export function welchDF(sd1: number, sd2: number, n1: number, n2: number): number {
-	const v1 = (sd1 ** 2) / n1;
-	const v2 = (sd2 ** 2) / n2;
+	const v1 = sd1 ** 2 / n1;
+	const v2 = sd2 ** 2 / n2;
 	const numerator = (v1 + v2) ** 2;
-	const denominator = (v1 ** 2) / (n1 - 1) + (v2 ** 2) / (n2 - 1);
+	const denominator = v1 ** 2 / (n1 - 1) + v2 ** 2 / (n2 - 1);
 	return denominator === 0 ? 1 : numerator / denominator;
 }
 
@@ -456,7 +451,7 @@ export function chiSquare2x2(observed: [[number, number], [number, number]]): nu
 		for (let j = 0; j < 2; j++) {
 			const e = expected[i][j];
 			if (e > 0) {
-				chiSq += ((observed[i][j] - e) ** 2) / e;
+				chiSq += (observed[i][j] - e) ** 2 / e;
 			}
 		}
 	}

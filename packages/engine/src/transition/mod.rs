@@ -13,4 +13,4 @@ pub mod probability;
 pub mod table;
 
 pub use probability::Probability;
-pub use table::{TransitionEntry, TransitionTable, TRANSITION_TABLE};
+pub use table::{TRANSITION_TABLE, TransitionEntry, TransitionTable};

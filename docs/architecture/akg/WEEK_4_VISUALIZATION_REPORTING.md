@@ -175,7 +175,7 @@ For GitHub Actions (future):
     pnpm akg:check --sarif > akg.sarif
 
 - name: Upload SARIF
-  uses: github/codeql-action/upload-sarif@v3
+  uses: github/codeql-action/upload-sarif@<full-commit-sha>
   with:
     sarif_file: akg.sarif
 ```
