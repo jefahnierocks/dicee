@@ -5,18 +5,18 @@
  * progress tracking, and resume capability.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtemp, rm, readFile, writeFile, mkdir } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
-	NdjsonWriter,
-	NdjsonReader,
-	SimulationOutputWriter,
-	getProcessedSeeds,
 	getProcessedGameCount,
+	getProcessedSeeds,
+	NdjsonReader,
+	NdjsonWriter,
+	SimulationOutputWriter,
 } from '../batch/ndjson-writer.js';
-import { runBatchSingleThreaded, benchmark } from '../batch/single-threaded.js';
+import { benchmark, runBatchSingleThreaded } from '../batch/single-threaded.js';
 import type { GameResult } from '../schemas/index.js';
 
 // Helper to create a minimal valid GameResult

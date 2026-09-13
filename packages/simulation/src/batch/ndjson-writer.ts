@@ -11,11 +11,11 @@
  * await writer.close();
  */
 
+import type { WriteStream } from 'node:fs';
 import { createWriteStream, existsSync, readFileSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import type { WriteStream } from 'node:fs';
-import type { GameResult, TurnResult, DecisionResult } from '../schemas/index.js';
+import type { DecisionResult, GameResult, TurnResult } from '../schemas/index.js';
 
 /**
  * NDJSON writer for streaming results to disk

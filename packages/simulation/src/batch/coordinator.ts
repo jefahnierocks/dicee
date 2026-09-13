@@ -18,16 +18,16 @@
  * const result = await coordinator.run(simulationConfig);
  */
 
-import { WorkerPool, getRecommendedWorkerCount } from './worker-pool.js';
 import { SeededRandom } from '../core/seeded-random.js';
-import type { SimulationConfig, GameResult } from '../schemas/index.js';
+import type { GameResult, SimulationConfig } from '../schemas/index.js';
 import type {
-	BatchRunConfig,
-	ResolvedBatchRunConfig,
 	BatchResult,
+	BatchRunConfig,
 	ProgressCallback,
+	ResolvedBatchRunConfig,
 	WorkerStats,
 } from './types.js';
+import { getRecommendedWorkerCount, WorkerPool } from './worker-pool.js';
 
 /**
  * Default batch configuration values

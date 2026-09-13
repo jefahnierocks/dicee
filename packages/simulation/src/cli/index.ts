@@ -17,14 +17,14 @@
 
 // Argument parsing utilities
 export {
-	parseArgs,
-	getString,
-	getNumber,
-	getBoolean,
-	getList,
-	parseDuration,
 	formatDuration,
 	formatNumber,
-	printHelp,
+	getBoolean,
+	getList,
+	getNumber,
+	getString,
 	type ParsedArgs,
+	parseArgs,
+	parseDuration,
+	printHelp,
 } from './args.js';

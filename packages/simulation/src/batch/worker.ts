@@ -11,14 +11,14 @@
  */
 
 import { GameSimulator } from '../core/game-simulator.js';
-import type { SimulationConfig, GameResult } from '../schemas/index.js';
+import type { GameResult, SimulationConfig } from '../schemas/index.js';
 import type {
-	WorkerMessage,
-	InitMessage,
-	RunBatchMessage,
 	BatchCompleteMessage,
-	ProgressMessage,
 	ErrorMessage,
+	InitMessage,
+	ProgressMessage,
+	RunBatchMessage,
+	WorkerMessage,
 } from './types.js';
 
 // Worker state

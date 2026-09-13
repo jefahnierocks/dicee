@@ -4,42 +4,42 @@
  * Tests for SeededRandom, seeded dice, brain adapter, and game simulator.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import type {
+	DiceArray,
+	KeptMask,
+	SimulationBrain,
+	SimulationConfig,
+	SimulationContext,
+	SimulationDecision,
+	SimulationProfile,
+} from '../index.js';
 import {
-	SeededRandom,
-	createRandom,
-	rollDice,
-	rollDie,
-	rerollDice,
-	executeTurnRolls,
+	BrainRngAdapter,
 	countDice,
-	sortDice,
+	createRandom,
+	executeTurnRolls,
+	GameSimulator,
+	hasFullHouse,
+	hasLargeStraight,
 	hasNOfAKind,
 	hasSmallStraight,
-	hasLargeStraight,
-	hasFullHouse,
-	isDicee,
-	sumDice,
-	sumMatching,
 	indicesToMask,
-	maskToIndices,
+	isDicee,
 	KEEP_ALL,
 	KEEP_NONE,
 	MathRandomOverride,
-	BrainRngAdapter,
+	maskToIndices,
+	rerollDice,
+	rollDice,
+	rollDie,
+	runSingleGame,
+	SeededRandom,
+	sortDice,
+	sumDice,
+	sumMatching,
 	withDeterministicRandom,
 	withDeterministicRandomAsync,
-	GameSimulator,
-	runSingleGame,
-} from '../index.js';
-import type {
-	SimulationBrain,
-	SimulationProfile,
-	SimulationContext,
-	SimulationDecision,
-	DiceArray,
-	KeptMask,
-	SimulationConfig,
 } from '../index.js';
 
 // =============================================================================

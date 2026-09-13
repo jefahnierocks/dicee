@@ -13,61 +13,57 @@
  * });
  */
 
-// Seeded random number generation
-export {
-	SeededRandom,
-	createRandom,
-	type RandomSource,
-} from './seeded-random.js';
-
-// Deterministic dice generation
-export {
-	rollDie,
-	rollDice,
-	rerollDice,
-	executeTurnRolls,
-	countDice,
-	sortDice,
-	hasNOfAKind,
-	hasSmallStraight,
-	hasLargeStraight,
-	hasFullHouse,
-	isDicee,
-	sumDice,
-	sumMatching,
-	indicesToMask,
-	maskToIndices,
-	KEEP_ALL,
-	KEEP_NONE,
-	type TurnRolls,
-} from './seeded-dice.js';
-
 // Brain RNG adapter
 export {
-	MathRandomOverride,
 	BrainRngAdapter,
 	createAdaptedBrain,
-	withDeterministicRandom,
-	withDeterministicRandomAsync,
+	MathRandomOverride,
 	type SimulationBrain,
-	type SimulationProfile,
-	type SimulationTraits,
-	type SimulationTiming,
 	type SimulationContext,
 	type SimulationDecision,
+	type SimulationProfile,
+	type SimulationTiming,
+	type SimulationTraits,
+	withDeterministicRandom,
+	withDeterministicRandomAsync,
 } from './brain-adapter.js';
-
 // Game simulator
 export {
 	GameSimulator,
-	runSingleGame,
 	type GameSimulatorConfig,
+	runSingleGame,
 } from './game-simulator.js';
-
 // Phase-shifting brains
 export {
-	PhaseShiftingBrain,
 	createPhaseShiftingBrain,
+	PhaseShiftingBrain,
 	type PhaseShiftingConfig,
 	type PhaseShiftingVariant,
 } from './phase-shifting-brain.js';
+// Deterministic dice generation
+export {
+	countDice,
+	executeTurnRolls,
+	hasFullHouse,
+	hasLargeStraight,
+	hasNOfAKind,
+	hasSmallStraight,
+	indicesToMask,
+	isDicee,
+	KEEP_ALL,
+	KEEP_NONE,
+	maskToIndices,
+	rerollDice,
+	rollDice,
+	rollDie,
+	sortDice,
+	sumDice,
+	sumMatching,
+	type TurnRolls,
+} from './seeded-dice.js';
+// Seeded random number generation
+export {
+	createRandom,
+	type RandomSource,
+	SeededRandom,
+} from './seeded-random.js';

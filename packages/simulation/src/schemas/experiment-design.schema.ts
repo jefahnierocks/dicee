@@ -228,7 +228,7 @@ export const HypothesisSchema = z.object({
 	alpha: z.number().min(0.001).max(0.1).default(0.05),
 
 	/** Desired statistical power (1 - Type II error rate) */
-	power: z.number().min(0.7).max(0.99).default(0.80),
+	power: z.number().min(0.7).max(0.99).default(0.8),
 
 	/** Rationale for this hypothesis */
 	rationale: z.string().min(20),
@@ -534,7 +534,7 @@ export function calculateRequiredSampleSize(options: {
 	const zAlpha = alpha === 0.05 ? 1.96 : alpha === 0.01 ? 2.576 : 1.645;
 	const zBeta = power === 0.8 ? 0.842 : power === 0.9 ? 1.282 : power === 0.95 ? 1.645 : 0.842;
 
-	const n = 2 * Math.pow((zAlpha + zBeta) / effectSize, 2);
+	const n = 2 * ((zAlpha + zBeta) / effectSize) ** 2;
 	return Math.ceil(n);
 }
 

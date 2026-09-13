@@ -13,14 +13,12 @@
  * });
  */
 
-// Re-export all schemas for convenience
-export * from './schemas/index.js';
-
-// Re-export core simulation engine
-export * from './core/index.js';
-
 // Re-export batch processing
 export * from './batch/index.js';
 
+// Re-export core simulation engine
+export * from './core/index.js';
 // Re-export experiment framework
 export * from './experiment/index.js';
+// Re-export all schemas for convenience
+export * from './schemas/index.js';

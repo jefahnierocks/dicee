@@ -18,16 +18,16 @@
  * });
  */
 
-import { GameSimulator } from '../core/game-simulator.js';
-import { SeededRandom } from '../core/seeded-random.js';
-import type { SimulationConfig, GameResult } from '../schemas/index.js';
-import type { BatchRunProgress, BatchResult, ProgressCallback } from './types.js';
-import { SimulationOutputWriter, getProcessedGameCount } from './ndjson-writer.js';
 import {
-	initializeBrains,
 	createSimulationBrain,
 	getSimulationProfile,
+	initializeBrains,
 } from '../core/cloudflare-brain-integration.js';
+import { GameSimulator } from '../core/game-simulator.js';
+import { SeededRandom } from '../core/seeded-random.js';
+import type { GameResult, SimulationConfig } from '../schemas/index.js';
+import { getProcessedGameCount, SimulationOutputWriter } from './ndjson-writer.js';
+import type { BatchResult, BatchRunProgress, ProgressCallback } from './types.js';
 
 /**
  * Options for single-threaded batch runner
