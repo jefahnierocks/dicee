@@ -31,13 +31,14 @@ through an explicit manual dispatch with `deploy=true` on `main`.
 ## Review and validation evidence
 
 Independent reviewers inspected runtime security, commit dependencies, database
-compatibility, and publication controls. The baseline fixes the first four
+compatibility, and publication controls. The baseline fixes the first five
 findings below; the separately tested database changes belong to the second PR:
 
 - nested private environment filenames missed by the publication scan;
 - telemetry payload URLs and query strings surviving privacy normalization;
 - stacked PRs excluded by workflow branch filters;
 - Git fixture tests inheriting hook variables and altering the parent repository;
+- CI relying on an uninstalled `ripgrep` dependency for the publication scan;
 - stale database types and missing security-specific tests for migration
   `20260913000002` (owned by the second PR).
 
