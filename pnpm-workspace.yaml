@@ -22,7 +22,7 @@ catalog:
   '@dicebear/core': 9.4.3
   '@modelcontextprotocol/sdk': 1.30.0
   '@playwright/test': 1.63.0
-  '@supabase/ssr': 0.12.3
+  '@supabase/ssr': 0.12.7
   '@supabase/supabase-js': 2.116.0
   '@sveltejs/adapter-cloudflare': 7.2.9
   '@sveltejs/kit': 2.70.3
@@ -31,7 +31,7 @@ catalog:
   '@testing-library/svelte': 5.4.2
   '@testing-library/user-event': 14.6.7
   '@types/node': 24.13.4
-  jsdom: 29.1.1
+  jsdom: 30.0.1
   jose: 6.2.12
   lefthook: 2.1.12
   # Must equal the exact miniflare version wrangler depends on, so workerd
@@ -47,7 +47,7 @@ catalog:
   typescript: 6.0.3
   vite: 8.2.2
   vite-plugin-wasm: 3.6.0
-  vitest: 4.1.11
+  vitest: 5.0.0
   vitest-axe: 0.1.0
   wasm-pack: 0.15.0
   # Held on the miniflare 4 line: wrangler 4.117.0 and later depend on a
