@@ -118,13 +118,16 @@ Safe without deploy authority: `wrangler types`, `types:check`, `wrangler deploy
 2. `deploy-worker`: the Production environment, a `production-deploy` concurrency group that is never cancelled, builds `@dicee/shared`, then `wrangler deploy --env=""`.
 3. `deploy-pages`: reuses the validated WASM artifact, builds shared and web, then runs `pages deploy` to project `dicee`.
 
-`deploy-pages` needs `deploy-worker`, so CI cannot deploy Pages alone. Use CI only when live check 1 shows the `dicee` script holds both the `GameRoom` and `GlobalLobby` namespaces at migration tag v2. Otherwise deploy no Worker: a Pages-only deploy is the operator-local `pnpm pages:deploy` (status action 3); read the local Pages build environment warning below first.
+`deploy-pages` needs `deploy-worker`, so CI cannot deploy Pages alone. Complete the credential and GitHub protection prerequisites in [roadmap section 1](roadmap.md#1-safety-now) first. Use CI only when live checks 1-2 show that `dicee` owns both SQLite classes at v2 without competing ownership and Pages targets that backend. Review the exact release configuration and migrations as well; ownership is a deployment prerequisite, not approval of every later artifact.
+
+A Pages-only release uses the operator-local `pnpm pages:deploy` (status action 3). It is not automatically safe when Worker ownership is different or unknown: committed production and preview settings both target `dicee`, and this command does not preserve an arbitrary dashboard binding. Stop until the verified backend and release configuration agree. Use a clean checkout of the exact successful CI commit and read the local Pages build environment warning below.
 
 **Operator escape hatches** skip the validation gate and need explicit authority:
 
 - Root `pnpm do:deploy`, `pnpm pages:deploy`, `pnpm pages:deploy:preview`, `pnpm deploy` and `pnpm do:tail` wrap wrangler in `scripts/with-dicee-cloudflare.sh`.
 - The package `deploy`, `deploy:staging`, `tail` and `pages:deploy` scripts run wrangler unwrapped.
 - The wrapper is a convention, not a boundary: a stored Wrangler login authenticates without it.
+- The current wrapper passes credential assignments as arguments to an intermediate `env` process. Its shell-export/direct-exec fix is pending in the roadmap; resolve it before the next credential-backed operation.
 - **Local Pages build environment.** `pnpm pages:deploy` runs `pnpm build` before the wrapper, which adds only Cloudflare credentials. `vite build` inlines `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` (`$env/static/public`) from the shell. It falls back to the ignored `packages/web/.env*` files (`.env`, `.env.local`, `.env.production`, `.env.production.local`), which hold local development values. Before the build, export both production public values in the same shell. Exported values override the files, but if either name is unexported, the build uses the file value without warning. The post-deploy sign-in check must pass against production.
 
 **Local proof:** `pnpm --filter @dicee/cloudflare-do exec wrangler deploy --dry-run --env=""`. It proves the bundle builds and the bindings resolve. It gives no lifecycle signal and does not check `secrets.required`.
@@ -149,8 +152,8 @@ Safe without deploy authority: `wrangler types`, `types:check`, `wrangler deploy
 
 Use read-only methods only: the dashboard or a read-scoped API `GET`. Record each result in the [status.md](status.md) readbacks as names, counts and HTTP status. Never record account, zone or namespace ids, subdomains, project refs or secret values.
 
-1. **Namespace owner.** Which Worker script holds the live `GameRoom` and `GlobalLobby` namespaces (class, script, SQLite), its migration tag where a read-only source shows it, and the deployed version. Method: dashboard, or a read-scoped `GET` of the account's Durable Object namespace list. A Worker deploy proceeds only when this shows `dicee` holds both namespaces at v2.
-2. **Pages binding.** What Pages `GAME_WORKER` targets, and whether live Pages settings (compatibility date, flags, preview binding) match `packages/web/wrangler.jsonc`. Method: dashboard, or `wrangler pages download config` into a scratch directory outside the repository (never with `--force`).
+1. **Namespace owner.** Which Worker scripts hold the live `GameRoom` and `GlobalLobby` namespaces (class, script, SQLite), their migration tags where a read-only source shows them, and the deployed versions. Method: dashboard, or a read-scoped `GET` of the account's Durable Object namespace list. A Worker deploy proceeds only when `dicee` holds both SQLite namespaces at v2 without competing or ambiguous ownership, and check 2 establishes the expected Pages target.
+2. **Pages binding.** What production and preview `GAME_WORKER` target, and whether live settings (compatibility date, flags, bindings) agree with `packages/web/wrangler.jsonc`. Method: dashboard, or `wrangler pages download config` into a private scratch directory outside the repository (never with `--force`). Inspect this before either deployment path; a different or unknown target requires reconciliation, not an unconditional Pages-only fallback.
 3. **Subdomains.** workers.dev and Preview URL state on every Dicee Worker script. Method: each script's domains and routes settings in the dashboard.
 4. **Legacy scripts.** Routes, custom domains and last deployment on every Dicee Worker script other than the one check 1 identifies.
 5. **Secret names.** Secret names on each script and on the Pages project; `wrangler secret list` and `wrangler pages secret list` return names only.
