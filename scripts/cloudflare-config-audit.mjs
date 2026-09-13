@@ -7,9 +7,7 @@
  *     B1  workers_dev is explicitly false, and no named environment overrides it
  *     B1P preview_urls is explicitly false, and no named environment overrides it
  *     B2  exactly one Durable Object lifecycle mode is declared: `migrations` or `exports`
- *     B3  that mode is the one ADR-005 authorises (docs/rfcs/adr-005-durable-object-lifecycle.md):
- *         `migrations` while ADR-005 is not accepted; the ADR's declared **Lifecycle mode:**
- *         once it is accepted
+ *     B3  the lifecycle mode is `migrations` (docs/status.md decision 1)
  *     B3E lifecycle keys are declared only at the top level (both are inheritable)
  *     B2H migrations mode: the array begins with the already-applied history, unedited
  *     B2N migrations mode: no unapplied lifecycle step is pending                (advisory)
@@ -37,12 +35,11 @@
  *   both files
  *     X1  no hardcoded Cloudflare account id or API token literal
  *     X2  no wrangler.toml beside either wrangler.jsonc (working tree)
- *     G1  both wrangler.jsonc files are tracked by git                        (advisory)
  *
  * WHY
- *   None of these invariants is covered by any test, lint rule, or CI step in this
- *   repository today. `pnpm validate` cannot detect workers_dev or preview_urls flipping to
- *   true, the Durable Object lifecycle mode drifting away from what ADR-005 authorises, an
+ *   No other test, lint rule, or CI step in this repository covers these invariants.
+ *   Type checks and a dry run cannot detect workers_dev or preview_urls flipping to
+ *   true, the Durable Object lifecycle mode drifting away from the authorised one, an
  *   applied migration tag being edited, a storage binding being added to the frontend, or a
  *   secret being read in source but never declared. This script turns those from
  *   reviewer memory into a command.
@@ -55,23 +52,6 @@
  *   namespaces exist, or whether any route is attached. Those are operator-only checks
  *   against the live account.
  *
- *   One exception to "no subprocess": G1 shells out to `git ls-files` (read-only, no
- *   network, no credentials) to answer whether the configs are tracked. It runs only when
- *   a .git directory is present and degrades to a warn if git is unavailable. Nothing else
- *   in this script spawns anything.
- *
- * WHICH STATE EACH CHECK ASSERTS OVER — read this before believing an X2 or G1 result
- *   Every check except G1 reads the WORKING TREE, not HEAD. That distinction is load-
- *   bearing right now, because the two states disagree:
- *     working tree — packages/{cloudflare-do,web}/wrangler.jsonc exist; both
- *                    wrangler.toml files are deleted. X2 therefore PASSES today.
- *     HEAD         — the opposite: both wrangler.toml files are tracked and neither
- *                    wrangler.jsonc is. A run against a fresh actions/checkout would fail
- *                    B0/F0 (no config to read) and X2 (wrangler.toml present).
- *   G1 is the only check that looks at git, and it exists precisely to surface that gap:
- *   it warns while the .jsonc files are untracked. X2 passing and G1 warning at the same
- *   time is the expected, correct reading of today's repository — not a contradiction.
- *
  * SEVERITY MODEL
  *   error  must fix — exits non-zero always
  *   warn   advisory — exits non-zero only under --strict
@@ -79,29 +59,17 @@
  *   Without --strict this script exits 0 on the repository's current configuration, so it
  *   can be adopted without disturbing the existing gate.
  *
- * WIRING IT INTO A GATE LATER  (read this before adding a CI step)
- *   Both wrangler.jsonc files are currently UNTRACKED. `git ls-tree -r HEAD` contains only
- *   packages/{cloudflare-do,web}/wrangler.toml. GitHub Actions runs actions/checkout, which
- *   materialises HEAD — so a CI step added today would find no wrangler.jsonc to read and
- *   would fail on its first run no matter how clean the working tree is. Local green is not
- *   evidence of CI green.
- *   Order of adoption:
- *     1. commit both wrangler.jsonc files and remove the staged-deleted wrangler.toml files
- *     2. then add `node scripts/cloudflare-config-audit.mjs` to CI (non-strict first)
- *     3. a lefthook pre-commit entry globbed to packages/{web,cloudflare-do}/wrangler.jsonc
- *        will not fire while those files are unstaged — glob-scoped hooks match staged paths
- *     4. promote to --strict only once every warn-severity finding is resolved or retired
- *   Adding it to `pnpm validate` is deliberately left to the primary agent; this script does
- *   not modify package.json.
+ * GATE
+ *   Wired: `pnpm lint` runs `pnpm cf:audit` (non-strict). `--strict` also fails on warnings;
+ *   promote when the warnings in `docs/cloudflare.md` 'Open decisions' are resolved.
  *
  * USAGE
  *   node scripts/cloudflare-config-audit.mjs            # advisory, exit 0 unless an error
  *   node scripts/cloudflare-config-audit.mjs --strict   # warnings also exit non-zero
  *   node scripts/cloudflare-config-audit.mjs --json     # machine-readable, deterministic
- *   node scripts/cloudflare-config-audit.mjs --self-test # prove the JSONC reader
+ *   node scripts/cloudflare-config-audit.mjs --self-test # run the self-test
  */
 
-import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -113,7 +81,7 @@ const FRONTEND_CONFIG = 'packages/web/wrangler.jsonc';
 const BACKEND_SRC = 'packages/cloudflare-do/src';
 const BACKEND_ENTRY = 'packages/cloudflare-do/src/worker.ts';
 const LEGACY_TOML = ['packages/cloudflare-do/wrangler.toml', 'packages/web/wrangler.toml'];
-const ADR_005 = 'docs/rfcs/adr-005-durable-object-lifecycle.md';
+const AUTHORIZED_LIFECYCLE_MODE = 'migrations'; // docs/status.md decision 1; changing it is a one-way door (standalone operator deploy)
 
 /* ────────────────────────────────────────────────────────────────────────────
  * Durable Object lifecycle mode
@@ -122,17 +90,17 @@ const ADR_005 = 'docs/rfcs/adr-005-durable-object-lifecycle.md';
  * the legacy `migrations` array and the declarative `exports` map. Moving a deployed
  * Worker from `migrations` to `exports` is a one-way door (no return to `migrations`,
  * no rollback across the change), so which mode the config may carry is an
- * architecture decision owned by ADR-005, not a config preference.
+ * owner decision (docs/status.md decision 1), not a config preference.
  *
- *   ADR-005 not accepted  -> `migrations` is the only permitted mode (owner decision,
- *                            2026-09-12: the baseline keeps the applied v1/v2 history;
- *                            `exports` is deferred to a standalone operator deploy).
- *   ADR-005 accepted      -> the mode named on the ADR's `**Lifecycle mode:**` line.
+ *   Only `migrations` is authorised (docs/status.md decision 1). Adopting `exports`
+ *   requires a recorded concrete need, a change to AUTHORIZED_LIFECYCLE_MODE, and a
+ *   standalone operator deploy.
  *
- * APPLIED_MIGRATIONS is the history HEAD's wrangler.toml applied
+ * APPLIED_MIGRATIONS is the history the previous wrangler.toml (commit 2c3e875) applied
  * (`git show 2c3e875:packages/cloudflare-do/wrangler.toml`, lines 26-32, repeated
  * under [env.production] at 60-66). It is repository history, not live state: which
- * script carries which migration tag is an operator question (OPS-02, OPS-04).
+ * script carries which migration tag is an operator question (see docs/cloudflare.md,
+ * Live checks still needed).
  * Wrangler uploads only the steps after the tag the live script already carries, so
  * editing or reordering an applied step silently changes what a deploy would send.
  * Append a new tag here only after the operator deploy that applies it.
@@ -230,8 +198,8 @@ const INHERITED_KEYS = [
  * Ingress keys that must not appear in the frontend config.
  *
  * The Pages project's hostnames are attached out-of-band; declaring a route here would
- * make ingress implicit and split-brained across two places. Adding any of these is a
- * CF-D07 decision, not a config tweak.
+ * make ingress implicit and split-brained across two places. Adding any of these is an
+ * ingress decision, not a config tweak.
  */
 const FRONTEND_INGRESS_KEYS = ['route', 'routes', 'custom_domain'];
 
@@ -758,51 +726,6 @@ export function appliedHistoryMismatch(migrations, applied = APPLIED_MIGRATIONS)
 }
 
 /**
- * Read the status and declared lifecycle mode from ADR-005's header.
- *
- * @param {string} markdown
- * @returns {{status: string | null, accepted: boolean, declaredMode: 'migrations'|'exports'|null}}
- */
-export function parseAdrLifecycle(markdown) {
-	const statusMatch = markdown.match(/^\*\*ADR Status:\*\*[ \t]*(.+?)[ \t]*$/m);
-	const status = statusMatch ? statusMatch[1] : null;
-	const modeMatch = markdown.match(/^\*\*Lifecycle mode:\*\*[ \t]*`?(migrations|exports)`?/m);
-	return {
-		status,
-		accepted: status !== null && /^accepted\b/i.test(status),
-		declaredMode: modeMatch ? /** @type {'migrations'|'exports'} */ (modeMatch[1]) : null,
-	};
-}
-
-/**
- * The lifecycle mode ADR-005 authorises right now.
- *
- * @param {{status: string | null, accepted: boolean, declaredMode: 'migrations'|'exports'|null} | null} adr
- *   null when the ADR file could not be read
- * @returns {{mode: 'migrations'|'exports'|null, reason: string}}
- */
-export function expectedLifecycleMode(adr) {
-	if (adr === null) return { mode: null, reason: `${ADR_005} could not be read` };
-	if (adr.status === null) return { mode: null, reason: `${ADR_005} has no **ADR Status:** line` };
-	if (!adr.accepted) {
-		return {
-			mode: 'migrations',
-			reason: `ADR-005 status is "${adr.status}" — not accepted, so only the baseline \`migrations\` mode is authorised`,
-		};
-	}
-	if (adr.declaredMode === null) {
-		return {
-			mode: null,
-			reason: 'ADR-005 is accepted but its header declares no **Lifecycle mode:** line',
-		};
-	}
-	return {
-		mode: adr.declaredMode,
-		reason: `ADR-005 is accepted and declares **Lifecycle mode:** \`${adr.declaredMode}\``,
-	};
-}
-
-/**
  * Blocks that expose `key` as anything other than `false`. The top level must set it
  * explicitly; a named environment is flagged only when it overrides the inherited value.
  *
@@ -988,11 +911,8 @@ function auditBackend() {
 		`preview_urls must be explicitly false: ${previewHits.join(', ')}. When the key is unset, wrangler 4.113.0 sends no value and the platform default applies; an explicit false keeps per-version Preview URLs off whatever that default becomes.`,
 	);
 
-	// B2 / B3 / B3E — exactly one lifecycle mode, the one ADR-005 authorises, top level only.
+	// B2 / B3 / B3E — exactly one lifecycle mode, the authorised one, top level only.
 	const lifecycle = lifecycleMode(cfg);
-	const adrAbs = join(ROOT, ADR_005);
-	const adr = existsSync(adrAbs) ? parseAdrLifecycle(readFileSync(adrAbs, 'utf8')) : null;
-	const expected = expectedLifecycleMode(adr);
 
 	assert(
 		'B2',
@@ -1007,13 +927,11 @@ function auditBackend() {
 
 	assert(
 		'B3',
-		expected.mode !== null && lifecycle.mode === expected.mode,
+		lifecycle.mode === AUTHORIZED_LIFECYCLE_MODE,
 		'error',
 		file,
-		`lifecycle mode \`${lifecycle.mode}\` is the one ADR-005 authorises (${expected.reason})`,
-		expected.mode === null
-			? `cannot key the lifecycle mode to ADR-005: ${expected.reason}`
-			: `lifecycle mode is \`${lifecycle.mode}\`, but ${expected.reason}. Adopting \`exports\` is irreversible (no return to \`migrations\`, no rollback across the change) and ships only as a standalone operator deploy after ADR-005 is accepted.`,
+		'lifecycle mode is migrations (docs/status.md decision 1)',
+		`lifecycle mode is \`${lifecycle.mode}\`, but only migrations is authorised; adopting exports is irreversible and ships only as a standalone operator deploy`,
 	);
 
 	assert(
@@ -1065,7 +983,7 @@ function auditBackend() {
 				.map((s) => JSON.stringify(isPlainObject(s) ? s.tag : s))
 				.join(
 					', ',
-				)}. A new step is a Durable Object lifecycle change: follow ADR-005, deploy it on its own, then record it in APPLIED_MIGRATIONS.`,
+				)}. A new step is a Durable Object lifecycle change: record the need in docs/status.md, deploy it on its own, then record it in APPLIED_MIGRATIONS.`,
 		);
 	}
 
@@ -1225,10 +1143,10 @@ function auditDeclaredVars(cfg, file) {
 	// WARN, NOT ERROR — DELIBERATE. This fires today on ENVIRONMENT, which is
 	// declared in all three `vars` blocks of the backend config and is read nowhere
 	// in packages/cloudflare-do/src outside __tests__ (which collectSources excludes).
-	// That is a real, open finding tracked in docs/cloudflare/risk-register.md, not a
+	// That is an open finding listed in docs/cloudflare.md (Open decisions), not a
 	// bug in this check; it is held at warn so that adopting this script does not
-	// break the existing gate. Promote to 'error' once the register entry is resolved
-	// — either by reading the var or by deleting it.
+	// break the existing gate. Promote to 'error' once it is resolved — either by
+	// reading the var or by deleting it.
 	assert(
 		'B11',
 		unread.length === 0,
@@ -1238,7 +1156,7 @@ function auditDeclaredVars(cfg, file) {
 		`vars declared but never read as \`env.NAME\` in ${BACKEND_SRC}: ${unread
 			.map((n) => `${n} (${vars.get(n).join(', ')})`)
 			.join('; ')}`,
-		'test files are excluded from the source scan, so a var used only in __tests__ counts as unread; tracked in docs/cloudflare/risk-register.md',
+		'test files are excluded from the source scan, so a var used only in __tests__ counts as unread; see docs/cloudflare.md',
 	);
 }
 
@@ -1293,10 +1211,10 @@ function auditSecretNames(required, file) {
 	// and packages/cloudflare-do/src/api/transcribe.ts but is absent from every
 	// secrets.required block (the config's own trailing comment names it as an
 	// out-of-band `wrangler secret put` item, and src/types.ts declares it optional
-	// by hand). That is a real, open finding tracked in
-	// docs/cloudflare/risk-register.md — it is not suppressed here, only held at
-	// warn so that adopting this script does not break the existing gate. Promote
-	// it to 'error' once the register entry is resolved.
+	// by hand). That is an open finding listed in docs/cloudflare.md (Open
+	// decisions) — it is not suppressed here, only held at warn so that adopting this
+	// script does not break the existing gate. Promote it to 'error' once HS256
+	// removal resolves it.
 	const envReads = new Set();
 	for (const m of corpus.matchAll(/\benv\.([A-Z][A-Z0-9_]*)\b/g)) envReads.add(m[1]);
 
@@ -1314,7 +1232,7 @@ function auditSecretNames(required, file) {
 		file,
 		'every Supabase secret read as `env.NAME` in source is declared in secrets.required',
 		`read in ${BACKEND_SRC} as env.NAME but absent from secrets.required: ${undeclared.join(', ')}`,
-		'undeclared secrets get no deploy-time presence validation and are omitted from generated types; tracked in docs/cloudflare/risk-register.md',
+		'undeclared secrets get no deploy-time presence validation and are omitted from generated types; see docs/cloudflare.md',
 	);
 }
 
@@ -1369,8 +1287,7 @@ function auditFrontend(backendNames) {
  * packages/web/src/routes proxy through `platform.env.GAME_WORKER`
  * (`grep -rln GAME_WORKER packages/web/src/routes --include='+server.ts'` returns ten;
  * api/telemetry and auth/callback do not proxy). A service binding names its target by
- * string. Renaming the backend Worker — which CF-D03 proposes doing, `dicee` to
- * `dicee-game-{env}` — without updating this string leaves a binding pointing at a
+ * string. A Worker rename without updating this string leaves a binding pointing at a
  * Worker that does not exist, and every one of those ten routes starts returning 503.
  * No test, typecheck, or CI job in this repository catches it, because no CI job
  * deploys the Worker and the binding target is not a TypeScript symbol.
@@ -1378,7 +1295,7 @@ function auditFrontend(backendNames) {
  * The top-level binding is held to strict equality with the backend's top-level `name`.
  * A binding inside a named environment may target any name the backend config can
  * resolve to (see resolvableWorkerNames) — otherwise this check would become a
- * false positive the moment CF-D03/CF-D13 give each environment its own Worker, and a
+ * false positive the moment each environment gets its own Worker, and a
  * check that must be disabled to make progress gets disabled.
  *
  * @param {any} cfg parsed frontend config
@@ -1451,11 +1368,8 @@ function auditServiceBinding(cfg, backendNames, file) {
 
 	// WARN, NOT ERROR — DELIBERATE. This fires today: env.preview binds
 	// service "dicee", the same Worker the top-level (production) block binds. That
-	// is a real, open finding tracked in docs/cloudflare/risk-register.md, held at
-	// warn so that adopting this script does not break the existing gate. Resolving
-	// it depends on CF-D03 (backend identity `dicee` -> `dicee-game-{env}`) and
-	// CF-D13 (named environments on the DO Worker); promote to 'error' once a
-	// per-environment backend Worker exists to point at.
+	// is an open finding listed in docs/cloudflare.md (Open decisions); promote to
+	// 'error' once preview has its own backend Worker.
 	assert(
 		'F7',
 		sharedWithProduction.length === 0,
@@ -1465,7 +1379,7 @@ function auditServiceBinding(cfg, backendNames, file) {
 		`named environment(s) bound to the same backend Worker as production: ${sharedWithProduction.join(
 			', ',
 		)} — preview traffic reaches production Durable Object state`,
-		'depends on CF-D03 and CF-D13; tracked in docs/cloudflare/risk-register.md',
+		'see docs/cloudflare.md (preview shares the production Worker)',
 	);
 }
 
@@ -1482,7 +1396,7 @@ function auditFrontendIngress(cfg, file) {
 		'error',
 		file,
 		`declares no ingress key (${FRONTEND_INGRESS_KEYS.join(', ')})`,
-		`frontend config declares ingress key(s): ${hits.join(', ')}. Attaching hostnames from this file is a CF-D07 decision (custom domains via Wrangler \`routes\`), not a config tweak; until that decision lands, hostname attachment stays out-of-band and this file stays free of route declarations.`,
+		`frontend config declares ingress key(s): ${hits.join(', ')}. Attaching hostnames from this file is an ingress decision, not a config tweak; hostname attachment stays out-of-band and this file stays free of route declarations.`,
 	);
 }
 
@@ -1491,11 +1405,9 @@ function auditFrontendIngress(cfg, file) {
 const REPO_SCOPE = '(repository)';
 
 /**
- * X2 and G1 — the two checks that are about the repository rather than a config's
- * contents. See the "WHICH STATE EACH CHECK ASSERTS OVER" note in the header: X2 reads
- * the working tree, G1 reads git. They disagree today, and that is the point.
+ * X2 — no legacy wrangler.toml beside a wrangler.jsonc (working tree).
  */
-function auditRepoState() {
+function auditLegacyToml() {
 	// X2 — no wrangler.toml beside a wrangler.jsonc.
 	//
 	// Two config files for one Worker is not a merge conflict waiting to happen, it is
@@ -1503,10 +1415,6 @@ function auditRepoState() {
 	// .toml that still carries `compatibility_date = "2025-01-01"` and a legacy
 	// [[migrations]] array reads as authoritative to every human and every agent while
 	// being ignored by the tool.
-	//
-	// This asserts over the WORKING TREE. Both .toml files are deleted there, so it
-	// passes. At HEAD both are still tracked (the deletions are unstaged) — that is
-	// G1's business, not X2's.
 	const stray = LEGACY_TOML.filter((rel) => existsSync(join(ROOT, rel)));
 	assert(
 		'X2',
@@ -1515,65 +1423,6 @@ function auditRepoState() {
 		REPO_SCOPE,
 		`no legacy wrangler.toml in the working tree (checked: ${LEGACY_TOML.join(', ')})`,
 		`wrangler.toml present alongside wrangler.jsonc: ${stray.join(', ')}. Wrangler resolves .jsonc first, so the .toml is inert but still reads as authoritative — delete it.`,
-	);
-
-	// G1 — are the .jsonc configs actually tracked?
-	//
-	// The only check in this script that looks at git rather than the filesystem, and
-	// the only one that spawns a subprocess. `git ls-files` is read-only, touches no
-	// remote, and needs no credential.
-	if (!existsSync(join(ROOT, '.git'))) {
-		record('G1', 'warn', REPO_SCOPE, 'no .git directory found; tracked-ness check skipped');
-		return;
-	}
-
-	let tracked;
-	try {
-		const stdout = execFileSync(
-			'git',
-			['ls-files', '--', ...LEGACY_TOML, BACKEND_CONFIG, FRONTEND_CONFIG],
-			{
-				cwd: ROOT,
-				encoding: 'utf8',
-				stdio: ['ignore', 'pipe', 'ignore'],
-			},
-		);
-		tracked = new Set(
-			stdout
-				.split('\n')
-				.map((s) => s.trim())
-				.filter(Boolean),
-		);
-	} catch (err) {
-		record('G1', 'warn', REPO_SCOPE, `could not run \`git ls-files\`: ${err.message}`);
-		return;
-	}
-
-	const untracked = [BACKEND_CONFIG, FRONTEND_CONFIG].filter((rel) => !tracked.has(rel));
-	const tomlStillTracked = LEGACY_TOML.filter((rel) => tracked.has(rel));
-
-	// WARN, NOT ERROR — DELIBERATE, and this one is structural rather than a
-	// judgement call: making it an error would mean this script cannot be adopted
-	// until the very commit it is meant to guard has already landed. It fires today
-	// on both counts — neither wrangler.jsonc is tracked and both wrangler.toml files
-	// still are. That is a real, open finding tracked in
-	// docs/cloudflare/risk-register.md (see also CF-D09, commit and deploy
-	// sequencing). Its practical consequence: CI runs actions/checkout, which
-	// materialises HEAD, so a CI step added today reads no wrangler.jsonc at all and
-	// fails B0/F0 no matter how green this run is locally. Promote to 'error' after
-	// the configs are committed.
-	const problems = [
-		...untracked.map((rel) => `${rel} is untracked`),
-		...tomlStillTracked.map((rel) => `${rel} is still tracked at HEAD`),
-	];
-	assert(
-		'G1',
-		problems.length === 0,
-		'warn',
-		REPO_SCOPE,
-		'both wrangler.jsonc files are tracked and no wrangler.toml remains tracked',
-		`git and the working tree disagree: ${problems.join('; ')}. Everything else in this run audited the working tree; a fresh actions/checkout would see HEAD instead and could not read a config at all.`,
-		'tracked in docs/cloudflare/risk-register.md; sequencing is CF-D09',
 	);
 }
 
@@ -1901,39 +1750,9 @@ function selfTest() {
 				.length === 0
 		);
 	});
-	expect('parseAdrLifecycle reads a draft status and a declared mode', () => {
-		const adr = parseAdrLifecycle(
-			'# ADR\n\n**ADR Status:** Draft — not accepted\n**Lifecycle mode:** `migrations` (baseline)\n',
-		);
-		return (
-			adr.status === 'Draft — not accepted' &&
-			adr.accepted === false &&
-			adr.declaredMode === 'migrations'
-		);
-	});
-	expect('expectedLifecycleMode requires `migrations` while the ADR is not accepted', () => {
-		const draft = parseAdrLifecycle('**ADR Status:** Proposed\n**Lifecycle mode:** `exports`\n');
-		return expectedLifecycleMode(draft).mode === 'migrations';
-	});
-	expect('expectedLifecycleMode follows the declared mode once accepted', () => {
-		const accepted = parseAdrLifecycle(
-			'**ADR Status:** Accepted — 2026-10-01\n**Lifecycle mode:** `exports`\n',
-		);
-		return accepted.accepted && expectedLifecycleMode(accepted).mode === 'exports';
-	});
-	expect('expectedLifecycleMode cannot key a mode without a status or declared mode', () => {
-		const noStatus = expectedLifecycleMode(parseAdrLifecycle('# nothing here\n'));
-		const noMode = expectedLifecycleMode(parseAdrLifecycle('**ADR Status:** Accepted\n'));
-		return (
-			noStatus.mode === null && noMode.mode === null && expectedLifecycleMode(null).mode === null
-		);
-	});
-	expect(`real config lifecycle mode is the one ${ADR_005} authorises`, () => {
+	expect('real config uses the authorised lifecycle mode', () => {
 		const be = loadConfig(BACKEND_CONFIG);
-		const abs = join(ROOT, ADR_005);
-		if (!be.ok || !existsSync(abs)) return false;
-		const expected = expectedLifecycleMode(parseAdrLifecycle(readFileSync(abs, 'utf8')));
-		return expected.mode !== null && lifecycleMode(be.data).mode === expected.mode;
+		return be.ok && lifecycleMode(be.data).mode === AUTHORIZED_LIFECYCLE_MODE;
 	});
 	expect(`real config preserves the applied migration history when in migrations mode`, () => {
 		const be = loadConfig(BACKEND_CONFIG);
@@ -1946,7 +1765,7 @@ function selfTest() {
 
 	// X2 — the working-tree wrangler.toml assertion, stated explicitly so the
 	// self-test records which state it is asserting over.
-	expect('X2 operates on the working tree (no wrangler.toml present there today)', () => {
+	expect('X2 operates on the working tree (no wrangler.toml present)', () => {
 		return LEGACY_TOML.every((rel) => !existsSync(join(ROOT, rel)));
 	});
 
@@ -2033,7 +1852,7 @@ cloudflare-config-audit — offline static audit of Dicee's Wrangler configurati
   node scripts/cloudflare-config-audit.mjs             advisory run (exit 0 unless an error)
   node scripts/cloudflare-config-audit.mjs --strict    warnings also exit non-zero
   node scripts/cloudflare-config-audit.mjs --json      deterministic machine-readable output
-  node scripts/cloudflare-config-audit.mjs --self-test verify the JSONC reader
+  node scripts/cloudflare-config-audit.mjs --self-test run the self-test
 
 Reads ${BACKEND_CONFIG}, ${FRONTEND_CONFIG}, and ${BACKEND_SRC}.
 Makes no network calls, reads no credentials, and modifies nothing.
@@ -2048,13 +1867,13 @@ Makes no network calls, reads no credentials, and modifies nothing.
 	}
 
 	if (argv.includes('--self-test')) {
-		console.log('\nJSONC reader self-test\n');
+		console.log('\nconfig audit self-test\n');
 		return selfTest();
 	}
 
 	const backendNames = auditBackend();
 	auditFrontend(backendNames);
-	auditRepoState();
+	auditLegacyToml();
 
 	return report({ json: argv.includes('--json'), strict: argv.includes('--strict') });
 }
