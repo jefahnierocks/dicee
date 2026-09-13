@@ -5,6 +5,14 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+# Git hooks export repository-local variables that override `git -C`.
+# Follow githooks(5)'s foreign-repository guidance before creating the fixture.
+git_local_env_vars="$(git rev-parse --local-env-vars)"
+while IFS= read -r name; do
+	unset "$name"
+done <<<"$git_local_env_vars"
+
 work_dir="$(mktemp -d "${TMPDIR:-/tmp}/dicee-public-safety-test.XXXXXX")"
 trap 'rm -rf "$work_dir"' EXIT
 repo_dir="$work_dir/repo"
