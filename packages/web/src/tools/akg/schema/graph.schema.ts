@@ -7,6 +7,7 @@
  * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
  */
 
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
 // =============================================================================
@@ -369,17 +370,18 @@ export function createEmptyGraph(projectRoot: string): AKGGraph {
 }
 
 /**
- * Simple path hash for ID generation (first 20 chars of normalized path)
+ * Stable digest for graph IDs. Truncating a normalized path caused collisions
+ * between SvelteKit routes that share the same trailing path segments.
  */
-function hashPath(path: string): string {
-	return path.replace(/[^a-zA-Z0-9]/g, '_').slice(-20);
+function stableDigest(value: string): string {
+	return createHash('sha256').update(value).digest('hex').slice(0, 16);
 }
 
 /**
  * Generate node ID
  */
 export function generateNodeId(type: NodeType, name: string, filePath?: string): string {
-	const pathPart = filePath ? `::${hashPath(filePath)}` : '';
+	const pathPart = filePath ? `::${stableDigest(filePath)}` : '';
 	return `${type.toLowerCase()}::${name}${pathPart}`;
 }
 
@@ -389,7 +391,8 @@ export function generateNodeId(type: NodeType, name: string, filePath?: string):
 export function generateEdgeId(type: EdgeType, sourceId: string, targetId: string): string {
 	const sourceShort = sourceId.split('::').slice(0, 2).join('::');
 	const targetShort = targetId.split('::').slice(0, 2).join('::');
-	return `${type}::${sourceShort}->${targetShort}`;
+	const digest = stableDigest(`${type}\0${sourceId}\0${targetId}`);
+	return `${type}::${sourceShort}->${targetShort}::${digest}`;
 }
 
 /**

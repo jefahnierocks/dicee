@@ -233,6 +233,16 @@ export function validateGraph(graph: AKGGraph): string[] {
 		seenNodeIds.add(node.id);
 	}
 
+	// Edge IDs must also remain unique or query results can silently overwrite
+	// distinct relationships between files with the same basename.
+	const seenEdgeIds = new Set<string>();
+	for (const edge of graph.edges) {
+		if (seenEdgeIds.has(edge.id)) {
+			errors.push(`Duplicate edge ID: ${edge.id}`);
+		}
+		seenEdgeIds.add(edge.id);
+	}
+
 	return errors;
 }
 
