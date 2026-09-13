@@ -468,25 +468,17 @@ describe('AuthState: Sign Out', () => {
 // =============================================================================
 
 describe('AuthState: Profile Sync', () => {
-	it('syncProfileAnonymousStatus updates profiles table', async () => {
+	it('does not write profiles.is_anonymous from the client', async () => {
 		const auth = await createFreshAuthStore();
 		const mockClient = createMockSupabaseClient();
-		const user = createMockUser({ is_anonymous: false });
+		const user = createMockUser({ is_anonymous: true });
 		const session = createMockSession(user);
 
 		auth.init(mockClient as unknown as SupabaseClient<Database>, session, user);
-		await auth.syncProfileAnonymousStatus();
+		await auth.linkEmail('upgrade@example.com');
 
-		expect(mockClient.from).toHaveBeenCalledWith('profiles');
-	});
-
-	it('syncProfileAnonymousStatus does nothing without user', async () => {
-		const auth = await createFreshAuthStore();
-		const mockClient = createMockSupabaseClient();
-
-		auth.init(mockClient as unknown as SupabaseClient<Database>, null, null);
-		await auth.syncProfileAnonymousStatus();
-
+		// The database trigger syncs is_anonymous from auth.users
+		expect('syncProfileAnonymousStatus' in auth).toBe(false);
 		expect(mockClient.from).not.toHaveBeenCalled();
 	});
 });

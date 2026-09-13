@@ -249,15 +249,16 @@ describe('createProfile', () => {
 		mockSupabase = createMockSupabase();
 	});
 
-	it('creates a new profile', async () => {
+	function mockInsertResult(result: { data: Profile | null; error: unknown }) {
+		const maybeSingle = vi.fn().mockResolvedValue(result);
 		mockSupabase.__mocks.upsert.mockReturnValue({
-			select: mockSupabase.__mocks.select.mockReturnValue({
-				single: mockSupabase.__mocks.single.mockResolvedValue({
-					data: mockProfile,
-					error: null,
-				}),
-			}),
+			select: vi.fn().mockReturnValue({ maybeSingle }),
 		});
+		return maybeSingle;
+	}
+
+	it('inserts a new profile without overwriting existing rows', async () => {
+		const maybeSingle = mockInsertResult({ data: mockProfile, error: null });
 
 		const result = await createProfile(mockSupabase, 'test-user-id', {
 			display_name: 'Test User',
@@ -268,28 +269,50 @@ describe('createProfile', () => {
 		expect(mockSupabase.__mocks.from).toHaveBeenCalledWith('profiles');
 		expect(mockSupabase.__mocks.upsert).toHaveBeenCalledWith(
 			{ id: 'test-user-id', display_name: 'Test User' },
-			{ onConflict: 'id' },
+			{ onConflict: 'id', ignoreDuplicates: true },
+		);
+		expect(maybeSingle).toHaveBeenCalledOnce();
+	});
+
+	it('never sends server-managed columns', async () => {
+		mockInsertResult({ data: mockProfile, error: null });
+
+		await createProfile(mockSupabase, 'test-user-id', {
+			id: 'someone-else',
+			display_name: null,
+			is_anonymous: false,
+			is_public: false,
+			role: 'super_admin',
+			skill_rating: 9999,
+			badges: ['forged'],
+		});
+
+		expect(mockSupabase.__mocks.upsert).toHaveBeenCalledWith(
+			{ id: 'test-user-id', display_name: null, is_public: false },
+			{ onConflict: 'id', ignoreDuplicates: true },
 		);
 	});
 
-	it('upserts an existing profile', async () => {
-		const updatedProfile = { ...mockProfile, display_name: 'Updated via Upsert' };
-
-		mockSupabase.__mocks.upsert.mockReturnValue({
-			select: mockSupabase.__mocks.select.mockReturnValue({
+	it('returns the existing profile unchanged when the insert is ignored', async () => {
+		mockInsertResult({ data: null, error: null });
+		mockSupabase.__mocks.select.mockReturnValue({
+			eq: mockSupabase.__mocks.eq.mockReturnValue({
 				single: mockSupabase.__mocks.single.mockResolvedValue({
-					data: updatedProfile,
+					data: mockProfile,
 					error: null,
 				}),
 			}),
 		});
 
 		const result = await createProfile(mockSupabase, 'test-user-id', {
-			display_name: 'Updated via Upsert',
+			display_name: 'Ignored Name',
 		});
 
-		expect(result.data?.display_name).toBe('Updated via Upsert');
+		expect(result.data).toEqual(mockProfile);
 		expect(result.error).toBeNull();
+		expect(mockSupabase.__mocks.select).toHaveBeenCalledWith('*');
+		expect(mockSupabase.__mocks.eq).toHaveBeenCalledWith('id', 'test-user-id');
+		expect(mockSupabase.__mocks.update).not.toHaveBeenCalled();
 	});
 
 	it('creates profile with minimal data', async () => {
@@ -299,20 +322,29 @@ describe('createProfile', () => {
 			bio: null,
 			username: null,
 		};
-
-		mockSupabase.__mocks.upsert.mockReturnValue({
-			select: mockSupabase.__mocks.select.mockReturnValue({
-				single: mockSupabase.__mocks.single.mockResolvedValue({
-					data: minimalProfile,
-					error: null,
-				}),
-			}),
-		});
+		mockInsertResult({ data: minimalProfile, error: null });
 
 		const result = await createProfile(mockSupabase, 'test-user-id');
 
 		expect(result.data).toEqual(minimalProfile);
 		expect(result.error).toBeNull();
+		expect(mockSupabase.__mocks.upsert).toHaveBeenCalledWith(
+			{ id: 'test-user-id' },
+			{ onConflict: 'id', ignoreDuplicates: true },
+		);
+	});
+
+	it('returns insert errors', async () => {
+		mockInsertResult({
+			data: null,
+			error: { message: 'permission denied for table profiles', code: '42501' },
+		});
+
+		const result = await createProfile(mockSupabase, 'test-user-id');
+
+		expect(result.data).toBeNull();
+		expect(result.error).toBeInstanceOf(Error);
+		expect(result.error?.message).toBe('permission denied for table profiles');
 	});
 });
 

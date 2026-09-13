@@ -1,8 +1,7 @@
 -- ============================================================================
--- Test RPC Functions
+-- RPC persistence functions
 -- ============================================================================
--- Run in Supabase SQL Editor or via psql
--- Usage: psql $DATABASE_URL -f supabase/tests/rpc_functions.sql
+-- Run with: supabase test db
 --
 -- These tests verify:
 -- 1. Atomic game creation with multiple players
@@ -10,255 +9,177 @@
 -- 3. Atomic game completion with rankings
 -- 4. Idempotent game completion (retry safety)
 -- 5. Bulk domain event persistence with idempotency
--- 6. Game abandonment
+-- 6. Empty event batches
+--
+-- Everything runs inside a transaction that is rolled back.
 -- ============================================================================
 
-DO $$
-DECLARE
-  v_game_id UUID := gen_random_uuid();
-  v_host_id UUID := gen_random_uuid();
-  v_player2_id UUID := gen_random_uuid();
-  v_event1_id UUID := gen_random_uuid();
-  v_event2_id UUID := gen_random_uuid();
-  v_result operation_result;
-  v_test_passed BOOLEAN := true;
-BEGIN
-  RAISE NOTICE '========================================';
-  RAISE NOTICE 'RPC Functions Test Suite';
-  RAISE NOTICE '========================================';
-  RAISE NOTICE 'Test game_id: %', v_game_id;
-  RAISE NOTICE 'Test host_id: %', v_host_id;
-  RAISE NOTICE 'Test player2_id: %', v_player2_id;
-  RAISE NOTICE '========================================';
+begin;
+create extension if not exists pgtap with schema extensions;
 
-  -- ===========================================================================
-  -- Test 1: create_game_atomic - Basic Creation
-  -- ===========================================================================
-  RAISE NOTICE '';
-  RAISE NOTICE 'Test 1: create_game_atomic - Basic Creation';
+select plan(13);
 
-  SELECT * INTO v_result FROM create_game_atomic(
-    v_game_id,
-    'TEST01',
-    v_host_id,
-    'multiplayer',
-    '{"test": true}'::jsonb,
-    ARRAY[
-      ROW(v_host_id, 0, 0, false)::game_player_input,
-      ROW(v_player2_id, 1, 1, false)::game_player_input
-    ]
-  );
+-- Players must exist in auth.users; the signup trigger creates their profiles.
+insert into auth.users (id, email) values
+  ('aaaaaaaa-0000-4000-8000-000000000001', 'rpc-host@example.com'),
+  ('aaaaaaaa-0000-4000-8000-000000000002', 'rpc-player@example.com');
 
-  IF NOT v_result.success THEN
-    RAISE NOTICE 'FAILED: create_game_atomic should succeed';
-    RAISE NOTICE 'Error: % - %', v_result.error_code, v_result.error_message;
-    v_test_passed := false;
-  ELSIF v_result.affected_rows != 3 THEN
-    RAISE NOTICE 'FAILED: Should create 1 game + 2 players (got %)', v_result.affected_rows;
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Created game with % rows', v_result.affected_rows;
-  END IF;
+-- ===========================================================================
+-- create_game_atomic
+-- ===========================================================================
 
-  -- Verify records exist
-  IF NOT EXISTS (SELECT 1 FROM games WHERE id = v_game_id AND status = 'active') THEN
-    RAISE NOTICE 'FAILED: Game record not found or wrong status';
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Game record verified';
-  END IF;
+select is(
+  (select row(r.success, r.affected_rows)::text
+   from public.create_game_atomic(
+     'bbbbbbbb-0000-4000-8000-000000000001'::uuid,
+     'TEST01',
+     'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+     'multiplayer',
+     '{"test": true}'::jsonb,
+     array[
+       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 0, 0, false)::public.game_player_input,
+       row('aaaaaaaa-0000-4000-8000-000000000002'::uuid, 1, 1, false)::public.game_player_input
+     ]
+   ) as r),
+  '(t,3)',
+  'create_game_atomic creates 1 game + 2 players'
+);
 
-  IF (SELECT COUNT(*) FROM game_players WHERE game_id = v_game_id) != 2 THEN
-    RAISE NOTICE 'FAILED: Expected 2 player records';
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Player records verified (2 players)';
-  END IF;
+select ok(
+  exists(
+    select 1 from public.games
+    where id = 'bbbbbbbb-0000-4000-8000-000000000001' and status = 'active'
+  ),
+  'game record exists with active status'
+);
 
-  -- ===========================================================================
-  -- Test 2: create_game_atomic - Idempotency (Retry Safety)
-  -- ===========================================================================
-  RAISE NOTICE '';
-  RAISE NOTICE 'Test 2: create_game_atomic - Idempotency';
+select is(
+  (select count(*)::int from public.game_players
+   where game_id = 'bbbbbbbb-0000-4000-8000-000000000001'),
+  2,
+  'two player records exist'
+);
 
-  SELECT * INTO v_result FROM create_game_atomic(
-    v_game_id,  -- Same game_id
-    'TEST01',
-    v_host_id,
-    'multiplayer',
-    '{}'::jsonb,
-    ARRAY[ROW(v_host_id, 0, 0, false)::game_player_input]
-  );
+select is(
+  (select row(r.success, r.affected_rows)::text
+   from public.create_game_atomic(
+     'bbbbbbbb-0000-4000-8000-000000000001'::uuid,
+     'TEST01',
+     'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+     'multiplayer',
+     '{}'::jsonb,
+     array[
+       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 0, 0, false)::public.game_player_input
+     ]
+   ) as r),
+  '(t,0)',
+  'create_game_atomic retry is idempotent (success, 0 new rows)'
+);
 
-  IF NOT v_result.success THEN
-    RAISE NOTICE 'FAILED: Duplicate create should succeed (idempotent)';
-    v_test_passed := false;
-  ELSIF v_result.affected_rows != 0 THEN
-    RAISE NOTICE 'FAILED: Should not create duplicates (got %)', v_result.affected_rows;
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Idempotent retry returned success with 0 new rows';
-  END IF;
+-- ===========================================================================
+-- complete_game_atomic
+-- ===========================================================================
 
-  -- ===========================================================================
-  -- Test 3: complete_game_atomic - Basic Completion
-  -- ===========================================================================
-  RAISE NOTICE '';
-  RAISE NOTICE 'Test 3: complete_game_atomic - Basic Completion';
+select is(
+  (select row(r.success, r.affected_rows)::text
+   from public.complete_game_atomic(
+     'bbbbbbbb-0000-4000-8000-000000000001'::uuid,
+     'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+     array[
+       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 1, 285, '{"ones": 3, "twos": 6}'::jsonb, false)::public.player_ranking,
+       row('aaaaaaaa-0000-4000-8000-000000000002'::uuid, 2, 220, '{"ones": 2, "twos": 4}'::jsonb, false)::public.player_ranking
+     ]
+   ) as r),
+  '(t,3)',
+  'complete_game_atomic updates 1 game + 2 players'
+);
 
-  SELECT * INTO v_result FROM complete_game_atomic(
-    v_game_id,
-    v_host_id,  -- winner
-    ARRAY[
-      ROW(v_host_id, 1, 285, '{"ones": 3, "twos": 6}'::jsonb, false)::player_ranking,
-      ROW(v_player2_id, 2, 220, '{"ones": 2, "twos": 4}'::jsonb, false)::player_ranking
-    ]
-  );
+select is(
+  (select status from public.games
+   where id = 'bbbbbbbb-0000-4000-8000-000000000001'),
+  'completed',
+  'game status is completed'
+);
 
-  IF NOT v_result.success THEN
-    RAISE NOTICE 'FAILED: complete_game_atomic should succeed';
-    RAISE NOTICE 'Error: % - %', v_result.error_code, v_result.error_message;
-    v_test_passed := false;
-  ELSIF v_result.affected_rows != 3 THEN
-    RAISE NOTICE 'FAILED: Should update 1 game + 2 players (got %)', v_result.affected_rows;
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Completed game with % updates', v_result.affected_rows;
-  END IF;
+select is(
+  (select final_score from public.game_players
+   where game_id = 'bbbbbbbb-0000-4000-8000-000000000001'
+     and user_id = 'aaaaaaaa-0000-4000-8000-000000000001'),
+  285,
+  'host final score is 285'
+);
 
-  -- Verify game status
-  IF (SELECT status FROM games WHERE id = v_game_id) != 'completed' THEN
-    RAISE NOTICE 'FAILED: Game should be completed';
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Game status is completed';
-  END IF;
+select is(
+  (select final_score from public.game_players
+   where game_id = 'bbbbbbbb-0000-4000-8000-000000000001'
+     and user_id = 'aaaaaaaa-0000-4000-8000-000000000002'),
+  220,
+  'player 2 final score is 220'
+);
 
-  -- Verify player scores
-  IF (SELECT final_score FROM game_players WHERE game_id = v_game_id AND user_id = v_host_id) != 285 THEN
-    RAISE NOTICE 'FAILED: Host score should be 285';
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Host score is 285';
-  END IF;
+select is(
+  (select r.success
+   from public.complete_game_atomic(
+     'bbbbbbbb-0000-4000-8000-000000000001'::uuid,
+     'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+     array[
+       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 1, 999, '{}'::jsonb, false)::public.player_ranking
+     ]
+   ) as r),
+  true,
+  'complete_game_atomic retry is idempotent'
+);
 
-  IF (SELECT final_score FROM game_players WHERE game_id = v_game_id AND user_id = v_player2_id) != 220 THEN
-    RAISE NOTICE 'FAILED: Player 2 score should be 220';
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Player 2 score is 220';
-  END IF;
+select is(
+  (select final_score from public.game_players
+   where game_id = 'bbbbbbbb-0000-4000-8000-000000000001'
+     and user_id = 'aaaaaaaa-0000-4000-8000-000000000001'),
+  285,
+  'host score unchanged after idempotent retry'
+);
 
-  -- ===========================================================================
-  -- Test 4: complete_game_atomic - Idempotency
-  -- ===========================================================================
-  RAISE NOTICE '';
-  RAISE NOTICE 'Test 4: complete_game_atomic - Idempotency';
+-- ===========================================================================
+-- persist_domain_events
+-- ===========================================================================
 
-  SELECT * INTO v_result FROM complete_game_atomic(
-    v_game_id,
-    v_host_id,
-    ARRAY[ROW(v_host_id, 1, 999, '{}'::jsonb, false)::player_ranking]  -- Different score
-  );
+select is(
+  (select row(r.success, r.affected_rows)::text
+   from public.persist_domain_events(
+     array[
+       row('cccccccc-0000-4000-8000-000000000001'::uuid, 'GameStarted', '1.0.0', 0,
+           'bbbbbbbb-0000-4000-8000-000000000001'::uuid,
+           'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+           null, null, '{"test": 1}'::jsonb)::public.domain_event_input,
+       row('cccccccc-0000-4000-8000-000000000002'::uuid, 'TurnScored', '1.0.0', 1,
+           'bbbbbbbb-0000-4000-8000-000000000001'::uuid,
+           'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+           1, null, '{"category": "ones"}'::jsonb)::public.domain_event_input
+     ]
+   ) as r),
+  '(t,2)',
+  'persist_domain_events inserts 2 events'
+);
 
-  IF NOT v_result.success THEN
-    RAISE NOTICE 'FAILED: Duplicate complete should succeed (idempotent)';
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Idempotent retry returned success';
-  END IF;
+select is(
+  (select row(r.success, r.affected_rows)::text
+   from public.persist_domain_events(
+     array[
+       row('cccccccc-0000-4000-8000-000000000001'::uuid, 'GameStarted', '1.0.0', 0,
+           'bbbbbbbb-0000-4000-8000-000000000001'::uuid,
+           'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
+           null, null, '{"test": 1}'::jsonb)::public.domain_event_input
+     ]
+   ) as r),
+  '(t,0)',
+  'persist_domain_events skips duplicate events'
+);
 
-  -- Verify score did NOT change
-  IF (SELECT final_score FROM game_players WHERE game_id = v_game_id AND user_id = v_host_id) != 285 THEN
-    RAISE NOTICE 'FAILED: Score should not change on idempotent retry';
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Score unchanged (285) after idempotent retry';
-  END IF;
+select is(
+  (select row(r.success, r.affected_rows)::text
+   from public.persist_domain_events(array[]::public.domain_event_input[]) as r),
+  '(t,0)',
+  'persist_domain_events accepts an empty array'
+);
 
-  -- ===========================================================================
-  -- Test 5: persist_domain_events - Bulk Insert
-  -- ===========================================================================
-  RAISE NOTICE '';
-  RAISE NOTICE 'Test 5: persist_domain_events - Bulk Insert';
-
-  SELECT * INTO v_result FROM persist_domain_events(
-    ARRAY[
-      ROW(v_event1_id, 'GameStarted', '1.0.0', 0, v_game_id, v_host_id, NULL, NULL, '{"test": 1}'::jsonb)::domain_event_input,
-      ROW(v_event2_id, 'TurnScored', '1.0.0', 1, v_game_id, v_host_id, 1, NULL, '{"category": "ones"}'::jsonb)::domain_event_input
-    ]
-  );
-
-  IF NOT v_result.success THEN
-    RAISE NOTICE 'FAILED: persist_domain_events should succeed';
-    RAISE NOTICE 'Error: % - %', v_result.error_code, v_result.error_message;
-    v_test_passed := false;
-  ELSIF v_result.affected_rows != 2 THEN
-    RAISE NOTICE 'FAILED: Should insert 2 events (got %)', v_result.affected_rows;
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Inserted % events', v_result.affected_rows;
-  END IF;
-
-  -- ===========================================================================
-  -- Test 6: persist_domain_events - Idempotency
-  -- ===========================================================================
-  RAISE NOTICE '';
-  RAISE NOTICE 'Test 6: persist_domain_events - Idempotency';
-
-  SELECT * INTO v_result FROM persist_domain_events(
-    ARRAY[
-      ROW(v_event1_id, 'GameStarted', '1.0.0', 0, v_game_id, v_host_id, NULL, NULL, '{"test": 1}'::jsonb)::domain_event_input
-    ]
-  );
-
-  IF NOT v_result.success THEN
-    RAISE NOTICE 'FAILED: Duplicate event insert should succeed (idempotent)';
-    v_test_passed := false;
-  ELSIF v_result.affected_rows != 0 THEN
-    RAISE NOTICE 'FAILED: Should skip duplicate event (got %)', v_result.affected_rows;
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Duplicate event skipped (0 inserted)';
-  END IF;
-
-  -- ===========================================================================
-  -- Test 7: Empty Events Array
-  -- ===========================================================================
-  RAISE NOTICE '';
-  RAISE NOTICE 'Test 7: persist_domain_events - Empty Array';
-
-  SELECT * INTO v_result FROM persist_domain_events(ARRAY[]::domain_event_input[]);
-
-  IF NOT v_result.success THEN
-    RAISE NOTICE 'FAILED: Empty array should succeed';
-    v_test_passed := false;
-  ELSE
-    RAISE NOTICE 'PASSED: Empty array handled correctly';
-  END IF;
-
-  -- ===========================================================================
-  -- Cleanup
-  -- ===========================================================================
-  RAISE NOTICE '';
-  RAISE NOTICE 'Cleaning up test data...';
-
-  DELETE FROM domain_events WHERE game_id = v_game_id;
-  DELETE FROM game_players WHERE game_id = v_game_id;
-  DELETE FROM games WHERE id = v_game_id;
-
-  RAISE NOTICE 'Cleanup complete';
-
-  -- ===========================================================================
-  -- Summary
-  -- ===========================================================================
-  RAISE NOTICE '';
-  RAISE NOTICE '========================================';
-  IF v_test_passed THEN
-    RAISE NOTICE 'All tests PASSED!';
-  ELSE
-    RAISE NOTICE 'Some tests FAILED - review output above';
-  END IF;
-  RAISE NOTICE '========================================';
-END;
-$$;
+select * from finish();
+rollback;
