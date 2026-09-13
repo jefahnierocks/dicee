@@ -1,8 +1,8 @@
 # Dicee status
 
-**As of:** 2026-09-13T22:18:29Z
+**As of:** 2026-09-13T23:08:56Z
 
-**Current phase:** 2026-09 operator safety rollout; Phases 9-10 complete (no deployment)
+**Current phase:** 2026-09 operator safety rollout; Phases 9-10 complete, Cloudflare governance strategy aligned (no deployment)
 
 Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 
@@ -13,6 +13,7 @@ Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 - Phase 8 is complete: 7 profiles comprise 5 users and 2 super admins, with no moderators or admins. The operator confirmed both elevated assignments as intentional after private record review; no role changes were needed. Audit-log absence cannot establish that the old privilege was never exploited.
 - The database backup is encrypted and verified on off-machine storage; Storage contained 0 objects. The plaintext exports were removed after verification.
 - `workers.dev` and Preview URLs are disabled on `dicee` and `dicee-production`. Changes were limited to these two scripts; namespace ownership and other ingress remain unverified.
+- The selected Cloudflare strategy targets Jefahnierocks service governance while retaining the existing shared account. Organizational intake, infrastructure adoption and account relocation are not complete; exposed-token rotation remains open.
 - No application deployment has run during this operator rollout. CI deploys only on a manual `workflow_dispatch` from `main` with `deploy=true`.
 - Legacy client layers are retired and the docs are consolidated into this file, the roadmap, `docs/cloudflare.md`, `docs/architecture/` and `docs/development/`. Git history is the archive.
 
@@ -26,7 +27,7 @@ Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 6. **Homes.** This file is the status of record; [roadmap.md](roadmap.md) is the only sequence of work; git history is the archive.
 7. **Data platform.** Stay on Supabase (Auth and Postgres), hardened and minimized.
 8. **Cloudflare platform.** Pages plus the `dicee` Worker with SQLite Durable Objects. No D1, R2, Worker split or Workers Static Assets without a concrete need.
-9. **Organization move.** The GitHub organization move with Cloudflare governance and infrastructure as code is a near-term roadmap item. Nothing moves before the credential work it depends on.
+9. **Jefahnierocks Cloudflare strategy.** Select Jefahnierocks as the intended Dicee service owner, with the existing shared account and steward retained during alignment. OpenTofu will manage explicitly assigned infrastructure fields in an accepted Jefahnierocks root; Wrangler keeps application releases, bindings and Durable Object lifecycle. Separate inventory/plan, infrastructure-apply, application-release and local-operator credentials, with effective reach verified. Preserve names/state; Pages field overlap must pass import/release/plan checks. Intake, exact infrastructure placement and any later account relocation still need acceptance/evidence. Ownership changes follow the credential prerequisites in [roadmap section 7](roadmap.md#7-organization-move-with-governance-and-iac); [Cloudflare strategy](cloudflare.md#governance-strategy) owns the design details.
 10. **Agent surface.** `AGENTS.md` plus package `AGENTS.md` files; portable skills in .agents/skills (symlinked for Claude); Codex policy in `.codex/rules`. Windsurf and Cascade, CODEX.md, GEMINI.md, Cursor rule files and the Copilot MCP files are retired.
 
 ## Open operator actions

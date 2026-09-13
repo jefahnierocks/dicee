@@ -23,6 +23,7 @@ Before editing `packages/web` or `packages/cloudflare-do`, read that package's `
 | Status, decisions, operator actions, live readbacks | [docs/status.md](docs/status.md), mirrored by `project.yaml` `status.*` |
 | Ordered next work | [docs/roadmap.md](docs/roadmap.md) |
 | Cloudflare topology, configuration, deploy path, live checks | [docs/cloudflare.md](docs/cloudflare.md) |
+| Future Jefahnierocks ownership and infrastructure boundaries | [docs/development/organization-alignment.md](docs/development/organization-alignment.md) (intake proposal) |
 | Architecture, engine, data contracts, multiplayer | [docs/architecture/README.md](docs/architecture/README.md) |
 | Layer rules and invariants | `akg.config.ts`, [docs/architecture/akg/README.md](docs/architecture/akg/README.md), `pnpm akg:check` |
 | Toolchain and dependency policy | [docs/development/toolchain.md](docs/development/toolchain.md) |
