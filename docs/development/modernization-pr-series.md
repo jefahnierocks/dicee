@@ -28,7 +28,8 @@ through an explicit manual dispatch with `deploy=true` on `main`.
 ## Review and validation evidence
 
 Independent reviewers inspected runtime security, commit dependencies, database
-compatibility, and publication controls. The review identified and addressed:
+compatibility, and publication controls. The baseline fixes the first three
+findings below; the separately tested database changes belong to the second PR:
 
 - nested private environment filenames missed by the publication scan;
 - telemetry payload URLs and query strings surviving privacy normalization;

@@ -23,10 +23,9 @@ dependencies, and the distinction between merge and rollout.
   separate operator work. No deployment or hosted migration is recorded.
 - PRs remain drafts while the operator follow-ups below are open. Publishing
   a PR does not establish production remediation or authorize a merge/deploy.
-- Completion gate: `pnpm validate:ci`. Both the pre-commit working tree and the
-  committed tip, in a clean worktree, passed it locally (see
-  [Local verification](#local-verification)). Pull-request CI still has to pass
-  after push.
+- Completion gate: `pnpm validate:ci`. The original handoff and the reviewed
+  baseline have separate local results below. Pull-request CI still has to pass
+  after publication; local success does not establish hosted CI success.
 
 Cloudflare work starts at [`docs/cloudflare/README.md`](cloudflare/README.md).
 
@@ -154,8 +153,29 @@ without a first-hand readback recorded below.
 
 ## Local verification
 
-Local evidence from the Phase 1 working tree before the commit series. This is
-not live-environment evidence.
+Local evidence only; the historical handoff checks and the current review checks
+are identified separately. None establishes live-environment remediation.
+
+- 2026-09-13T04:43Z: reviewed baseline `0c11d5a` passed frozen installation and
+  `pnpm validate:ci` in a clean worktree using CI's synthetic public Supabase
+  settings, with no tracked or untracked output. Results: 120 Rust, 1,600 web
+  (3 skipped), 522 Worker, 204 simulation, and 26 Python tests; 2,472 passed in
+  total, plus AKG/MCP and script checks. Production builds, dependency audit
+  (no known vulnerabilities), and publication scan passed. The initial uv run
+  selected Python 3.13.6; mypy, Ruff, and all 26 Python tests were then rerun
+  successfully with Python 3.13.14. `.mise.toml` now sets `UV_PYTHON` to keep
+  clean-worktree validation on the project pin.
+- 2026-09-13: a task-isolated local Supabase stack reset through only
+  `20260913000001` contained 22 migrations and passed the 47 baseline pgTAP
+  tests. A separate reset through `20260913000002` contained 23 migrations and
+  passed 146 tests, including 99 new privacy/grant assertions owned by the
+  second PR. Its public-schema types were generated locally with Supabase CLI
+  2.117.0. The task's containers and volumes were removed afterwards.
+- Independent follow-up review found no remaining blockers in the telemetry,
+  publication scanner, stacked-PR workflow, or database privacy changes.
+  `actionlint` accepted both workflows. Operator follow-ups remain open.
+
+Historical handoff checks:
 
 - 2026-09-13T03:51Z–03:54Z UTC: `pnpm akg:discover && pnpm akg:mermaid` then
   `pnpm validate:ci` passed (exit 0). Rust fmt, Clippy with warnings denied, and

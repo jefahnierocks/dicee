@@ -44,3 +44,6 @@ quality = "./scripts/quality-gate.sh"
 
 [env]
 DICEE_ENV = "development"
+# uv otherwise prefers an independently installed interpreter on clean clones.
+# Keep this in sync with tools.python and CI's python-version.
+UV_PYTHON = "3.13.14"
