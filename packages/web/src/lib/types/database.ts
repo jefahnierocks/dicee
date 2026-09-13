@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
-  }
   public: {
     Tables: {
       admin_audit_log: {
@@ -118,7 +113,6 @@ export type Database = {
           audio_transcription: string | null
           breadcrumbs: Json | null
           connection_state: Json | null
-          console_capture: Json | null
           created_at: string | null
           description: string | null
           game_state: Json | null
@@ -131,9 +125,6 @@ export type Database = {
           title: string
           ui_state: Json | null
           updated_at: string | null
-          user_context: Json | null
-          user_display_name: string | null
-          user_email: string | null
           user_id: string
         }
         Insert: {
@@ -142,7 +133,6 @@ export type Database = {
           audio_transcription?: string | null
           breadcrumbs?: Json | null
           connection_state?: Json | null
-          console_capture?: Json | null
           created_at?: string | null
           description?: string | null
           game_state?: Json | null
@@ -155,9 +145,6 @@ export type Database = {
           title: string
           ui_state?: Json | null
           updated_at?: string | null
-          user_context?: Json | null
-          user_display_name?: string | null
-          user_email?: string | null
           user_id: string
         }
         Update: {
@@ -166,7 +153,6 @@ export type Database = {
           audio_transcription?: string | null
           breadcrumbs?: Json | null
           connection_state?: Json | null
-          console_capture?: Json | null
           created_at?: string | null
           description?: string | null
           game_state?: Json | null
@@ -179,9 +165,6 @@ export type Database = {
           title?: string
           ui_state?: Json | null
           updated_at?: string | null
-          user_context?: Json | null
-          user_display_name?: string | null
-          user_email?: string | null
           user_id?: string
         }
         Relationships: []
@@ -273,6 +256,135 @@ export type Database = {
           rollout_percent?: number
           updated_at?: string
           user_ids?: string[]
+        }
+        Relationships: []
+      }
+      gallery_achievements: {
+        Row: {
+          achievement_id: string
+          created_at: string
+          id: string
+          progress: number
+          unlocked: boolean
+          unlocked_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          created_at?: string
+          id?: string
+          progress?: number
+          unlocked?: boolean
+          unlocked_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          created_at?: string
+          id?: string
+          progress?: number
+          unlocked?: boolean
+          unlocked_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gallery_stats: {
+        Row: {
+          avatar_seed: string | null
+          backed_winner_count: number
+          backed_winner_points: number
+          best_backing_streak: number
+          best_streak: number
+          chat_messages: number
+          chat_points: number
+          correct_predictions: number
+          created_at: string
+          current_backing_streak: number
+          current_streak: number
+          display_name: string
+          exact_predictions: number
+          exact_score_points: number
+          games_watched: number
+          kibitz_points: number
+          kibitz_votes: number
+          loyalty_bonus_points: number
+          prediction_points: number
+          reaction_points: number
+          reactions_given: number
+          rooms_visited: number
+          streak_bonus_points: number
+          total_backings: number
+          total_points: number
+          total_predictions: number
+          updated_at: string
+          user_id: string
+          yahtzee_predictions: number
+        }
+        Insert: {
+          avatar_seed?: string | null
+          backed_winner_count?: number
+          backed_winner_points?: number
+          best_backing_streak?: number
+          best_streak?: number
+          chat_messages?: number
+          chat_points?: number
+          correct_predictions?: number
+          created_at?: string
+          current_backing_streak?: number
+          current_streak?: number
+          display_name: string
+          exact_predictions?: number
+          exact_score_points?: number
+          games_watched?: number
+          kibitz_points?: number
+          kibitz_votes?: number
+          loyalty_bonus_points?: number
+          prediction_points?: number
+          reaction_points?: number
+          reactions_given?: number
+          rooms_visited?: number
+          streak_bonus_points?: number
+          total_backings?: number
+          total_points?: number
+          total_predictions?: number
+          updated_at?: string
+          user_id: string
+          yahtzee_predictions?: number
+        }
+        Update: {
+          avatar_seed?: string | null
+          backed_winner_count?: number
+          backed_winner_points?: number
+          best_backing_streak?: number
+          best_streak?: number
+          chat_messages?: number
+          chat_points?: number
+          correct_predictions?: number
+          created_at?: string
+          current_backing_streak?: number
+          current_streak?: number
+          display_name?: string
+          exact_predictions?: number
+          exact_score_points?: number
+          games_watched?: number
+          kibitz_points?: number
+          kibitz_votes?: number
+          loyalty_bonus_points?: number
+          prediction_points?: number
+          reaction_points?: number
+          reactions_given?: number
+          rooms_visited?: number
+          streak_bonus_points?: number
+          total_backings?: number
+          total_points?: number
+          total_predictions?: number
+          updated_at?: string
+          user_id?: string
+          yahtzee_predictions?: number
         }
         Relationships: []
       }
@@ -651,12 +763,92 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      gallery_leaderboard_weekly: {
+        Row: {
+          achievement_count: number | null
+          avatar_seed: string | null
+          display_name: string | null
+          prediction_accuracy: number | null
+          rank: number | null
+          total_points: number | null
+          user_id: string | null
+          win_pick_ratio: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      abandon_game_atomic: {
+        Args: { p_abandoned_at?: string; p_game_id: string; p_reason: string }
+        Returns: Database["public"]["CompositeTypes"]["operation_result"]
+        SetofOptions: {
+          from: "*"
+          to: "operation_result"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      aggregate_game_stats: {
+        Args: { p_game_id: string }
+        Returns: Database["public"]["CompositeTypes"]["stats_update_result"][]
+        SetofOptions: {
+          from: "*"
+          to: "stats_update_result"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      award_gallery_points: {
+        Args: {
+          p_avatar_seed: string
+          p_backed_winner?: number
+          p_chat_points?: number
+          p_display_name: string
+          p_exact_score_points?: number
+          p_kibitz_points?: number
+          p_loyalty_bonus?: number
+          p_prediction_points?: number
+          p_reaction_points?: number
+          p_streak_bonus?: number
+          p_user_id: string
+        }
+        Returns: number
+      }
       cleanup_expired_rooms: { Args: never; Returns: undefined }
       cleanup_old_analysis: { Args: never; Returns: undefined }
       cleanup_old_telemetry: { Args: never; Returns: undefined }
+      complete_game_atomic: {
+        Args: {
+          p_completed_at?: string
+          p_game_id: string
+          p_rankings: Database["public"]["CompositeTypes"]["player_ranking"][]
+          p_winner_id: string
+        }
+        Returns: Database["public"]["CompositeTypes"]["operation_result"]
+        SetofOptions: {
+          from: "*"
+          to: "operation_result"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_game_atomic: {
+        Args: {
+          p_game_id: string
+          p_game_mode: string
+          p_host_id: string
+          p_players: Database["public"]["CompositeTypes"]["game_player_input"][]
+          p_room_code: string
+          p_settings: Json
+        }
+        Returns: Database["public"]["CompositeTypes"]["operation_result"]
+        SetofOptions: {
+          from: "*"
+          to: "operation_result"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       generate_room_code: { Args: never; Returns: string }
       get_alltime_leaderboard: {
         Args: { limit_count?: number }
@@ -730,6 +922,18 @@ export type Database = {
         }
         Returns: string
       }
+      persist_domain_events: {
+        Args: {
+          p_events: Database["public"]["CompositeTypes"]["domain_event_input"][]
+        }
+        Returns: Database["public"]["CompositeTypes"]["operation_result"]
+        SetofOptions: {
+          from: "*"
+          to: "operation_result"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       promote_to_admin: {
         Args: {
           new_role: Database["public"]["Enums"]["admin_role"]
@@ -737,12 +941,67 @@ export type Database = {
         }
         Returns: boolean
       }
+      unlock_gallery_achievement: {
+        Args: {
+          p_achievement_id: string
+          p_progress?: number
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      update_achievement_progress: {
+        Args: {
+          p_achievement_id: string
+          p_progress: number
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      update_category_stats: {
+        Args: { p_existing: Json; p_new_scorecard: Json }
+        Returns: Json
+      }
     }
     Enums: {
       admin_role: "user" | "moderator" | "admin" | "super_admin"
     }
     CompositeTypes: {
-      [_ in never]: never
+      domain_event_input: {
+        id: string | null
+        event_type: string | null
+        event_version: string | null
+        sequence_number: number | null
+        game_id: string | null
+        player_id: string | null
+        turn_number: number | null
+        roll_number: number | null
+        payload: Json | null
+      }
+      game_player_input: {
+        user_id: string | null
+        seat_number: number | null
+        turn_order: number | null
+        is_ai: boolean | null
+      }
+      operation_result: {
+        success: boolean | null
+        error_code: string | null
+        error_message: string | null
+        affected_rows: number | null
+      }
+      player_ranking: {
+        player_id: string | null
+        rank: number | null
+        score: number | null
+        scorecard: Json | null
+        is_ai: boolean | null
+      }
+      stats_update_result: {
+        user_id: string | null
+        games_played: number | null
+        games_won: number | null
+        new_badges: string[] | null
+      }
     }
   }
 }
@@ -755,12 +1014,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -784,11 +1043,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -809,11 +1068,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -834,11 +1093,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -851,11 +1110,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
