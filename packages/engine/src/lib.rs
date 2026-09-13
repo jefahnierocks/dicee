@@ -64,7 +64,7 @@ pub mod types; // Public types (Category, ScoringResult)
 // =============================================================================
 
 use core::error::DiceeError;
-use types::{parse_dice, Category, CategoryInfo};
+use types::{Category, CategoryInfo, parse_dice};
 use wasm_bindgen::prelude::*;
 
 // Solver types for new WASM API
@@ -389,7 +389,7 @@ mod wasm_tests {
         let analysis = solver.analyze(&state, &available);
 
         // Should have zero expected value
-        assert_eq!(analysis.expected_value, 0.0);
+        assert!(analysis.expected_value.abs() <= f64::EPSILON);
         assert!(analysis.category_values.is_empty());
     }
 

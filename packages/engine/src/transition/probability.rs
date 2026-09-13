@@ -7,8 +7,8 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-use crate::core::error::DiceeError;
 use crate::Result;
+use crate::core::error::DiceeError;
 
 // =============================================================================
 // PROBABILITY TYPE
@@ -361,8 +361,11 @@ pub mod exact {
         use super::factorial;
 
         let n = dice_rolled;
-        let numerator = factorial(n) as i64;
-        let denominator: i64 = counts.iter().map(|&c| factorial(c) as i64).product();
+        let numerator = i64::try_from(factorial(n)).expect("5-die factorial fits in i64");
+        let denominator: i64 = counts
+            .iter()
+            .map(|&count| i64::try_from(factorial(count)).expect("5-die factorial fits in i64"))
+            .product();
         let coeff = Ratio::new(numerator, denominator);
 
         // Multiply by (1/6)^n

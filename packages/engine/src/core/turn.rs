@@ -215,7 +215,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "At most 2 rerolls allowed")]
     fn test_invalid_rolls_remaining() {
         let config = DiceConfig::from_dice(&[1, 2, 3, 4, 5]);
         TurnState::new(config, 3); // Panic: max is 2

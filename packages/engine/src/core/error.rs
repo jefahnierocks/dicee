@@ -19,7 +19,9 @@ pub enum DiceeError {
     InvalidConfigIndex(u8),
 
     /// A keep pattern was incompatible with the current configuration.
-    #[error("Invalid keep pattern: cannot keep {requested} dice of face {face} when only {available} present")]
+    #[error(
+        "Invalid keep pattern: cannot keep {requested} dice of face {face} when only {available} present"
+    )]
     InvalidKeepPattern {
         /// The face value (1-6).
         face: u8,

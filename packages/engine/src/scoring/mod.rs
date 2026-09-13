@@ -32,7 +32,7 @@ pub mod rules;
 
 // Re-export backward-compatible API (uses types::Category)
 // The solver imports directly from crate::scoring::rules::score
-pub use rules::{max_score, score_all_config, score_config, upper_target, ScoreResult};
+pub use rules::{ScoreResult, max_score, score_all_config, score_config, upper_target};
 
 use crate::core::DiceConfig;
 use crate::types::{Category, Dice, ScoringResult};

@@ -7,13 +7,13 @@
 //!
 //! Run with: `cargo test --test property_tests`
 
+use dicee_engine::Dice;
 use dicee_engine::core::category::CategorySet;
-use dicee_engine::core::config::{ConfigIndex, DiceConfig, ALL_CONFIGS};
+use dicee_engine::core::config::{ALL_CONFIGS, ConfigIndex, DiceConfig};
 use dicee_engine::core::keep::KeepPattern;
 use dicee_engine::core::solver::TurnSolver;
 use dicee_engine::core::turn::TurnState;
 use dicee_engine::transition::probability::{roll_outcome_probability, transition_probability};
-use dicee_engine::Dice;
 use proptest::prelude::*;
 
 // =============================================================================
@@ -34,7 +34,7 @@ fn arbitrary_rolls() -> impl Strategy<Value = u8> {
 /// Strategy for generating a non-empty category set.
 fn arbitrary_category_set() -> impl Strategy<Value = CategorySet> {
     // Generate a bitmask with at least one bit set (1 to 8191 = 2^13 - 1)
-    (1u16..=8191).prop_map(|bits| CategorySet::from_bits(bits))
+    (1u16..=8191).prop_map(CategorySet::from_bits)
 }
 
 /// Strategy for generating valid config index.
@@ -145,9 +145,8 @@ proptest! {
         let mut kept_counts = [0u8; 6];
         let mut dice_kept = 0u8;
 
-        for i in 0..5 {
+        for (i, &face) in canonical_dice.iter().enumerate() {
             if keep_bits & (1 << i) != 0 {
-                let face = canonical_dice[i];
                 kept_counts[(face - 1) as usize] += 1;
                 dice_kept += 1;
             }
