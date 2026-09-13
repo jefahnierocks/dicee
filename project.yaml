@@ -10,8 +10,8 @@ role: canonical
 peers: []
 status:
   posture: deployed-system
-  local_phase: "2026-09 modernization, Phase 1 baseline (local; not pushed or deployed)"
-  as_of: "2026-09-12"
+  local_phase: "2026-09 modernization, Phase 1 PR review (no deployment)"
+  as_of: "2026-09-13"
 authority:
   status_of_record: docs/status.md
 presentation:

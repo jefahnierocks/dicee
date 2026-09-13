@@ -1,8 +1,8 @@
 # Dicee status of record
 
 - **Status:** tracked status of record for agents, operators, and the meta-inventory manifest (`project.yaml`)
-- **As of:** 2026-09-12
-- **Current phase:** 2026-09 modernization, Phase 1 baseline
+- **As of:** 2026-09-13 (UTC)
+- **Current phase:** 2026-09 modernization, Phase 1 PR review
 
 This file replaces the private `.claude/state/current-phase.json` as the status
 of record. `.claude/state/` is private and archival only. Update this file,
@@ -11,14 +11,18 @@ of record. `.claude/state/` is private and archival only. Update this file,
 ## Current phase
 
 Phase 1 fixes the blockers in the July 2026 toolchain and agent-framework
-refresh and lands it as a validated baseline commit series on
-`work/2026-09-modernization`.
+refresh. The original 19-commit handoff remains on
+`work/2026-09-modernization`; review work is grouped into two branches:
+`review/2026-09-baseline`, followed by `review/2026-09-database-privacy`.
+See [the PR review guide](development/modernization-pr-series.md) for scope,
+dependencies, and the distinction between merge and rollout.
 
-- This work is local. Nothing in this phase has been pushed, deployed, or
-  migrated against a live environment.
-- Push the baseline only after the operator has applied the urgent profiles
-  privilege migration live and has confirmed that workers.dev and Preview URLs
-  are disabled.
+- The owner explicitly authorized grouping, branch pushes, and PR publication
+  on 2026-09-13 UTC. This supersedes the previous publication hold; production
+  migration, deployment, ingress, credential, and governance changes remain
+  separate operator work. No deployment or hosted migration is recorded.
+- PRs remain drafts while the operator follow-ups below are open. Publishing
+  a PR does not establish production remediation or authorize a merge/deploy.
 - Completion gate: `pnpm validate:ci`. Both the pre-commit working tree and the
   committed tip, in a clean worktree, passed it locally (see
   [Local verification](#local-verification)). Pull-request CI still has to pass
@@ -103,7 +107,8 @@ without a first-hand readback recorded below.
       use the equivalent Cursor OAuth flow. See [`MCP-SETUP.md`](MCP-SETUP.md).
 - [ ] Rotate or revoke the Cloudflare API token and the Supabase personal access
       token used by the retired bearer MCP wrappers.
-- [ ] GitHub governance: a `main` ruleset that requires the CI `validate` check,
+- [ ] GitHub governance: a `main` ruleset that requires the GitHub Actions check
+      **Full repository validation** (the job display name, not `validate`),
       a `Production` environment with required reviewers and a main-only
       deployment branch policy, and Dependabot alerts plus security updates.
 - [ ] Revoke the Infisical machine identities whose identifiers were published
@@ -142,9 +147,10 @@ without a first-hand readback recorded below.
   reports 29 passes and 3 advisory warnings: F7 (above), B8 (the legacy
   `SUPABASE_JWT_SECRET`, removed by P6-03), and B11 (the `ENVIRONMENT` variable
   is declared but never read). The strict audit is not part of `validate:ci`.
-- **Agent sandbox.** Sandboxed agent sessions cannot write the pnpm store,
-  `~/.cargo`, or `~/.wrangler`, and cannot read `**/.npmrc`. Full gate runs,
-  `pnpm install`, and local Supabase need an unsandboxed or approved command.
+- **Agent execution permissions.** File and network permissions depend on the
+  active client. This review uses an unrestricted local session; restricted
+  clients may need approved access to dependency caches and local containers.
+  Inspect the active policy rather than assuming a repository-wide sandbox.
 
 ## Local verification
 
@@ -182,4 +188,17 @@ A readback is URL or query, result (counts only for data), and timestamp from a
 command run by the operator or agent that records it. Never record secret values
 or account identifiers here.
 
-None recorded for this phase.
+- 2026-09-13T04:32:34Z–04:32:35Z: GitHub
+  `GET https://api.github.com/repos/verlyn13/dicee/rulesets` returned HTTP 200
+  with zero rulesets; `GET .../branches/main/protection` returned HTTP 404
+  (unprotected); `GET .../environments` returned HTTP 200 with no required
+  reviewers or deployment branch policy on `Production`. Read-only observation;
+  no governance settings changed.
+- 2026-09-13T04:35:13Z–04:35:14Z: authenticated Cloudflare
+  `GET https://api.cloudflare.com/client/v4/accounts/{account}/pages/projects/dicee`
+  returned HTTP 200, `source: null`, production branch `main`.
+  `GET .../workers/scripts` returned HTTP 200 with `dicee` and
+  `dicee-production`. Their Workers Builds trigger reads returned HTTP 403
+  (error code 10000); trigger configuration remains unverified through this token.
+  Account identifiers are omitted. These reads do not prove ingress containment,
+  secret rotation, database remediation, or production deployment.
