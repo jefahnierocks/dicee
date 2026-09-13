@@ -91,8 +91,16 @@ without a first-hand readback recorded below.
       (OPS-03), their legacy migration tag if a confirmed read-only source exists
       (OPS-04), and what the Pages `GAME_WORKER` binding targets (OPS-08).
       See [`docs/cloudflare/operator-evidence.md`](cloudflare/operator-evidence.md).
-- [ ] Apply the explicit Supabase Data API grants (P6-01) before 2026-10-30,
-      when Supabase starts enforcing them on existing projects.
+- [ ] Prepare future-table migrations for Supabase's 2026-10-30 default-grants
+      change (P6-01). Existing tables retain their grants; the change affects
+      the defaults for newly created tables in existing projects. Review
+      current privileges separately. See the
+      [official change notice](https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically).
+- [ ] Complete migration from legacy `anon`/`service_role` API keys ahead of
+      the announced end-of-2026 deprecation. Verify the final retirement
+      schedule before cutover; the current
+      [migration guide](https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys)
+      does not establish an exact universal shutdown date.
 - [ ] Disable workers.dev and Preview URLs on every Dicee Worker script.
 - [ ] Undeploy the `aggregate-game-stats` Edge Function, which P6-02 retires.
       It runs with the service role for any caller that has the public anon key
