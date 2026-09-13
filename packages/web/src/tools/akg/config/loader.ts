@@ -4,7 +4,7 @@
  * Handles loading, validation, and merging of AKG configuration files.
  * Supports JSON and JavaScript/TypeScript config files.
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { readFile } from 'node:fs/promises';
@@ -286,7 +286,7 @@ export function generateDefaultConfig(format: 'json' | 'typescript' = 'typescrip
 	return `/**
  * AKG Configuration
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import type { AKGConfig } from './src/tools/akg/schema/config.schema.js';

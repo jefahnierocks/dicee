@@ -2,7 +2,7 @@
  * Telemetry Types
  *
  * Event types for UX metrics and learning analytics.
- * Follows RFC-003 three-stream architecture (telemetry stream, 30-day retention).
+ * Follows RFC-003 three-stream architecture (telemetry stream, 30-day retention; docs/architecture/README.md#data-contracts).
  *
  * Types are derived from Zod schemas for runtime validation.
  *

@@ -4,7 +4,7 @@
  * Creates AKG graph edges from discovered relationships.
  * Handles import edges, component usage, and layer membership.
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import type { AKGConfig } from '../schema/config.schema.js';

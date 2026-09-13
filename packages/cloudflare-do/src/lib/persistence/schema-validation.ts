@@ -5,7 +5,7 @@
  * with Supabase's generated Insert types. If database schema changes,
  * TypeScript will error here, preventing silent drift.
  *
- * @see docs/architecture/PERSISTENCE_ARCHITECTURE_ANALYSIS.md
+ * @see docs/architecture/README.md#persistence-bridge
  */
 
 import type { TablesInsert } from '@dicee/web/src/lib/types/database';

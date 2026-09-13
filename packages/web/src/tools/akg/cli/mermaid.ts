@@ -14,7 +14,7 @@
  *   --check           Verify diagrams are current (for CI)
  *   --verbose         Enable verbose logging
  *
- * @see docs/architecture/akg/RFC_MERMAID_VISUALIZATION.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { execSync } from 'node:child_process';

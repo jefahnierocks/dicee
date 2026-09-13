@@ -4,7 +4,7 @@
  * Analyzes import relationships between source files.
  * Resolves module specifiers to actual file paths.
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { existsSync } from 'node:fs';

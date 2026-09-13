@@ -1,22 +1,15 @@
-# Repository-scoped Codex configuration. Personal model, authentication,
-# approval, and sandbox choices belong in the user configuration.
-
-[features]
-hooks = true
-multi_agent = true
-shell_snapshot = true
+# Repository-scoped Codex configuration; it loads only after the project is trusted.
+# Personal model, authentication, approval, and sandbox choices belong in the user
+# configuration. Custom agents in .codex/agents/*.toml are discovered automatically.
 
 [agents]
-max_threads = 4
+max_concurrent_threads_per_session = 4
 max_depth = 1
-interrupt_message = true
 
-[agents.reviewer]
-description = "Read-only cross-stack reviewer for correctness, security, regressions, and missing tests."
-config_file = "./agents/reviewer.toml"
-nickname_candidates = ["Ada", "Turing"]
+[mcp_servers.akg]
+command = "bun"
+args = ["run", "packages/web/src/tools/akg/mcp/server.ts"]
+env = { AKG_GRAPH_PATH = "docs/architecture/akg/graph/current.json", AKG_DIAGRAMS_PATH = "docs/architecture/akg/diagrams", AKG_PROJECT_ROOT = "." }
 
-[agents.researcher]
-description = "Read-only researcher for primary-source release notes, framework guidance, and implementation evidence."
-config_file = "./agents/researcher.toml"
-nickname_candidates = ["Curie", "Hopper"]
+[mcp_servers.cloudflare-docs]
+url = "https://docs.mcp.cloudflare.com/mcp"

@@ -4,7 +4,7 @@
  * Implementation of the AKGQueryEngine interface for graph queries.
  * Provides efficient node/edge lookups, traversals, and cycle detection.
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import type {

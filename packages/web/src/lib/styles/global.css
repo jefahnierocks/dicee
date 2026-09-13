@@ -18,8 +18,6 @@
  * The iOS viewport issue stems from Safari's dynamic UI - the address bar
  * collapses on scroll, changing the actual viewport height. dvh/svh units
  * handle this, but older browsers need a JavaScript fallback.
- * 
- * @see docs/references/keyboard-layout-research.md
  * ========================================================================== */
 
 :root {

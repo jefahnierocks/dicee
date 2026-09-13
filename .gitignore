@@ -32,9 +32,13 @@ docs/architecture/akg/graph/history/
 .windsurf/
 .codex/*
 !.codex/config.toml
-!.codex/README.md
 !.codex/agents/
 !.codex/agents/*.toml
+!.codex/rules/
+.codex/rules/*
+!.codex/rules/*.rules
+.gemini/*
+!.gemini/settings.json
 *.swp
 *.swo
 .DS_Store
@@ -92,9 +96,6 @@ biome-config-docs-current.md
 # Playwright artifacts
 playwright-report/
 test-results/
-
-# Windsurf temp files
-temp-windsurf-config.md
 .vercel
 
 # Development scripts (local logs only)

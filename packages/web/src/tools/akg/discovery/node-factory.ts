@@ -4,7 +4,7 @@
  * Creates AKG graph nodes from discovered source files.
  * Classifies nodes by type, layer, and component characteristics.
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { basename, relative } from 'node:path';

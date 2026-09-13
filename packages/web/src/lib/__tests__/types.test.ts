@@ -1,6 +1,6 @@
 /**
  * Type Integrity Tests
- * Validates type definitions match Dicee game rules and RFC-003
+ * Validates type definitions match Dicee game rules and RFC-003 (docs/architecture/README.md#data-contracts)
  */
 
 import { describe, expect, it } from 'vitest';

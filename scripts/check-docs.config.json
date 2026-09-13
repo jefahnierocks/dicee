@@ -1,0 +1,122 @@
+{
+	"generated": [
+		"docs/architecture/akg/graph/**",
+		"docs/architecture/akg/diagrams/**",
+		"pnpm-lock.yaml",
+		"**/worker-configuration.d.ts",
+		"packages/web/src/lib/types/database.ts",
+		"packages/web/src/lib/wasm/**"
+	],
+	"pathScope": [
+		"AGENTS.md",
+		"CLAUDE.md",
+		"README.md",
+		"packages/*/AGENTS.md",
+		"packages/*/README.md",
+		"packages/web/src/tools/*/README.md",
+		".github/copilot-instructions.md",
+		".agents/skills/**",
+		"docs/**"
+	],
+	"pathAllow": [],
+	"rootAllowlist": [
+		".editorconfig",
+		".envrc",
+		".gitignore",
+		".mcp.json",
+		".mise.toml",
+		"AGENTS.md",
+		"CLAUDE.md",
+		"LICENSE",
+		"README.md",
+		"SECURITY.md",
+		"akg.config.ts",
+		"biome.json",
+		"lefthook.yml",
+		"package.json",
+		"pnpm-lock.yaml",
+		"pnpm-workspace.yaml",
+		"project.yaml"
+	],
+	"docsAllowlist": [
+		"status.md",
+		"roadmap.md",
+		"cloudflare.md",
+		"history.md",
+		"architecture/",
+		"development/",
+		"product/"
+	],
+	"budgets": {
+		"AGENTS.md": { "maxLines": 120 },
+		"CLAUDE.md": { "maxLines": 12 },
+		"README.md": { "maxLines": 90 },
+		"docs/status.md": { "maxLines": 80 },
+		"docs/roadmap.md": { "maxLines": 120 },
+		"docs/cloudflare.md": { "maxLines": 250 },
+		"docs/history.md": { "maxLines": 15 },
+		"docs/architecture/README.md": { "maxLines": 550 },
+		"docs/architecture/akg/README.md": { "maxLines": 150 },
+		"docs/development/toolchain.md": { "maxLines": 150 },
+		"docs/development/testing.md": { "maxLines": 150 },
+		"docs/development/debugging.md": { "maxLines": 150 },
+		"docs/development/agent-clients.md": { "maxLines": 150 },
+		"packages/web/AGENTS.md": { "maxLines": 6 },
+		"packages/cloudflare-do/AGENTS.md": { "maxLines": 6 },
+		".github/copilot-instructions.md": { "maxLines": 5 }
+	},
+	"globBudgets": [{ "glob": ".agents/skills/*/SKILL.md", "maxLinesEach": 60 }],
+	"homeOnlyPatterns": [
+		"\\*\\*Current phase:\\*\\*",
+		"\\*\\*As of:\\*\\*",
+		"^Last (updated|reviewed):",
+		"Active wave",
+		"\\bWave [0-9]\\b"
+	],
+	"retired": [
+		{ "id": "fish", "re": "\\.fish\\b|fish_add_path|\\.config/fish", "allow": [] },
+		{ "id": "memory-mcp", "re": "mcp__memory__", "allow": [] },
+		{ "id": "mcp-remote", "re": "\\bmcp-remote\\b", "allow": [] },
+		{
+			"id": "bearer-wrap",
+			"re": "cloudflare-wrapper|supabase-wrapper|with-dicee-supabase-mcp|copilot-mcp|akg-wrapper|DICEE_MCP_ENABLED|/absolute/path/to|CF_BEARER_TOKEN",
+			"allow": []
+		},
+		{
+			"id": "windsurf",
+			"re": "\\.windsurf\\b|WINDSURF\\.md|\\bWindsurf\\b|Cascade rules|\\.cursor/rules",
+			"allow": [
+				".gitignore",
+				"docs/development/agent-clients.md",
+				"docs/status.md",
+				"docs/history.md"
+			]
+		},
+		{ "id": "agent-state", "re": "current-phase\\.json|\\.claude/state", "allow": [".gitignore"] },
+		{
+			"id": "dead-docs",
+			"re": "\\bROADMAP\\.md\\b|docs/planning\\b|docs/archive\\b|docs/audits\\b|docs/references\\b|docs/rfcs\\b|ALL_RFCS|docs/cloudflare/",
+			"allow": [".gitignore"]
+		},
+		{
+			"id": "wrangler-toml",
+			"re": "wrangler\\.toml",
+			"allow": ["scripts/cloudflare-config-audit.mjs", "packages/cloudflare-do/wrangler.jsonc"]
+		}
+	],
+	"broadAllow": [
+		"Bash",
+		"Bash(*)",
+		"Bash(pnpm --filter:*)",
+		"Bash(pnpm --filter *)",
+		"Bash(pnpm --filter*)",
+		"Bash(pnpm --dir*)",
+		"Bash(uv run:*)",
+		"Bash(uv run *)",
+		"Bash(pnpm exec:*)",
+		"Bash(pnpm exec *)",
+		"Bash(bun run:*)",
+		"Bash(node:*)"
+	],
+	"enabledMcp": ["akg", "cloudflare-docs"]
+}

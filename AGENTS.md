@@ -1,10 +1,10 @@
 # Dicee agent guide
 
-This file is the repository-wide source of truth for coding agents. Tool-specific instruction files may add ergonomics, but must not contradict it.
+This is the repository contract for every coding agent. Package `AGENTS.md` files add package rules; client files such as `CLAUDE.md` add only client-specific deltas.
 
 ## Product and repository map
 
-Dicee is an educational multiplayer dice game:
+Dicee is an educational multiplayer dice game for a few family players:
 
 - `packages/web`: SvelteKit 2 / Svelte 5 application deployed to Cloudflare Pages.
 - `packages/cloudflare-do`: Cloudflare Worker with SQLite-backed `GameRoom` and `GlobalLobby` Durable Objects.
@@ -12,26 +12,45 @@ Dicee is an educational multiplayer dice game:
 - `packages/simulation`: deterministic AI simulation and experiment framework.
 - `packages/engine`: Rust 2024 probability engine compiled to WebAssembly.
 - `packages/analysis`: Python 3.13 analysis, validation, and visualization package.
-- `supabase`: schema migrations and database tests.
-- `docs/architecture/akg`: generated architecture knowledge graph and invariants.
+- `supabase`: schema migrations and pgTAP database tests.
+
+Before editing `packages/web` or `packages/cloudflare-do`, read that package's `AGENTS.md`.
+
+## Where things live
+
+| Concern | Home |
+|---|---|
+| Status, decisions, operator actions, live readbacks | [docs/status.md](docs/status.md), mirrored by `project.yaml` `status.*` |
+| Ordered next work | [docs/roadmap.md](docs/roadmap.md) |
+| Cloudflare topology, configuration, deploy path, live checks | [docs/cloudflare.md](docs/cloudflare.md) |
+| Architecture, engine, data contracts, multiplayer | [docs/architecture/README.md](docs/architecture/README.md) |
+| Layer rules and invariants | `akg.config.ts`, [docs/architecture/akg/README.md](docs/architecture/akg/README.md), `pnpm akg:check` |
+| Toolchain and dependency policy | [docs/development/toolchain.md](docs/development/toolchain.md) |
+| Tests | [docs/development/testing.md](docs/development/testing.md) |
+| Debugging | [docs/development/debugging.md](docs/development/debugging.md) |
+| Agent clients, MCP, skills, Codex rules | [docs/development/agent-clients.md](docs/development/agent-clients.md) |
+| Portable skills | [dicee-verify](.agents/skills/dicee-verify/SKILL.md), [akg-boundaries](.agents/skills/akg-boundaries/SKILL.md) |
+| Schema and pgTAP tests | `supabase/migrations/`, `supabase/tests/` |
+| Removed documents | git history; [docs/history.md](docs/history.md) has the commands |
 
 ## Authority and safety
 
-1. Read the nearest source, test, and current config before editing. Current code and generated types outrank old planning documents or archived agent state.
-2. Keep local evidence, committed configuration, and live Cloudflare/Supabase state distinct. Never claim a deploy, migration, secret, or production check happened without direct evidence.
-3. Do not expose or commit secrets. Use `scripts/with-dicee-cloudflare.sh` for authorized Cloudflare operations and the Supabase CLI for Supabase operations under explicit operator authority. Infisical is retired for Dicee; do not add new Infisical references (its removal is Phase 6).
+1. Read the nearest source, test, and current config before editing. Code and generated types outrank docs; fix a doc that disagrees.
+2. Keep local evidence, committed configuration, and live Cloudflare/Supabase state distinct. Never claim a deploy, migration, secret change, or production check happened without direct evidence. A live claim needs a first-hand readback from the current session (request, result, UTC time); citing status docs, prior audits, or hub records as confirmation is circular.
+3. Never expose or commit secrets, account identifiers, or project refs. Authorized Cloudflare operations run through `./scripts/with-dicee-cloudflare.sh -- <command>`; Supabase operations use the Supabase CLI under explicit operator authority. Run `./scripts/check-1password-setup.sh` only for an explicitly authorized task that needs operator credentials. Infisical is retired: add no new Infisical usage; the remaining scripts are removed per `docs/roadmap.md` section 4.
 4. Deployment, remote database writes, migrations, secret changes, destructive Git operations, and publication require explicit user authority. Dry runs and local validation are safe defaults.
 5. Do not regenerate Supabase types as part of an ordinary local gate; that is an authenticated, live-schema operation.
-6. Start Cloudflare work at `docs/cloudflare/README.md`. It maps current project authority, live platform truth, historical material, and the target-state consolidation plan. Proposed D1, R2, OpenTofu, Worker-split, or Durable Object migration work is not current architecture until approved and implemented.
-7. Keep the legacy Durable Object `migrations` (v1 `GameRoom`, v2 `GlobalLobby`, both `new_sqlite_classes`) until ADR-005 (`docs/rfcs/adr-005-durable-object-lifecycle.md`) is accepted. Declarative `exports` cannot be rolled back and ships only as a standalone operator deploy.
-8. Project MCP is native HTTP/OAuth and minimal: `akg` (stdio) and unauthenticated `cloudflare-docs` are enabled; `cloudflare-api` and read-only Supabase are opt-in OAuth servers. Never pass tokens through MCP config, command arguments, headers, credential-forwarding MCP bridges, or bearer-token wrappers.
+6. Cloudflare work starts at `docs/cloudflare.md`. Current architecture is Cloudflare Pages plus the `dicee` Worker with SQLite Durable Objects plus Supabase. D1, R2, a Worker split, Workers Static Assets, and OpenTofu are not current architecture; organization governance and infrastructure as code arrive only through `docs/roadmap.md`.
+7. Keep the legacy Durable Object `migrations` (v1 `GameRoom`, v2 `GlobalLobby`, both `new_sqlite_classes`); never edit or reorder an applied tag. Adopting declarative `exports` is a one-way door: only for a concrete need recorded in `docs/status.md`, as a standalone operator deploy. `pnpm cf:audit` enforces migrations mode.
+8. Project MCP is minimal: `akg` (stdio) and unauthenticated `cloudflare-docs` are enabled; `cloudflare-api` and read-only `supabase` are opt-in OAuth servers. Never pass tokens through MCP config, command arguments, headers, credential-forwarding bridges, or bearer-token wrappers. An MCP session is not authority.
+9. Canonical public URL: `https://dicee.games`.
 
-## Status and live evidence
+## Status and docs
 
-- `docs/status.md` is the tracked status of record: current phase, owner decisions, and open operator follow-ups. `.claude/state/` is private and archival only.
-- `project.yaml` is the meta-inventory interop header (contract: meta-inventory `docs/decisions/0002-project-intelligence-spec.md` §D3). When project status changes, update `docs/status.md`, `status.local_phase`, and the quoted ISO-8601 `status.as_of` together.
-- Verifying live state requires a first-hand readback: URL, HTTP status, and timestamp from a command run in the current session. Never cite hub records, prior audits, or status docs back as confirmation; that is circular evidence.
-- Canonical public URL: `https://dicee.games`. `gamelobby.jefahnierocks.com` is an alias of the same deployment.
+- `docs/status.md` is the only status home. When status changes, update `project.yaml` `status.local_phase` and `status.as_of` in the same change; `pnpm lint:docs` checks that they match.
+- `docs/roadmap.md` is the only sequence of work.
+- Verification logs belong in PR descriptions and CI output, never in tracked docs.
+- Keep one current document per concern; update the map when a home moves. Delete superseded documents; git history is the archive.
 
 ## Toolchain and dependencies
 
@@ -39,21 +58,25 @@ Dicee is an educational multiplayer dice game:
 - Use only `pnpm` for JavaScript dependencies. Keep shared versions in the pnpm catalog and run `pnpm install --frozen-lockfile` in verification and CI.
 - TypeScript 6 is intentional: TypeScript 7 does not yet provide the stable embedded-language API required by Svelte tooling.
 - Keep Cloudflare configuration in `wrangler.jsonc`. After changing it, run the package's `pnpm types` and commit the generated `worker-configuration.d.ts`.
-- Never hand-edit generated Worker, Supabase, SvelteKit, lock, or WASM output unless its generator explicitly requires it.
+- Never hand-edit generated Worker, Supabase, SvelteKit, lock, WASM, or AKG graph output unless its generator explicitly requires it.
 
-## Architecture and implementation conventions
+## Architecture and conventions
 
 - Svelte uses runes and lowercase DOM event properties (`onclick`); component callback props and handlers use `onVerb` and `handleVerb`.
-- Preserve the AKG layer direction: routes -> components/stores/services/types; components -> components/types; stores -> services/types/supabase; services -> types/supabase/wasm.
-- Run `pnpm akg:check` after import or boundary changes. Regenerate graph artifacts only when the task changes architecture.
-- Durable Objects own strongly consistent room/lobby state. Keep constructors synchronous, use `ctx.blockConcurrencyWhile` for required async initialization, use alarms for delayed work, and preserve WebSocket hibernation behavior.
-- Keep external data validated at boundaries with Zod or Pydantic. Keep simulations seeded and tests deterministic.
-- Use existing structured logging and observability helpers in Worker code; do not add ad hoc production `console.log` calls.
+- Preserve the layer direction in `akg.config.ts`: routes -> components/stores/services/types/wasm; components -> components/types; stores -> services/types/supabase; services -> types/supabase/wasm; types, supabase, and wasm -> types. Every web layer may import `shared`; `cloudflare-do` imports only `shared`. After import changes run `pnpm akg:discover && pnpm akg:check`; if the architecture change was not intended, `git restore docs/architecture/akg/graph docs/architecture/akg/diagrams` before committing.
+- Durable Objects own strongly consistent room/lobby state. Keep constructors synchronous, use `ctx.blockConcurrencyWhile` for required async initialization, use alarms for delayed work, and preserve WebSocket hibernation.
+- Validate external data at boundaries with Zod or Pydantic. Keep simulations seeded and tests deterministic.
+- In Worker code use the structured logger (`packages/cloudflare-do/src/lib/logger.ts`) and the observability helpers; do not add ad hoc production `console.log` calls.
+- Auth invariants:
+  - Server code trusts a session only after `getUser()` validates the JWT (`safeGetSession` in `packages/web/src/hooks.server.ts`); never trust `getSession()` alone.
+  - The auth callback redirects only to same-origin relative paths and reports provider errors as fixed `auth_error` codes (`packages/web/src/routes/auth/callback/+server.ts`).
+  - No tokens in URLs: WebSockets open same-origin `/ws/room/<CODE>` and `/ws/lobby`, whose server routes replace any inbound `Authorization` header with the validated session's bearer.
+  - Never derive a public display name from an email address or provider identity, and accept avatar URLs only from the DiceBear API host.
 
 ## Agentic workflow
 
-- For substantial audits, cross-stack changes, research, or reviews, use bounded parallel subagents when the active client supports them. Give each agent a non-overlapping read-only or file-scoped lane; the primary agent owns the plan, integration, final edits, and verification.
-- Use the project `reviewer` and `researcher` agents (currently defined in `.codex/agents/`) for independent review and primary-source research where the client supports them. Do not delegate trivial work or allow agents to edit the same files concurrently.
+- For substantial audits, cross-stack changes, research, or reviews, use bounded parallel subagents when the client supports them. Give each agent a non-overlapping read-only or file-scoped lane; the primary agent owns the plan, integration, final edits, and verification.
+- Use read-only subagents for independent review and primary-source research: Codex defines `reviewer` and `researcher` in `.codex/agents/`; other clients use built-in read-only subagents. Do not delegate trivial work or let agents edit the same files concurrently.
 - State assumptions early, keep a live plan for multi-step work, and report blockers with exact evidence. Do not silently bypass a failing guardrail.
 - Prefer focused tests while iterating. Before completion, run the smallest full gate proportional to the change and review the complete diff.
 
@@ -62,7 +85,9 @@ Dicee is an educational multiplayer dice game:
 ```bash
 pnpm install --frozen-lockfile  # reproducible install
 pnpm check                      # Rust, TypeScript, Python, Worker types
-pnpm lint                       # Rust, Python, Biome, AKG invariants/diagrams/MCP
+pnpm lint                       # Rust, Python, Biome, AKG, Cloudflare config audit, script tests, docs gate
+pnpm lint:docs                  # docs and agent-surface gate
+pnpm cf:audit                   # offline Cloudflare config audit
 pnpm test:agent                 # complete concise test suite
 pnpm build                      # WASM and production packages
 pnpm validate                   # check, lint, test:agent, build
@@ -78,12 +103,13 @@ pnpm --filter @dicee/cloudflare-do test:agent
 pnpm --filter @dicee/simulation test:agent
 cd packages/engine && env -u RUSTUP_TOOLCHAIN cargo test --all-features  # uses the engine toolchain pin
 uv run --project packages/analysis --group dev pytest -q packages/analysis
+supabase db reset --local && supabase test db  # local stack only: migrations plus pgTAP
 ```
 
 ## Definition of done
 
 - Requested behavior is implemented with focused tests.
 - Relevant generated types and lockfiles are current.
-- `pnpm validate:ci` (`pnpm validate`, `pnpm audit:dependencies`, `pnpm security:public`) passes, or every skipped/failing lane is named with evidence.
+- `pnpm validate:ci` passes (its `pnpm lint` includes `lint:docs` and `cf:audit`), or every skipped or failing lane is named with evidence.
 - `git diff --check` and a final diff review show no accidental, secret, generated-noise, or unrelated changes.
 - The handoff separates completed local work from operator-only and live-environment follow-up, and `docs/status.md` reflects any status change.

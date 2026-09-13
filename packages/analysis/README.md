@@ -12,15 +12,11 @@ Python analysis stack for Dicee AI simulation results.
 
 ## Installation
 
-```bash
-# From the dicee root directory
-cd packages/analysis
-pip install -e ".[dev]"
-```
+From the repository root (uv and Python come from `.mise.toml`):
 
-Or with uv:
 ```bash
-uv pip install -e ".[dev]"
+uv sync --project packages/analysis --group dev
+uv run --project packages/analysis --group dev pytest -q packages/analysis
 ```
 
 ## Quick Start
@@ -62,20 +58,20 @@ fig.savefig("score_distribution.png")
 ### 3. Use Jupyter Notebooks
 
 ```bash
-jupyter lab notebooks/
+uv run --project packages/analysis jupyter lab packages/analysis/notebooks
 ```
 
 ## CLI Commands
 
 ```bash
 # Convert NDJSON to Parquet (faster loading for large files)
-dicee-convert ./results -o ./results/parquet
+uv run --project packages/analysis dicee-convert ./results -o ./results/parquet
 
 # Quick analysis
-dicee-analyze ./results/games.ndjson --by-profile
+uv run --project packages/analysis dicee-analyze ./results/games.ndjson --by-profile
 
 # Compare specific profiles
-dicee-analyze ./results/games.ndjson --compare professor carmen
+uv run --project packages/analysis dicee-analyze ./results/games.ndjson --compare professor carmen
 ```
 
 ## Package Structure

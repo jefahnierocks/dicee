@@ -15,9 +15,6 @@
  * - Chrome 108+: interactive-widget meta + VirtualKeyboard API
  * - Firefox 132+: interactive-widget meta
  * - Safari iOS: Visual Viewport API only (this utility is essential)
- *
- * @see MobileKeyboardHandlingPattern in MCP Knowledge Graph
- * @see docs/references/keyboard-layout-research.md
  */
 
 /** Threshold to distinguish keyboard from browser chrome changes (address bar) */

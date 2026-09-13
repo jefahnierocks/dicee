@@ -6,7 +6,7 @@
  * - WireCategory ($lib/types/multiplayer.ts): camelCase, used in JSON/WebSocket
  *
  * @invariant category_type_consistency
- * @see docs/architecture/akg/simulations/SIMULATION_005_PARALLEL_CATEGORY_TYPE.md
+ * @see docs/architecture/akg/README.md#authoring-invariants
  */
 
 import type { Category as CoreCategory } from '../types.js';

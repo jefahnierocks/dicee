@@ -1,0 +1,83 @@
+# Dicee Codex command policy. Codex loads .codex/rules/ only for a trusted project.
+# Every rule asks first or blocks; nothing here auto-approves a command.
+# Workspace package names and packages/<dir> paths are fixed sets, so filtered exec forms are enumerated below. Test: scripts/tests/codex-rules.test.sh
+
+# Cloudflare deploys, live logs, live type generation, and credential wrappers.
+prefix_rule(pattern=["pnpm", ["deploy", "do:deploy", "do:tail", "pages:deploy", "pages:deploy:preview", "db:types"]],
+            decision="prompt", justification="Deploys, live logs, and live type generation need explicit authority.",
+            match=["pnpm do:deploy", "pnpm db:types"], not_match=["pnpm lint", "pnpm test:agent"])
+prefix_rule(pattern=["pnpm", "run", ["deploy", "do:deploy", "do:tail", "pages:deploy", "pages:deploy:preview", "db:types"]],
+            decision="prompt", justification="Deploys, live logs, and live type generation need explicit authority.",
+            match=["pnpm run do:deploy", "pnpm run pages:deploy:preview"], not_match=["pnpm run lint", "pnpm run build"])
+prefix_rule(pattern=["pnpm", "--dir", "packages/cloudflare-do", ["deploy", "deploy:staging", "tail"]],
+            decision="prompt", justification="Worker deploys and live logs need explicit authority.",
+            match=["pnpm --dir packages/cloudflare-do deploy", "pnpm --dir packages/cloudflare-do tail"],
+            not_match=["pnpm --dir packages/cloudflare-do test:agent", "pnpm --dir packages/cloudflare-do types"])
+prefix_rule(pattern=["pnpm", "--dir", "packages/web", ["pages:deploy", "pages:deploy:preview"]],
+            decision="prompt", justification="Pages deploys need explicit authority.",
+            match=["pnpm --dir packages/web pages:deploy"], not_match=["pnpm --dir packages/web build"])
+prefix_rule(pattern=["pnpm", "--filter", "@dicee/cloudflare-do", ["deploy", "deploy:staging", "tail"]],
+            decision="prompt", justification="Worker deploys and live logs need explicit authority.",
+            match=["pnpm --filter @dicee/cloudflare-do deploy", "pnpm --filter @dicee/cloudflare-do tail"],
+            not_match=["pnpm --filter @dicee/cloudflare-do test:agent", "pnpm --filter @dicee/cloudflare-do types"])
+prefix_rule(pattern=["pnpm", "--filter", "@dicee/web", ["pages:deploy", "pages:deploy:preview"]],
+            decision="prompt", justification="Pages deploys need explicit authority.",
+            match=["pnpm --filter @dicee/web pages:deploy", "pnpm --filter @dicee/web pages:deploy:preview"],
+            not_match=["pnpm --filter @dicee/web test:agent", "pnpm --filter @dicee/web build"])
+prefix_rule(pattern=["wrangler", ["deploy", "versions", "rollback", "secret", "tail", "pages", "d1", "r2", "login"]],
+            decision="prompt", justification="Wrangler account operations need explicit authority.",
+            match=["wrangler secret put X", "wrangler deploy"], not_match=["wrangler types", "wrangler dev"])
+prefix_rule(pattern=["pnpm", "exec", "wrangler"], decision="prompt", justification="Wrangler through pnpm can reach the account.",
+            match=["pnpm exec wrangler deploy"], not_match=["pnpm exec biome check"])
+prefix_rule(pattern=["npx", "wrangler"], decision="prompt", justification="Wrangler through npx can reach the account.",
+            match=["npx wrangler whoami"], not_match=["npx vitest run"])
+prefix_rule(pattern=["./scripts/with-dicee-cloudflare.sh"], decision="prompt", justification="Resolves operator credentials.",
+            match=["./scripts/with-dicee-cloudflare.sh -- wrangler whoami"], not_match=["./scripts/public-safety-scan.sh"])
+prefix_rule(pattern=["./scripts/with-dicee-infisical-auth.sh"], decision="prompt", justification="Resolves operator credentials.",
+            match=["./scripts/with-dicee-infisical-auth.sh dev -- true"], not_match=["./scripts/quality-gate.sh"])
+prefix_rule(pattern=["./scripts/with-dicee-elevenlabs-local.sh"], decision="prompt", justification="Resolves a paid API credential.",
+            match=["./scripts/with-dicee-elevenlabs-local.sh -- pnpm audio:gen"], not_match=["./scripts/dicee-adb.sh status"])
+prefix_rule(pattern=[["scripts/with-dicee-cloudflare.sh", "scripts/with-dicee-elevenlabs-local.sh", "scripts/with-dicee-infisical-auth.sh"]],
+            decision="prompt", justification="Resolves operator credentials.",
+            match=["scripts/with-dicee-cloudflare.sh -- wrangler deploy", "scripts/with-dicee-infisical-auth.sh dev -- true"],
+            not_match=["scripts/public-safety-scan.sh"])
+prefix_rule(pattern=["bash", ["scripts/with-dicee-cloudflare.sh", "./scripts/with-dicee-cloudflare.sh",
+                              "scripts/with-dicee-elevenlabs-local.sh", "./scripts/with-dicee-elevenlabs-local.sh",
+                              "scripts/with-dicee-infisical-auth.sh", "./scripts/with-dicee-infisical-auth.sh"]],
+            decision="prompt", justification="Resolves operator credentials.",
+            match=["bash scripts/with-dicee-cloudflare.sh -- wrangler deploy", "bash ./scripts/with-dicee-elevenlabs-local.sh -- pnpm audio:gen"],
+            not_match=["bash scripts/public-safety-scan.sh", "bash scripts/tests/codex-rules.test.sh"])
+
+# Wrangler or Supabase through a workspace package. Every such exec prompts, including local-only
+# forms such as `wrangler deploy --dry-run`, because the same prefix also reaches the account.
+prefix_rule(pattern=["pnpm", ["--filter", "-F"], ["@dicee/cloudflare-do", "@dicee/shared", "@dicee/simulation", "@dicee/web"],
+                     "exec", ["wrangler", "supabase"]],
+            decision="prompt", justification="Wrangler or Supabase through a workspace package can reach the account.",
+            match=["pnpm --filter @dicee/cloudflare-do exec wrangler deploy", "pnpm -F @dicee/web exec supabase db push"],
+            not_match=["pnpm --filter @dicee/cloudflare-do exec vitest run", "pnpm --filter @dicee/web test:agent"])
+prefix_rule(pattern=["pnpm", ["--dir", "-C"], ["packages/analysis", "packages/cloudflare-do", "packages/engine", "packages/shared",
+                                               "packages/simulation", "packages/web"], "exec", ["wrangler", "supabase"]],
+            decision="prompt", justification="Wrangler or Supabase through a workspace package can reach the account.",
+            match=["pnpm --dir packages/cloudflare-do exec wrangler deploy", "pnpm -C packages/web exec supabase db push"],
+            not_match=["pnpm --dir packages/web exec biome check", "pnpm --dir packages/web build"])
+
+# Supabase and 1Password.
+prefix_rule(pattern=["supabase", ["db", "migration", "link", "secrets", "functions", "gen"]],
+            decision="prompt", justification="Database, migration, secret, and type-generation commands need explicit authority.",
+            match=["supabase db push", "supabase gen types typescript"], not_match=["supabase status", "supabase start"])
+prefix_rule(pattern=["op", ["read", "run"]], decision="prompt", justification="Reads secrets from 1Password.",
+            match=["op run -- pnpm build"], not_match=["op whoami"])
+
+# Publication.
+prefix_rule(pattern=["git", "push"], decision="prompt", justification="Publishing needs explicit authority.",
+            match=["git push origin main"], not_match=["git status", "git pull"])
+prefix_rule(pattern=["gh", ["workflow", "release"]], decision="prompt", justification="Workflow dispatch and releases need explicit authority.",
+            match=["gh workflow run ci.yml", "gh release create v1"], not_match=["gh pr view"])
+
+# Destructive Git operations are blocked.
+prefix_rule(pattern=["git", "reset", "--hard"], decision="forbidden", justification="Discards local work.",
+            match=["git reset --hard HEAD"], not_match=["git reset --soft HEAD~1"])
+prefix_rule(pattern=["git", "clean"], decision="forbidden", justification="Deletes untracked files.",
+            match=["git clean -fdx"], not_match=["git status"])
+prefix_rule(pattern=["git", "push", ["--force", "-f"]], decision="forbidden", justification="Rewrites published history.",
+            match=["git push --force origin main", "git push -f"], not_match=["git push origin main"])

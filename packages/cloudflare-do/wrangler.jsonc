@@ -8,7 +8,8 @@
 	"compatibility_flags": ["nodejs_compat"],
 	// Durable Object lifecycle: the legacy `migrations` array, identical to the tags already
 	// applied from the previous wrangler.toml. Never edit or reorder an applied tag. Declarative
-	// `exports` is deferred to a standalone operator deploy once ADR-005 is accepted.
+	// `exports` waits for a concrete need and a standalone operator deploy (docs/status.md
+	// decision 1; docs/cloudflare.md).
 	"migrations": [
 		{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] },
 		{ "tag": "v2", "new_sqlite_classes": ["GlobalLobby"] }

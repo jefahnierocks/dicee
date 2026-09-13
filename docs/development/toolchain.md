@@ -1,7 +1,5 @@
 # Toolchain and dependency policy
 
-Last reviewed: 2026-09-12
-
 ## Pinned runtimes
 
 | Tool | Version | Source of truth |
@@ -9,7 +7,7 @@ Last reviewed: 2026-09-12
 | Node.js | 24.18.0 LTS | `.mise.toml`, root engines, CI |
 | pnpm | 11.15.1 | `packageManager`, `.mise.toml`, CI |
 | Rust | 1.97.1 | `.mise.toml`, `packages/engine/rust-toolchain.toml`, CI; `rust-version = "1.97"` in `packages/engine/Cargo.toml` |
-| Python | 3.13.14 | `.mise.toml`, CI; package supports 3.13-3.14 |
+| Python | 3.13.14 | `.mise.toml`, CI; `packages/analysis/pyproject.toml` still allows 3.14, which CI does not test ([roadmap.md](../roadmap.md)) |
 | uv | 0.11.30 | `.mise.toml`, CI |
 | Bun | 1.3.14 | `.mise.toml`, CI |
 | wasm-pack | 0.15.0 | pnpm catalog, CI |
@@ -35,7 +33,7 @@ The Supabase CLI is pinned through mise so `pnpm db:*` and the local migration w
 - The global virtual store is disabled so local and CI module layouts match.
 - Package-level `.npmrc` files are not used; pnpm 11 reads project settings from `pnpm-workspace.yaml`.
 
-TypeScript 6.0.3 is intentional. TypeScript 7's native compiler is attractive, but its July 2026 release guidance says embedded-language workflows such as Svelte should remain on TypeScript 6 until the API is stable. `@sveltejs/kit` 2.70.3 and `svelte-check` 4.7.x peer ranges still stop at TypeScript `^6`. Vite 8, Vitest 4.1, Svelte 5, SvelteKit 2, Biome 2.5, Zod 4, and Wrangler 4 are current within that compatibility boundary.
+TypeScript 6.0.3 is intentional. TypeScript 7's native compiler is attractive, but its July 2026 release guidance says embedded-language workflows such as Svelte should remain on TypeScript 6 until the API is stable. `@sveltejs/kit` 2.70.3 and `svelte-check` 4.7.x peer ranges still stop at TypeScript `^6`. Vite 8, Vitest 5, Svelte 5, SvelteKit 2, Biome 2.5, Zod 4, and Wrangler 4 are current within that compatibility boundary.
 
 When a newest package is less than 24 hours old, keep the newest version that satisfies the release-age policy and let Dependabot propose the next update after the cooling period.
 
@@ -50,11 +48,9 @@ When a newest package is less than 24 hours old, keep the newest version that sa
 | `sharp@<0.35.4` -> `0.35.4` | miniflare 4.x pins `sharp` 0.34.5 (GHSA-rgj7-g3m4-5g8c) | The pinned miniflare depends on sharp 0.35.4 or later |
 | `undici@<7.29.0` -> `7.29.1` | miniflare 4.x pins `undici` 7.28.0 (GHSA-4cwx-7wf7-3272) | The pinned miniflare depends on undici 7.29.0 or later |
 
-The former `@hono/node-server` override was dropped: `@modelcontextprotocol/sdk` 1.30.0 accepts `^2.0.5`.
-
 ### Wrangler and miniflare hold
 
-Wrangler stays on the miniflare 4 line at 4.113.0, which depends on exactly `miniflare` 4.20260721.0 and `workerd` 1.20260721.1. Wrangler 4.117.0 and later depend on a miniflare 5 alpha line, so moving past 4.116.0 is not a minor bump. Every miniflare 4 release still pins vulnerable `sharp` and `undici`, which is why the overrides above are required whichever 4.x wrangler is chosen.
+The hold is [docs/status.md](../status.md) decision 5. Wrangler stays on the miniflare 4 line at 4.113.0, which depends on exactly `miniflare` 4.20260721.0 and `workerd` 1.20260721.1. Wrangler 4.117.0 and later depend on a miniflare 5 alpha line, so moving past 4.116.0 is not a minor bump. Every miniflare 4 release still pins vulnerable `sharp` and `undici`, which is why the overrides above are required whichever 4.x wrangler is chosen.
 
 `miniflare` is a catalog devDependency of `@dicee/web` so workerd runtime tests can import it directly. Its catalog version must equal the exact version the pinned wrangler depends on; bump both together (`npm view wrangler@<version> dependencies`). Revisit the hold when miniflare 5 is no longer alpha, together with any compatibility date on or after 2026-08-04 (which needs wrangler 4.122 or later with `nodejs_compat`).
 
@@ -68,38 +64,23 @@ Wrangler stays on the miniflare 4 line at 4.113.0, which depends on exactly `min
 
 | Command | Scope |
 |---|---|
-| `pnpm validate` | `check` (Rust, TypeScript with `@dicee/shared` built first, Python, Worker types), `lint` (Rust, Python, Biome, AKG, `test:scripts`), `test:agent`, `build` |
+| `pnpm validate` | `check` (Rust, TypeScript with `@dicee/shared` built first, Python, Worker types), `lint` (Rust, Python, Biome, AKG, Cloudflare config audit, `test:scripts`, docs gate), `test:agent`, `build` |
 | `pnpm validate:ci` | `validate`, then `audit:dependencies` (`pnpm audit --audit-level high`) and `security:public` |
 
-The lefthook pre-push hook and CI run `pnpm validate:ci`. `test:scripts` runs every `scripts/tests/*.test.sh` and fails if none exist.
+The lefthook pre-push hook and CI run `pnpm validate:ci`. `test:scripts` runs every shell test in `scripts/tests/` and fails if none exist. What each test lane covers is in [testing.md](testing.md).
 
-## Cloudflare strategy
+## Cloudflare
 
-`docs/cloudflare/README.md` is the authority map for Cloudflare work. Current
-source, generated types, and configuration remain executable truth; proposed
-D1/R2/OpenTofu and Worker-topology changes live in the linked consolidation plan
-until approved and implemented.
+Worker and Pages configuration, the deploy path, and live checks live in [docs/cloudflare.md](../cloudflare.md). The toolchain rule is the Wrangler hold above.
 
-- Worker configuration uses schema-backed `wrangler.jsonc` with compatibility date `2026-07-21`.
-- Durable Object namespaces keep the legacy SQLite migrations (`v1` GameRoom, `v2` GlobalLobby). Declarative `exports` is deferred to a standalone operator deploy after ADR-005 is accepted, because that lifecycle change cannot be rolled back.
-- Non-inherited bindings are repeated for each named environment.
-- The default Worker target is production; development and staging are explicit named environments.
-- `wrangler types --env-file=/dev/null` generates deterministic committed bindings without leaking local `.env` names into generated files.
-- Logs and traces are enabled with full log sampling and 10% trace sampling.
-- Deploy scripts target the intended environment explicitly. Local completion uses a dry run; live deployment remains operator-gated.
+## Agent clients
 
-## Agent development framework
+Client configuration, MCP servers, skills, and Codex rules live in [agent-clients.md](agent-clients.md).
 
-`AGENTS.md` is the short, cross-client repository contract. Claude, Codex, Gemini, GitHub Copilot, Cursor, and Windsurf files point to it and add only client-specific behavior.
+## Local limitations
 
-The in-repository AKG remains the project-specific local MCP server. The generic Memory MCP server was removed from the shipped dependency graph after its server stack introduced audited vulnerabilities and duplicated native client/session memory; durable project decisions belong in source, tests, Git history, and explicit handoff artifacts. Remote MCP servers use native HTTP transport with client OAuth, so no stdio-to-remote bridge package is a dependency.
-
-Codex project configuration enables the stable multi-agent and shell-snapshot features and defines two read-only specialists:
-
-- `researcher` for primary-source version and framework research.
-- `reviewer` for independent correctness, security, regression, and test review.
-
-The primary agent owns the plan, integration, edits, and final verification. Parallel work must be bounded and non-overlapping.
+- Clean clones need `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY`, because the web app imports them from `$env/static/public`. Copy `packages/web/.env.example` to an ignored .env file beside it and fill in local values, or use the non-secret placeholders CI sets in `.github/workflows/ci.yml`.
+- Supabase CLI 2.117.0 warns that the `[inbucket]` section of `supabase/config.toml` is deprecated in favour of `[local_smtp]`. The warning is harmless; rename the section together with the next CLI bump.
 
 ## References
 
@@ -111,12 +92,5 @@ The primary agent owns the plan, integration, edits, and final verification. Par
 - [Vitest 4.1 agent reporter](https://vitest.dev/blog/vitest-4-1.html)
 - [Cloudflare Workers changelog](https://developers.cloudflare.com/changelog/product/workers/)
 - [Cloudflare compatibility dates](https://developers.cloudflare.com/workers/configuration/compatibility-dates/)
-- [Cloudflare Durable Object migrations and declarative exports](https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/)
 - [Supabase CLI releases](https://github.com/supabase/cli/releases)
 - [mise aqua backend](https://mise.jdx.dev/dev-tools/backends/aqua.html)
-- [Claude Code memory and project instructions](https://code.claude.com/docs/en/memory)
-- [Claude Code hooks](https://code.claude.com/docs/en/hooks)
-- [GitHub Copilot repository instructions](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions)
-- [Gemini CLI context files](https://geminicli.com/docs/cli/gemini-md/)
-- [Cursor rules](https://docs.cursor.com/context/rules)
-- [Codex AGENTS.md guidance](https://learn.chatgpt.com/docs/agent-configuration/agents-md)

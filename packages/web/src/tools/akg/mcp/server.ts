@@ -5,7 +5,7 @@
  * Model Context Protocol server providing architecture-aware queries for agents.
  * Enables real-time architectural validation and diagram generation.
  *
- * @see docs/architecture/akg/RFC_MERMAID_VISUALIZATION.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { existsSync, readFileSync, statSync } from 'node:fs';

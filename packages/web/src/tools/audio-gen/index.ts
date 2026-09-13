@@ -4,8 +4,7 @@
  * CLI tool for generating audio assets using ElevenLabs Sound Effects API.
  * Provides structured asset definitions, generation tracking, and output management.
  *
- * @see docs/references/audio-plan.md
- * @see docs/references/elevenlabs/
+ * @see packages/web/src/tools/audio-gen/README.md#audio-plan
  *
  * Usage:
  *   pnpm audio:list     - List all defined assets

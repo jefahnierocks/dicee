@@ -1,38 +1,25 @@
-# sv
+# @dicee/web
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+The Dicee SvelteKit 2 / Svelte 5 app, deployed to Cloudflare Pages. Read [AGENTS.md](AGENTS.md) before editing this package.
 
-## Creating a project
+## Setup
 
-If you're seeing this, you've probably already done this step. Congrats!
+From the repository root, run `pnpm install --frozen-lockfile`. Then copy `packages/web/.env.example` to a .env file beside it and set the public Supabase URL and anon key for your local stack. The .env file is ignored.
 
-```sh
-# create a new project in the current directory
-npx sv create
+## Commands
 
-# create a new project in my-app
-npx sv create my-app
-```
+Run these from the repository root as `pnpm --filter @dicee/web <script>`.
 
-## Developing
+| Script | Purpose |
+|---|---|
+| `dev` | Vite dev server on port 5173 (`pnpm dev` at the root; `pnpm dev:full` adds the Worker) |
+| `dev:network`, `dev:mobile` | Dev server reachable from other devices on the LAN |
+| `build`, `preview` | Production build and local preview |
+| `check` | `svelte-kit sync` and `svelte-check` |
+| `test:agent`, `test`, `test:watch` | Vitest unit and component tests |
+| `test:e2e`, `test:mobile` | Playwright tests |
+| `biome:check`, `format` | Lint and format |
+| `types`, `types:check` | Generate or check `worker-configuration.d.ts` from `wrangler.jsonc` |
+| `pages:dev` | Serve the built Pages output locally with Wrangler |
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+The deploy scripts are operator-only; see [docs/cloudflare.md](../../docs/cloudflare.md). Testing details are in [docs/development/testing.md](../../docs/development/testing.md).

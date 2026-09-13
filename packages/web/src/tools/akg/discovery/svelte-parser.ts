@@ -4,7 +4,7 @@
  * Extracts TypeScript from Svelte 5 components for AST analysis.
  * Uses the native Svelte compiler with modern: true for Svelte 5 AST.
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { readFile } from 'node:fs/promises';
