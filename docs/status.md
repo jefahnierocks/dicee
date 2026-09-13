@@ -19,9 +19,10 @@ refresh and lands it as a validated baseline commit series on
 - Push the baseline only after the operator has applied the urgent profiles
   privilege migration live and has confirmed that workers.dev and Preview URLs
   are disabled.
-- Completion gate: `pnpm validate:ci`. The pre-commit baseline tree passed it
-  locally (see [Local verification](#local-verification)); re-run it on the
-  committed tip in a clean worktree before pushing.
+- Completion gate: `pnpm validate:ci`. Both the pre-commit working tree and the
+  committed tip, in a clean worktree, passed it locally (see
+  [Local verification](#local-verification)). Pull-request CI still has to pass
+  after push.
 
 Cloudflare work starts at [`docs/cloudflare/README.md`](cloudflare/README.md).
 
@@ -115,6 +116,20 @@ without a first-hand readback recorded below.
 - **Supabase CLI configuration.** Supabase CLI 2.117.0 reports that the
   `[inbucket]` section in `supabase/config.toml` is deprecated in favor of
   `[local_smtp]`. Rename it in the Phase 3 toolchain refresh.
+- **Clean clones need public Supabase settings.** `packages/web` imports
+  `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` from
+  `$env/static/public`, so `svelte-check` fails in a fresh clone without them.
+  Copy `packages/web/.env.example` to `packages/web/.env` for local work, or set
+  the same non-secret placeholders CI uses (`.github/workflows/ci.yml`). The
+  Phase 5 clean-clone work should remove this manual step.
+- **Preview traffic reaches production Durable Objects.** In
+  `packages/web/wrangler.jsonc`, `env.preview` binds `GAME_WORKER` to the
+  production Worker `dicee` (`cloudflare-config-audit` F7). Give preview a
+  separate backend in the Cloudflare current-state phase.
+- **Config audit advisories.** `node scripts/cloudflare-config-audit.mjs --strict`
+  reports 29 passes and 3 advisory warnings: F7 (above), B8 (the legacy
+  `SUPABASE_JWT_SECRET`, removed by P6-03), and B11 (the `ENVIRONMENT` variable
+  is declared but never read). The strict audit is not part of `validate:ci`.
 - **Agent sandbox.** Sandboxed agent sessions cannot write the pnpm store,
   `~/.cargo`, or `~/.wrangler`, and cannot read `**/.npmrc`. Full gate runs,
   `pnpm install`, and local Supabase need an unsandboxed or approved command.
@@ -139,6 +154,12 @@ not live-environment evidence.
 - 2026-09-13T03:55Z UTC: `supabase db reset --local` applied all 23 migrations,
   including `20260913000001` and `20260913000002`, and `supabase test db` passed
   2 files and 47 tests.
+- 2026-09-13T04:04Z–04:07Z UTC: the committed tip `9ec6d7b` passed
+  `pnpm install --frozen-lockfile` and `pnpm validate:ci` in a clean worktree
+  with no `packages/web/.env`, using CI's placeholder public Supabase values.
+  Test counts matched the working-tree run, `svelte-check` reported 0 errors,
+  and the gate left no tracked or untracked changes, so the committed WASM and
+  AKG artifacts are reproducible.
 - `.claude/settings.json` sets `enabledMcpjsonServers` to `akg` and
   `cloudflare-docs` and adds ask rules for deploy, secret, tail, migration,
   1Password, and push commands plus deny rules for destructive Git commands.
