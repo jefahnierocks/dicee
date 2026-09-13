@@ -5,300 +5,133 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the validated revision to Production
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  # The event name keeps dispatched (possibly deploying) runs out of the push
+  # group: cancel-in-progress is evaluated by the new run, so a shared group
+  # would let a later push cancel a deploy.
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
+  PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  PUBLIC_SUPABASE_ANON_KEY: public-anon-key-for-ci
 
 jobs:
-  rust:
-    name: Rust Tests
+  validate:
+    name: Full repository validation
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/engine
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.95.0
+      # pnpm version comes from packageManager in package.json.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@46511b1c83438f0dd37c02d843619ece5a4abb5b # 1.97.1
         with:
           components: clippy, rustfmt
-
-      - name: Cache cargo
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            packages/engine/target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('packages/engine/Cargo.lock') }}
-
-      - name: Check formatting
-        run: cargo fmt --check
-
-      - name: Clippy
-        run: cargo clippy -- -D warnings
-
-      - name: Run unit tests
-        run: cargo test --lib
-
-      - name: Run known position tests
-        run: cargo test --test known_positions
-
-      - name: Run property-based tests (ADR-005)
-        run: cargo test --test property_tests
-
-      - name: Run doc tests
-        run: cargo test --doc
-
-  wasm:
-    name: WASM Build
-    runs-on: ubuntu-latest
-    needs: rust
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.95.0
-        with:
           targets: wasm32-unknown-unknown
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: 0.11.30
+          python-version: 3.13.14
+          enable-cache: true
+
       - name: Install wasm-pack
-        run: cargo install wasm-pack
+        run: cargo install wasm-pack --version 0.15.0 --locked
 
-      - name: Build WASM
-        working-directory: packages/engine
-        run: wasm-pack build --target web --out-dir ../web/src/lib/wasm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Check WASM size (150KB limit)
+      # validate, then production dependency audit, then public-release boundary scan.
+      - name: Validate repository
+        run: pnpm validate:ci
+
+      - name: Check generated and formatted diff
+        run: git diff --exit-code && git diff --check
+
+      - name: Check WASM size
         run: |
-          SIZE=$(wc -c < packages/web/src/lib/wasm/dicee_engine_bg.wasm)
-          echo "WASM size: ${SIZE} bytes"
-          if [ "$SIZE" -gt 153600 ]; then
-            echo "::error::WASM binary too large: ${SIZE} bytes (limit: 150KB = 153600 bytes)"
-            exit 1
-          fi
-          echo "✅ WASM size within limit"
+          wasm_path=packages/web/src/lib/wasm/dicee_engine_bg.wasm
+          wasm_size=$(wc -c < "$wasm_path")
+          echo "WASM size: ${wasm_size} bytes"
+          test "$wasm_size" -le 153600
 
       - name: Upload WASM artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: wasm-pkg
           path: packages/web/src/lib/wasm/
           retention-days: 1
 
-  web:
-    name: Web Build & Test
-    runs-on: ubuntu-latest
-    needs: wasm
-    env:
-      # Public Supabase config (required for svelte-check to pass)
-      # These are public values - anon key is safe to expose (it's in browser anyway)
-      PUBLIC_SUPABASE_URL: https://duhsbuyxyppgbkwbbtqg.supabase.co
-      PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1aHNidXl4eXBwZ2Jrd2JidHFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzI4NjQ0OTAsImV4cCI6MjA0ODQ0MDQ5MH0.placeholder
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - name: Download WASM artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: wasm-pkg
-          path: packages/web/src/lib/wasm/
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build shared package
-        run: pnpm --filter @dicee/shared build
-
-      - name: Biome check
-        run: pnpm --filter @dicee/web biome:check
-
-      - name: Type check
-        run: pnpm --filter @dicee/web check
-
-      - name: Run tests (legacy API mode)
-        run: pnpm --filter @dicee/web test -- run
-
-      - name: Run tests (new engine mode)
-        env:
-          VITE_ENABLE_NEW_ENGINE: 'true'
-        run: pnpm --filter @dicee/web test -- run
-
-      - name: Build
-        run: pnpm --filter @dicee/web build
-
-  akg:
-    name: Architecture Checks
-    runs-on: ubuntu-latest
-    needs: web
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build shared package
-        run: pnpm --filter @dicee/shared build
-
-      - name: Discover architecture graph
-        run: pnpm akg:discover
-
-      - name: Verify diagram staleness
-        run: |
-          pnpm akg:mermaid --check || {
-            echo "::warning::AKG diagrams may be stale. Run 'pnpm akg:mermaid' locally and commit if needed."
-          }
-        continue-on-error: true
-
-      - name: Run architecture checks
-        id: akg-check
-        run: |
-          # Run directly with bun to avoid pnpm output prefix in SARIF
-          bun run packages/web/src/tools/akg/cli/check.ts --sarif > akg-results.sarif
-          EXIT_CODE=$?
-          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
-
-          # Check if SARIF has results (GitHub Code Scanning requires at least one location)
-          RESULT_COUNT=$(jq '[.runs[].results[]] | length' akg-results.sarif 2>/dev/null || echo "0")
-          echo "result_count=$RESULT_COUNT" >> "$GITHUB_OUTPUT"
-          echo "AKG found $RESULT_COUNT violations"
-        continue-on-error: true
-
-      - name: Upload SARIF to Code Scanning
-        uses: github/codeql-action/upload-sarif@v4
-        if: steps.akg-check.outputs.result_count != '0'
-        with:
-          sarif_file: akg-results.sarif
-          category: architecture
-
-      - name: Log clean architecture status
-        if: steps.akg-check.outputs.result_count == '0'
-        run: echo "✅ No architectural violations found - SARIF upload skipped"
-
-      - name: Check for errors
-        if: steps.akg-check.outputs.exit_code == '1'
-        run: |
-          echo "::error::AKG found architectural violations"
-          pnpm akg:check
-          exit 1
-
-  cloudflare-do:
-    name: Cloudflare DO Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build shared package
-        run: pnpm --filter @dicee/shared build
-
-      - name: Type check
-        run: pnpm --filter @dicee/cloudflare-do typecheck
-
-      - name: Run tests
-        run: pnpm --filter @dicee/cloudflare-do test -- run
-
-      - name: Check observability test coverage
-        if: github.ref == 'refs/heads/main' || contains(github.head_ref, 'observability')
-        run: |
-          pnpm --filter @dicee/cloudflare-do test --coverage || true
-          echo "::notice::Observability test coverage check (during observability implementation phase)"
-        continue-on-error: true
-
-      - name: Check for console.log statements
-        if: github.ref == 'refs/heads/main' || contains(github.head_ref, 'observability')
-        run: |
-          CONSOLE_COUNT=$(grep -r "console\.log\|console\.error\|console\.warn" packages/cloudflare-do/src --exclude-dir=__tests__ 2>/dev/null | wc -l | tr -d ' ')
-          if [ "$CONSOLE_COUNT" -gt 0 ]; then
-            echo "::warning::Found $CONSOLE_COUNT console.log/error/warn statements in production code"
-            echo "::notice::Expected: 0 during observability implementation phase"
-          else
-            echo "::notice::No console.log statements found in production code"
-          fi
-        continue-on-error: true
-
   deploy-worker:
     name: Deploy Durable Objects Worker
     runs-on: ubuntu-latest
-    needs: [cloudflare-do, akg]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: validate
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy && github.ref == 'refs/heads/main'
+    environment: Production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
     permissions:
       contents: read
-      deployments: write
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          version: 10
+          persist-credentials: false
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: 24
+          node-version: 24.18.0
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build shared package
         run: pnpm --filter @dicee/shared build
 
       - name: Deploy Worker to Cloudflare
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/cloudflare-do
-          command: deploy --env production
+          command: deploy --env=""
           secrets: |
             SUPABASE_URL
             SUPABASE_ANON_KEY
@@ -309,47 +142,53 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
   deploy-pages:
-    name: Deploy to Cloudflare Pages
+    name: Deploy Cloudflare Pages
     runs-on: ubuntu-latest
-    needs: [web, akg, deploy-worker]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [validate, deploy-worker]
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy && github.ref == 'refs/heads/main'
+    environment: Production
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
     permissions:
       contents: read
-      deployments: write
     env:
-      PUBLIC_SUPABASE_URL: https://duhsbuyxyppgbkwbbtqg.supabase.co
+      PUBLIC_SUPABASE_URL: ${{ vars.PUBLIC_SUPABASE_URL }}
       PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          version: 10
+          persist-credentials: false
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: 24
+          node-version: 24.18.0
           cache: pnpm
 
-      - name: Download WASM artifact
-        uses: actions/download-artifact@v8
+      - name: Download validated WASM artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: wasm-pkg
           path: packages/web/src/lib/wasm/
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify public build configuration
+        run: test -n "$PUBLIC_SUPABASE_URL" && test -n "$PUBLIC_SUPABASE_ANON_KEY"
 
       - name: Build shared package
         run: pnpm --filter @dicee/shared build
 
-      - name: Build
+      - name: Build web application
         run: pnpm --filter @dicee/web build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

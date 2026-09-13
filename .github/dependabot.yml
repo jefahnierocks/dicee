@@ -1,0 +1,56 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Explicit cooldown; never shorter than GitHub's 3-day default.
+    cooldown:
+      default-days: 3
+    groups:
+      javascript-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      javascript-major:
+        patterns: ["*"]
+        update-types: ["major"]
+    ignore:
+      # TypeScript 7 lacks the embedded-language API Svelte tooling needs (see AGENTS.md).
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@dicebear/core"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: cargo
+    directory: /packages/engine
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    groups:
+      rust:
+        patterns: ["*"]
+
+  - package-ecosystem: uv
+    directory: /packages/analysis
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    groups:
+      python:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+    groups:
+      actions:
+        patterns: ["*"]
