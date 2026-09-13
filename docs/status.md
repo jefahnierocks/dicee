@@ -1,16 +1,17 @@
 # Dicee status
 
-**As of:** 2026-09-13
+**As of:** 2026-09-13T20:46:01Z
 
-**Current phase:** 2026-09 docs streamline; operator safety rollout open (no deployment)
+**Current phase:** 2026-09 operator safety rollout; profile-role migration applied (no deployment)
 
 Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 
 ## Current state
 
 - `main` carries the reviewed baseline, the database privacy work and current dependency updates (Vitest 5, jsdom 30).
-- Migrations `20260913000001` and `20260913000002` and their pgTAP tests exist only as files; neither has run against the hosted project.
-- No deployment or hosted migration is recorded. CI deploys only on a manual `workflow_dispatch` from `main` with `deploy=true`.
+- Migration `20260913000001` is applied to the hosted project and recorded in migration history. Authenticated clients cannot update `profiles.role`; their editable profile fields remain granted. Migration `20260913000002` remains local-only.
+- The database backup is encrypted and verified on off-machine storage; Storage contained 0 objects. The plaintext exports were removed after verification.
+- No application deployment has run during this operator rollout. CI deploys only on a manual `workflow_dispatch` from `main` with `deploy=true`.
 - Legacy client layers are retired and the docs are consolidated into this file, the roadmap, `docs/cloudflare.md`, `docs/architecture/` and `docs/development/`. Git history is the archive.
 
 ## Decisions
@@ -18,7 +19,7 @@ Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 1. **Durable Objects.** Keep the legacy `migrations` v1 (`GameRoom`) and v2 (`GlobalLobby`) with `new_sqlite_classes`. Adopt declarative `exports` only for a concrete need, as a standalone operator deploy. The first Worker deploy waits for the namespace-ownership check (action 5): if another script owns the namespaces, a deploy to `dicee` creates empty namespaces and live state stays on the old script, so stop.
 2. **MCP.** `akg` (stdio) and unauthenticated `cloudflare-docs` are enabled. `cloudflare-api` and read-only Supabase are opt-in OAuth servers. No bearer-token wrappers or credential bridges.
 3. **Secrets.** Infisical is retired. CI reads GitHub Environment secrets; local operator commands resolve 1Password secrets per command.
-4. **Database.** `20260913000001` applies alone first; `20260913000002` applies only after a Pages deploy that includes the profile visibility opt-in control (actions 2-4).
+4. **Database.** `20260913000001` was applied alone. `20260913000002` applies only after a Pages deploy that includes the profile visibility opt-in control (actions 3-4).
 5. **Wrangler.** Stay on the miniflare 4 line: wrangler 4.113.0 with `compatibility_date` 2026-07-21. Dependabot cites this decision number.
 6. **Homes.** This file is the status of record; [roadmap.md](roadmap.md) is the only sequence of work; git history is the archive.
 7. **Data platform.** Stay on Supabase (Auth and Postgres), hardened and minimized.
@@ -30,8 +31,8 @@ Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 
 These need operator authority and live access, in this order. Mark one done only with a first-hand readback in [Latest live readbacks](#latest-live-readbacks).
 
-1. [ ] **Backup.** Read back the Supabase plan tier, then take an off-site `supabase db dump` and a Storage export. Free projects have no platform backups, and the dump is the only record of prior profile visibility.
-2. [ ] **Apply only `20260913000001`.** `supabase db push` applies every pending file, so push from a tree that does not contain `20260913000002`, or run `000001` in the SQL editor and record it with `supabase migration repair --status applied 20260913000001`. Record admin role counts only and revoke any unexpected elevation.
+1. [x] **Backup.** The operator confirmed the Free plan. Five SQL dumps and the Storage inventory were verified in an AES-256 image on off-machine storage; Storage contained 0 objects. Plaintext exports were removed only after the copied image passed verification.
+2. [ ] **Finish the profile-role audit.** Migration `20260913000001` is applied and recorded; do not reapply it. Record role counts and review existing elevated roles. Any corrective role changes remain operator follow-up.
 3. [ ] **Deploy Pages from `main`.** CI `deploy-pages` needs `deploy-worker`. Use CI only if action 5's readback shows the `dicee` script holds both the `GameRoom` and `GlobalLobby` namespaces at migration tag v2; otherwise use the operator-local `pnpm pages:deploy` and deploy no Worker. `pnpm pages:deploy` inlines the Supabase public values from the local build environment; read the warning in [cloudflare.md](cloudflare.md#deploy-path) first. Then run the post-deploy smoke checks there.
 4. [ ] **Apply `20260913000002`** only after a Pages deploy that includes the profile visibility opt-in control. It makes every existing profile private, so players disappear from leaderboards and stats until they opt in; the web app has no opt-in control yet. It also drops the `bug_reports` columns `user_email`, `user_display_name`, `user_context` and `console_capture`, which the previous web build still writes; applied earlier, bug-report submission fails.
 5. [ ] **Worker namespace check.** Before any Worker deploy, read back which Worker script holds the live `GameRoom` and `GlobalLobby` namespaces, their migration tag where a read-only source exists, and what the Pages `GAME_WORKER` binding targets ([method](cloudflare.md#live-checks-still-needed)).
@@ -51,6 +52,9 @@ One row per subject, replaced when superseded. Counts and names only; never secr
 
 | Subject | UTC | Request | Result |
 |---|---|---|---|
+| Encrypted backup | 2026-09-13T20:32:35Z | Supabase CLI exports and Storage count; mounted-image and SHA-256 checks | 5 SQL dumps; 0 Storage objects; all 11 backup files verified in the NAS image; plaintext exports removed |
+| Profile privileges | 2026-09-13T20:44:17Z | CLI: privilege and migration-object queries | Authenticated table-level and role UPDATE revoked; display_name UPDATE retained; anon UPDATE revoked; service_role unchanged; both triggers and insert policy present; 0 anonymous-flag mismatches |
+| Migration history | 2026-09-13T20:46:01Z | CLI: transactional execution of 000001, migration repair, migration list | 23 local and 22 remote versions; all 21 older versions and 000001 present remotely; 000002 remains local-only |
 | GitHub governance | 2026-09-13T04:32Z | REST: repository rulesets, `main` branch protection, environments | 0 rulesets; `main` unprotected (404); `Production` has no required reviewers or branch policy |
 | Cloudflare Pages and Workers | 2026-09-13T04:35Z | API: Pages project `dicee`, Worker scripts list, Workers Builds triggers | Pages has no Git source, production branch `main`; 2 scripts, one of them `dicee`; trigger reads returned 403, so triggers are unverified |
 | GitHub Apps | 2026-09-13T04:49Z | Repository installed GitHub Apps page | No Cloudflare Workers and Pages app; with no Pages Git source, the native Git build integration is not in use |
