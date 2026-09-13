@@ -6,6 +6,7 @@
  * Includes Avatar preview and form validation.
  */
 
+import { untrack } from 'svelte';
 import Avatar from '$lib/components/ui/Avatar.svelte';
 import { createSupabaseBrowserClient } from '$lib/supabase/client';
 import { type Profile, updateProfile } from '$lib/supabase/profiles';
@@ -22,8 +23,8 @@ interface Props {
 let { profile, onUpdate, class: className = '' }: Props = $props();
 
 // Form state
-let displayName = $state(profile.display_name || '');
-let bio = $state(profile.bio || '');
+let displayName = $state(untrack(() => profile.display_name || ''));
+let bio = $state(untrack(() => profile.bio || ''));
 let loading = $state(false);
 let error = $state<string | null>(null);
 let success = $state(false);

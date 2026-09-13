@@ -1,110 +1,79 @@
-/**
- * Telemetry API Endpoint
- *
- * Receives batched telemetry events from the client and stores them in Supabase.
- * Supports both authenticated and anonymous event collection.
- *
- * POST /api/telemetry
- * Body: { events: TelemetryEvent[] }
- */
+/** Privacy-bounded telemetry ingestion. */
 
 import { json, type RequestHandler } from '@sveltejs/kit';
 import type { Json } from '$lib/types/database';
-import type { TelemetryEvent } from '$lib/types/telemetry';
+import { parseTelemetryEvent, type TelemetryEvent } from '$lib/types/telemetry';
 
-/**
- * Maximum events per request (prevent abuse)
- */
 const MAX_EVENTS_PER_REQUEST = 50;
+const MAX_REQUEST_BYTES = 64 * 1024;
 
-/**
- * Validate a single telemetry event
- */
-function validateEvent(event: unknown): event is TelemetryEvent {
-	if (typeof event !== 'object' || event === null) {
-		return false;
+function sameOriginPath(value: string | null | undefined, origin: string): string | null {
+	if (!value) return null;
+	try {
+		const parsed = new URL(value, origin);
+		if (parsed.origin !== origin) return null;
+		return `${parsed.pathname}${parsed.search}`.slice(0, 512);
+	} catch {
+		return null;
 	}
-
-	const e = event as Record<string, unknown>;
-
-	// Required fields
-	if (typeof e.session_id !== 'string' || e.session_id.length < 1) {
-		return false;
-	}
-
-	if (typeof e.event_type !== 'string' || e.event_type.length < 1) {
-		return false;
-	}
-
-	if (typeof e.payload !== 'object' || e.payload === null) {
-		return false;
-	}
-
-	if (typeof e.timestamp !== 'string') {
-		return false;
-	}
-
-	return true;
 }
 
-/**
- * Handle POST requests with batched telemetry events
- */
-export const POST: RequestHandler = async ({ request, locals }) => {
+function boundedTimestamp(timestamp: string): string {
+	const value = Date.parse(timestamp);
+	const now = Date.now();
+	return Number.isFinite(value) &&
+		value >= now - 24 * 60 * 60 * 1000 &&
+		value <= now + 5 * 60 * 1000
+		? new Date(value).toISOString()
+		: new Date(now).toISOString();
+}
+
+export const POST: RequestHandler = async ({ request, locals, url }) => {
+	const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
+	if (declaredLength > MAX_REQUEST_BYTES)
+		return json({ error: 'Request too large' }, { status: 413 });
+
 	try {
-		const body = await request.json();
-
-		// Validate request body
-		if (!body.events || !Array.isArray(body.events)) {
+		const rawBody = await request.text();
+		if (new TextEncoder().encode(rawBody).byteLength > MAX_REQUEST_BYTES) {
+			return json({ error: 'Request too large' }, { status: 413 });
+		}
+		const body = JSON.parse(rawBody) as { events?: unknown };
+		if (!Array.isArray(body.events))
 			return json({ error: 'Missing events array' }, { status: 400 });
-		}
-
-		if (body.events.length === 0) {
-			return json({ success: true, count: 0 });
-		}
-
+		if (body.events.length === 0) return json({ success: true, count: 0 });
 		if (body.events.length > MAX_EVENTS_PER_REQUEST) {
 			return json({ error: `Too many events (max ${MAX_EVENTS_PER_REQUEST})` }, { status: 400 });
 		}
 
-		// Validate each event
 		const validEvents: TelemetryEvent[] = [];
-		for (const event of body.events) {
-			if (validateEvent(event)) {
-				validEvents.push(event);
-			}
+		for (const input of body.events) {
+			const result = parseTelemetryEvent(input);
+			if (!result.success) return json({ error: 'Invalid telemetry event' }, { status: 400 });
+			validEvents.push(result.data);
 		}
 
-		if (validEvents.length === 0) {
-			return json({ error: 'No valid events' }, { status: 400 });
-		}
-
-		// Get current user (if authenticated)
 		const { user } = await locals.safeGetSession();
-
-		// Prepare events for insertion
+		const requestUserAgent = request.headers.get('User-Agent')?.slice(0, 256) ?? null;
 		const eventsToInsert = validEvents.map((event) => ({
 			session_id: event.session_id,
-			user_id: user?.id ?? event.user_id ?? null,
+			// Never trust a client-supplied user identifier.
+			user_id: user?.id ?? null,
 			event_type: event.event_type,
 			payload: event.payload as unknown as Json,
-			page_url: event.page_url ?? null,
-			referrer: event.referrer ?? null,
-			user_agent: event.user_agent ?? null,
-			timestamp: event.timestamp,
+			page_url: sameOriginPath(event.page_url, url.origin),
+			referrer: sameOriginPath(event.referrer, url.origin),
+			user_agent: requestUserAgent,
+			timestamp: boundedTimestamp(event.timestamp),
 		}));
 
-		// Insert events into Supabase
 		const { error } = await locals.supabase.from('telemetry_events').insert(eventsToInsert);
-
 		if (error) {
-			console.error('Telemetry insert error:', error);
+			console.error('Telemetry insert failed');
 			return json({ error: 'Failed to store events' }, { status: 500 });
 		}
-
 		return json({ success: true, count: eventsToInsert.length });
-	} catch (err) {
-		console.error('Telemetry API error:', err);
-		return json({ error: 'Internal server error' }, { status: 500 });
+	} catch {
+		return json({ error: 'Invalid request' }, { status: 400 });
 	}
 };

@@ -5,17 +5,12 @@
  * Requires admin+ role for access.
  */
 
+import { requireAdminPermission } from '$lib/server/admin';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ platform, locals }) => {
-	// Check authentication
-	const { user } = await locals.safeGetSession();
-	if (!user) {
-		return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-			status: 401,
-			headers: { 'Content-Type': 'application/json' },
-		});
-	}
+	const authorization = await requireAdminPermission(locals, 'audit:view');
+	if (authorization instanceof Response) return authorization;
 
 	const gameWorker = platform?.env?.GAME_WORKER;
 
@@ -34,7 +29,7 @@ export const GET: RequestHandler = async ({ platform, locals }) => {
 		status: response.status,
 		headers: {
 			'Content-Type': 'application/json',
-			'Cache-Control': 'no-cache, max-age=0',
+			'Cache-Control': 'no-store',
 		},
 	});
 };

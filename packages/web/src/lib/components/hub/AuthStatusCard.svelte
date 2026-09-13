@@ -21,7 +21,10 @@ const isSignedIn = $derived(auth.isAuthenticated && !auth.isAnonymous);
 const displayName = $derived(() => {
 	if (!auth.user) return 'Guest';
 	if (auth.isAnonymous) return 'Guest';
-	return auth.email?.split('@')[0] || 'Player';
+	return (
+		(auth.user.user_metadata?.display_name as string | undefined) ||
+		`Player-${auth.user.id.slice(0, 6)}`
+	);
 });
 
 function handleClick() {

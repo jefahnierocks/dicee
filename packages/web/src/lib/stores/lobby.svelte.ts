@@ -26,7 +26,7 @@ import { createServiceLogger } from '$lib/utils/logger';
 const log = createServiceLogger('Lobby');
 
 // Re-export RoomInfo for components that import from this store
-export type { RoomInfo, PlayerPresenceState, PlayerSummary };
+export type { PlayerPresenceState, PlayerSummary, RoomInfo };
 
 // Types (local to lobby store)
 export interface ChatMessage {

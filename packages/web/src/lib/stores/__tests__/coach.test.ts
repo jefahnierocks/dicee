@@ -412,22 +412,21 @@ describe('CoachStore', () => {
 			expect(coach.showConfirmModal).toBe(false);
 		});
 
-		it.each([
-			'off',
-			'hints',
-			'coach',
-		] as const)('should not block decisions in %s mode', (level) => {
-			coach.setLevel(level);
+		it.each(['off', 'hints', 'coach'] as const)(
+			'should not block decisions in %s mode',
+			(level) => {
+				coach.setLevel(level);
 
-			const decision: PendingDecision = {
-				type: 'reroll',
-				isOptimal: false,
-				chosenEV: 10.0,
-				optimalEV: 20.0,
-			};
+				const decision: PendingDecision = {
+					type: 'reroll',
+					isOptimal: false,
+					chosenEV: 10.0,
+					optimalEV: 20.0,
+				};
 
-			expect(coach.requestConfirmation(decision)).toBe(true);
-		});
+				expect(coach.requestConfirmation(decision)).toBe(true);
+			},
+		);
 	});
 
 	describe('confirmDecision', () => {

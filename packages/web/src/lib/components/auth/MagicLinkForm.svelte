@@ -19,7 +19,7 @@ let error = $state<string | null>(null);
 let success = $state(false);
 
 const buttonText = $derived(mode === 'link' ? 'Link Email' : 'Send Magic Link');
-const placeholderText = $derived(mode === 'link' ? 'your@email.com' : 'Enter your email');
+const placeholderText = $derived(mode === 'link' ? 'user@example.com' : 'Enter your email');
 
 async function handleSubmit(e: Event) {
 	e.preventDefault();

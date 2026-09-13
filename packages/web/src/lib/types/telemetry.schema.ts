@@ -40,8 +40,8 @@ export type TelemetryEventType = z.infer<typeof TelemetryEventTypeSchema>;
 
 /** Session start payload */
 export const SessionStartPayloadSchema = z.object({
-	entry_page: z.string(),
-	referrer: z.string().nullable(),
+	entry_page: z.string().max(512),
+	referrer: z.string().max(512).nullable(),
 });
 
 /** Session end payload */
@@ -52,8 +52,8 @@ export const SessionEndPayloadSchema = z.object({
 
 /** Page view payload */
 export const PageViewPayloadSchema = z.object({
-	page: z.string(),
-	previous_page: z.string().nullable(),
+	page: z.string().max(512),
+	previous_page: z.string().max(512).nullable(),
 });
 
 /** Game start payload */
@@ -78,7 +78,7 @@ export const RollPayloadSchema = z.object({
 
 /** Category hover payload */
 export const CategoryHoverPayloadSchema = z.object({
-	category: z.string(),
+	category: z.string().max(64),
 	duration_ms: z.number().int().min(0),
 });
 
@@ -100,22 +100,22 @@ export const HintRequestedPayloadSchema = z.object({
 /** Decision quality payload */
 export const DecisionQualityPayloadSchema = z.object({
 	quality: z.enum(['optimal', 'excellent', 'good', 'acceptable', 'suboptimal', 'poor']),
-	ev_difference: z.number(),
-	category: z.string(),
+	ev_difference: z.number().finite(),
+	category: z.string().max(64),
 });
 
 /** Prediction payload */
 export const PredictionPayloadSchema = z.object({
-	predicted: z.string(),
-	actual: z.string(),
+	predicted: z.string().max(64),
+	actual: z.string().max(64),
 	accuracy: z.number().min(0).max(1),
 });
 
 /** Error payload */
 export const ErrorPayloadSchema = z.object({
-	error_code: z.string(),
-	error_message: z.string(),
-	context: z.string().nullable(),
+	error_code: z.string().max(64),
+	error_message: z.string().max(512),
+	context: z.string().max(256).nullable(),
 });
 
 // =============================================================================
@@ -141,13 +141,13 @@ export type ErrorPayload = z.infer<typeof ErrorPayloadSchema>;
 
 /** Base event fields shared by all telemetry events */
 const BaseTelemetryFields = z.object({
-	id: z.string().optional(),
-	session_id: z.string(),
-	user_id: z.string().nullable().optional(),
-	page_url: z.string().nullable().optional(),
-	referrer: z.string().nullable().optional(),
-	user_agent: z.string().nullable().optional(),
-	timestamp: z.string(),
+	id: z.string().uuid().optional(),
+	session_id: z.string().uuid(),
+	user_id: z.string().uuid().nullable().optional(),
+	page_url: z.string().max(512).nullable().optional(),
+	referrer: z.string().max(512).nullable().optional(),
+	user_agent: z.string().max(512).nullable().optional(),
+	timestamp: z.string().datetime({ offset: true }),
 });
 
 /** Session start event */

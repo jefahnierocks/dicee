@@ -19,8 +19,8 @@ async function handleSignOut() {
 	signingOut = true;
 	try {
 		await auth.signOut();
-	} catch (e) {
-		console.error('Sign out error:', e);
+	} catch {
+		console.error('Sign out failed');
 	} finally {
 		signingOut = false;
 	}
@@ -29,7 +29,10 @@ async function handleSignOut() {
 const displayName = $derived(() => {
 	if (!auth.user) return null;
 	if (auth.isAnonymous) return 'Guest';
-	return auth.email?.split('@')[0] || 'User';
+	return (
+		(auth.user.user_metadata?.display_name as string | undefined) ||
+		`Player-${auth.user.id.slice(0, 6)}`
+	);
 });
 </script>
 

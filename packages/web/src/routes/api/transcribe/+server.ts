@@ -6,7 +6,7 @@
 
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ request, platform }) => {
+export const POST: RequestHandler = async ({ request, platform, locals }) => {
 	const gameWorker = platform?.env?.GAME_WORKER;
 
 	if (!gameWorker) {
@@ -16,19 +16,28 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			headers: { 'Content-Type': 'application/json' },
 		});
 	}
+	const { session } = await locals.safeGetSession();
+	if (!session?.access_token) {
+		return Response.json({ error: 'Authentication required' }, { status: 401 });
+	}
+	const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
+	if (declaredLength > 7 * 1024 * 1024) {
+		return Response.json({ error: 'Request too large' }, { status: 413 });
+	}
 
 	try {
 		// Get the request body
-		const body = await request.text();
-
 		// Proxy to GAME_WORKER transcription endpoint
 		const response = await gameWorker.fetch(
 			new Request('https://internal/api/transcribe', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					Authorization: `Bearer ${session.access_token}`,
 				},
-				body,
+				body: request.body,
+				// @ts-expect-error - duplex is required for streamed request bodies
+				duplex: 'half',
 			}),
 		);
 
@@ -39,8 +48,8 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 				'Content-Type': 'application/json',
 			},
 		});
-	} catch (error) {
-		console.error('[api/transcribe] Proxy error:', error);
+	} catch {
+		console.error('[api/transcribe] Proxy failed');
 		return new Response(JSON.stringify({ error: 'Transcription failed' }), {
 			status: 500,
 			headers: { 'Content-Type': 'application/json' },

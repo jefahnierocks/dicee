@@ -42,12 +42,7 @@ let quickPlayLoading = $state(false);
 const displayName = $derived(() => {
 	const user = auth.user;
 	if (!user) return 'Guest';
-	return (
-		(user.user_metadata?.display_name as string) ||
-		(user.user_metadata?.full_name as string) ||
-		user.email?.split('@')[0] ||
-		'Guest'
-	);
+	return (user.user_metadata?.display_name as string) || `Player-${user.id.slice(0, 6)}`;
 });
 
 // Admin panel state - uses RBAC from profile store

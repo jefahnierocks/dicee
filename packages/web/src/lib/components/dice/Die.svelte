@@ -1,4 +1,5 @@
 <script lang="ts">
+import { untrack } from 'svelte';
 import { audioStore } from '$lib/stores/audio.svelte';
 import type { DieValue } from '$lib/types.js';
 import { getDiceLandStyles, getDiceRollStyles, prefersReducedMotion } from '$lib/utils/dicePhysics';
@@ -45,7 +46,7 @@ function stylesToString(styles: Record<string, string>): string {
 }
 
 // Track previous value for animation
-let previousValue = $state(value);
+let previousValue = $state(untrack(() => value));
 let showValueChange = $state(false);
 
 $effect(() => {

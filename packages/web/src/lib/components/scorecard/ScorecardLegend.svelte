@@ -1,4 +1,6 @@
 <script lang="ts">
+import { untrack } from 'svelte';
+
 /**
  * ScorecardLegend Component
  *
@@ -13,7 +15,7 @@ interface Props {
 
 let { defaultExpanded = false }: Props = $props();
 
-let expanded = $state(defaultExpanded);
+let expanded = $state(untrack(() => defaultExpanded));
 
 function toggle() {
 	expanded = !expanded;

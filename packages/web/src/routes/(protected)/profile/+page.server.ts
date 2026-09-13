@@ -21,14 +21,13 @@ export const load = (async ({ locals }) => {
 
 	// If profile doesn't exist, create it (handles cases where trigger didn't run)
 	if (!profile && !profileError) {
-		const displayName = user.user_metadata?.full_name || user.email?.split('@')[0] || null;
 		const { data: newProfile, error: createError } = await createProfile(locals.supabase, user.id, {
-			display_name: displayName,
-			is_anonymous: user.is_anonymous ?? false,
+			display_name: null,
+			is_public: false,
 		});
 
 		if (createError) {
-			console.error('Failed to create profile:', createError);
+			console.error('Failed to create profile');
 			throw error(500, 'Failed to create profile');
 		}
 
@@ -36,7 +35,7 @@ export const load = (async ({ locals }) => {
 	}
 
 	if (profileError) {
-		console.error('Failed to load profile:', profileError);
+		console.error('Failed to load profile');
 		throw error(500, 'Failed to load profile');
 	}
 

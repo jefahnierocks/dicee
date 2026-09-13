@@ -161,13 +161,13 @@ describe('UpgradePrompt: Email Linking', () => {
 		await fireEvent.click(emailOptionButton);
 
 		// Enter email and submit
-		const input = screen.getByPlaceholderText('your@email.com');
-		await fireEvent.input(input, { target: { value: 'upgrade@example.com' } });
+		const input = screen.getByPlaceholderText('user@example.com');
+		await fireEvent.input(input, { target: { value: 'user@example.com' } });
 
 		const submitButton = screen.getByRole('button', { name: 'Link Email' });
 		await fireEvent.click(submitButton);
 
-		expect(auth.linkEmail).toHaveBeenCalledWith('upgrade@example.com');
+		expect(auth.linkEmail).toHaveBeenCalledWith('user@example.com');
 	});
 });
 

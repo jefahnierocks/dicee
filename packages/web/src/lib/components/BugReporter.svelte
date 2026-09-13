@@ -7,9 +7,7 @@
  * Captures bug reports with voice recording and automatic state capture.
  */
 
-import { onMount } from 'svelte';
 import { type BugReportSubmission, bugReportService } from '$lib/services/bugReport';
-import { initializeConsoleCapture } from '$lib/services/consoleCapture';
 import { type VoiceRecording, voiceRecorder } from '$lib/services/voiceRecorder';
 
 // Props
@@ -36,11 +34,6 @@ let description = $state('');
 let error = $state('');
 let success = $state(false);
 let recordingInterval: number | null = null;
-
-// Initialize console capture when component mounts
-onMount(() => {
-	initializeConsoleCapture();
-});
 
 // Start voice recording
 async function startRecording() {

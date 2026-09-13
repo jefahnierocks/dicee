@@ -1,4 +1,5 @@
 import type { Handle } from '@sveltejs/kit';
+import { withSecurityHeaders } from '$lib/server/ws-proxy';
 import { createSupabaseServerClient } from '$lib/supabase/server';
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -37,10 +38,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 		return { session, user };
 	};
 
-	return resolve(event, {
+	const response = await resolve(event, {
 		filterSerializedResponseHeaders(name) {
 			// Allow Supabase-specific headers to be serialized
 			return name === 'content-range' || name === 'x-supabase-api-version';
 		},
 	});
+
+	// Skips 101 WebSocket upgrades and re-wraps responses with immutable headers
+	// (for example a service-binding response) instead of throwing.
+	return withSecurityHeaders(response, { https: event.url.protocol === 'https:' });
 };

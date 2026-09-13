@@ -7,7 +7,6 @@
 
 import { createSupabaseBrowserClient } from '$lib/supabase/client';
 import { clearBreadcrumbs, getBreadcrumbs } from './breadcrumbs';
-import { clearConsoleCapture, getConsoleCapture } from './consoleCapture';
 import { captureStateSnapshot } from './stateSnapshot';
 
 export interface BugReportSubmission {
@@ -21,17 +20,13 @@ export interface BugReportSubmission {
 export interface BugReport {
 	id: string;
 	user_id: string;
-	user_email?: string;
-	user_display_name?: string;
 	severity: 'blocking' | 'annoying' | 'noticed';
 	title: string;
 	description?: string;
 	game_state?: any;
 	connection_state?: any;
 	ui_state?: any;
-	user_context?: any;
 	breadcrumbs?: any[];
-	console_capture?: string[];
 	audio_transcription?: string;
 	audio_file_path?: string;
 	audio_duration_ms?: number;
@@ -54,7 +49,6 @@ export class BugReportService {
 			// Capture current application state
 			const stateSnapshot = captureStateSnapshot();
 			const breadcrumbs = getBreadcrumbs();
-			const consoleCapture = getConsoleCapture();
 
 			// Get user info from auth
 			const {
@@ -80,17 +74,13 @@ export class BugReportService {
 				.from('bug_reports')
 				.insert({
 					user_id: user.id,
-					user_email: user.email,
-					user_display_name: user.user_metadata?.full_name || user.email?.split('@')[0],
 					severity: submission.severity,
 					title: submission.title,
 					description: submission.description,
 					game_state: stateSnapshot.game,
 					connection_state: stateSnapshot.connection,
 					ui_state: stateSnapshot.ui,
-					user_context: stateSnapshot.user,
 					breadcrumbs,
-					console_capture: consoleCapture,
 					audio_transcription: submission.audioTranscription,
 					audio_file_path: audioFilePath,
 					audio_duration_ms: audioDuration,
@@ -107,7 +97,7 @@ export class BugReportService {
 
 			return data;
 		} catch (error) {
-			console.error('Bug report submission failed:', error);
+			console.error('Bug report submission failed');
 			throw error;
 		}
 	}
@@ -264,7 +254,6 @@ export class BugReportService {
 	 */
 	private clearCapturedData(): void {
 		clearBreadcrumbs();
-		clearConsoleCapture();
 	}
 
 	/**
