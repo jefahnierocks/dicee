@@ -1,8 +1,8 @@
 # Dicee status
 
-**As of:** 2026-09-13T21:41:56Z
+**As of:** 2026-09-13T22:18:29Z
 
-**Current phase:** 2026-09 operator safety rollout; profile-role audit complete (no deployment)
+**Current phase:** 2026-09 operator safety rollout; Phases 9-10 complete (no deployment)
 
 Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 
@@ -12,6 +12,7 @@ Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 - Migration `20260913000001` is applied to the hosted project and recorded in migration history. Authenticated clients cannot update `profiles.role`; their editable profile fields remain granted. Migration `20260913000002` remains local-only.
 - Phase 8 is complete: 7 profiles comprise 5 users and 2 super admins, with no moderators or admins. The operator confirmed both elevated assignments as intentional after private record review; no role changes were needed. Audit-log absence cannot establish that the old privilege was never exploited.
 - The database backup is encrypted and verified on off-machine storage; Storage contained 0 objects. The plaintext exports were removed after verification.
+- `workers.dev` and Preview URLs are disabled on `dicee` and `dicee-production`. Changes were limited to these two scripts; namespace ownership and other ingress remain unverified.
 - No application deployment has run during this operator rollout. CI deploys only on a manual `workflow_dispatch` from `main` with `deploy=true`.
 - Legacy client layers are retired and the docs are consolidated into this file, the roadmap, `docs/cloudflare.md`, `docs/architecture/` and `docs/development/`. Git history is the archive.
 
@@ -37,7 +38,7 @@ These need operator authority and live access, in this order. Mark one done only
 3. [ ] **Deploy Pages from `main`.** CI `deploy-pages` needs `deploy-worker`. Use CI only if action 5's readback shows the `dicee` script holds both the `GameRoom` and `GlobalLobby` namespaces at migration tag v2; otherwise use the operator-local `pnpm pages:deploy` and deploy no Worker. `pnpm pages:deploy` inlines the Supabase public values from the local build environment; read the warning in [cloudflare.md](cloudflare.md#deploy-path) first. Then run the post-deploy smoke checks there.
 4. [ ] **Apply `20260913000002`** only after a Pages deploy that includes the profile visibility opt-in control. It makes every existing profile private, so players disappear from leaderboards and stats until they opt in; the web app has no opt-in control yet. It also drops the `bug_reports` columns `user_email`, `user_display_name`, `user_context` and `console_capture`, which the previous web build still writes; applied earlier, bug-report submission fails.
 5. [ ] **Worker namespace check.** Before any Worker deploy, read back which Worker script holds the live `GameRoom` and `GlobalLobby` namespaces, their migration tag where a read-only source exists, and what the Pages `GAME_WORKER` binding targets ([method](cloudflare.md#live-checks-still-needed)).
-6. [ ] Confirm Worker ingress settings on every Dicee script.
+6. [x] **Worker subdomain URLs.** `workers.dev` and Preview URLs are disabled on `dicee` and `dicee-production`, verified by API. Namespace ownership and other ingress remain for the later reviews in actions 5 and 8.
 7. [ ] Undeploy the `aggregate-game-stats` Edge Function. The Worker treats the resulting 404 as non-retriable, so no retry loop follows.
 8. [ ] Review legacy Worker scripts.
 9. [ ] Rotate or revoke the Cloudflare API token and the Supabase personal access token that the retired bearer MCP wrappers used.
@@ -51,13 +52,27 @@ These need operator authority and live access, in this order. Mark one done only
 
 One row per subject, replaced when superseded. Counts and names only; never secret values or account identifiers.
 
+### Step 1 result
+
+These are the recorded Step 1 results; Phase 9 does not rerun the database checks. The operator confirmed that the verified NAS copy satisfies the off-site requirement.
+
 | Subject | UTC | Request | Result |
 |---|---|---|---|
-| Profile-role counts | 2026-09-13T21:39:34Z / 21:40:14Z | CLI: grouped profile-role counts, then private elevated-profile query | user 5; moderator 0; admin 0; super_admin 2; both elevated records match the counts |
-| Elevated-role intent | 2026-09-13T21:41:56Z | Operator confirmation after private review of both captured records | Both super-admin assignments intentional; 0 unresolved accounts; 0 corrections |
-| Encrypted backup | 2026-09-13T20:32:35Z | Supabase CLI exports and Storage count; mounted-image and SHA-256 checks | 5 SQL dumps; 0 Storage objects; all 11 backup files verified in the NAS image; plaintext exports removed |
-| Profile privileges | 2026-09-13T20:44:17Z | CLI: privilege and migration-object queries | Authenticated table-level and role UPDATE revoked; display_name UPDATE retained; anon UPDATE revoked; service_role unchanged; both triggers and insert policy present; 0 anonymous-flag mismatches |
-| Migration history | 2026-09-13T20:46:01Z | CLI: transactional execution of 000001, migration repair, migration list | 23 local and 22 remote versions; all 21 older versions and 000001 present remotely; 000002 remains local-only |
+| Supabase plan tier | 2026-09-13 | Operator plan-tier confirmation | Free |
+| Backup moved off-site | 2026-09-13T20:32:35Z | Mounted-image and checksum verification | Yes; verified encrypted NAS copy |
+| Storage object count | 2026-09-13T20:32:35Z | Storage inventory | 0 |
+| 000001 applied | 2026-09-13T20:46:01Z | CLI: migration history after successful SQL and repair | Yes; `20260913000001` applied |
+| 000002 applied | 2026-09-13T20:46:01Z | CLI: migration history | No; `20260913000002` not applied |
+| Privilege check results | 2026-09-13T21:03:57Z | CLI: privilege and migration-object queries | Table / role / display_name UPDATE: anon false / false / false; authenticated false / false / true; service_role true / true / true, unchanged; 2 required noninternal triggers; 1 owner insert policy |
+| Role counts | 2026-09-13T21:39:34Z | CLI: grouped profile-role counts | user 5; moderator 0; admin 0; super_admin 2 |
+| Unexpected elevated roles revoked | 2026-09-13T21:41:56Z | Operator review of both captured elevated records | 0 |
+
+### Other readbacks
+
+| Subject | UTC | Request | Result |
+|---|---|---|---|
+| Worker inventory | 2026-09-13T22:10:20Z | API: account Worker scripts | 11 scripts; the operator scoped Phase 10 to `dicee` and `dicee-production`, both at migration tag v2 |
+| Worker subdomain URLs | 2026-09-13T22:18:29Z | API: per-script subdomain settings after scoped POST updates | `dicee` and `dicee-production`: success true, enabled false, previews_enabled false; no deployment or deletion |
 | GitHub governance | 2026-09-13T04:32Z | REST: repository rulesets, `main` branch protection, environments | 0 rulesets; `main` unprotected (404); `Production` has no required reviewers or branch policy |
-| Cloudflare Pages and Workers | 2026-09-13T04:35Z | API: Pages project `dicee`, Worker scripts list, Workers Builds triggers | Pages has no Git source, production branch `main`; 2 scripts, one of them `dicee`; trigger reads returned 403, so triggers are unverified |
+| Cloudflare Pages and build triggers | 2026-09-13T04:35Z | API: Pages project `dicee`, Workers Builds triggers | Pages has no Git source, production branch `main`; trigger reads returned 403, so triggers are unverified |
 | GitHub Apps | 2026-09-13T04:49Z | Repository installed GitHub Apps page | No Cloudflare Workers and Pages app; with no Pages Git source, the native Git build integration is not in use |
