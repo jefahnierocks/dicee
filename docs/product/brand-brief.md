@@ -1,8 +1,8 @@
 # Dicee Brand Brief
 
-**Version:** 1.0  
-**Date:** December 2024  
-**Domain:** dicee.games
+- **Version:** 1.0
+- **Date:** December 2025
+- **Domain:** dicee.games
 
 ---
 
@@ -73,14 +73,14 @@ The friend who suggests playing a simple game at the party when everyone's tired
 
 ### Tone Examples
 
-**Good:** "Your turn! Roll when you're ready."  
-**Bad:** "It's YOUR turn now! 🎲🔥 ROLL TO WIN!"
+- **Good:** "Your turn! Roll when you're ready."
+- **Bad:** "It's YOUR turn now! 🎲🔥 ROLL TO WIN!"
 
-**Good:** "Nice! Dicee!"  
-**Bad:** "INCREDIBLE!!! YOU'RE ON FIRE!!! 🔥🔥🔥"
+- **Good:** "Nice! Dicee!"
+- **Bad:** "INCREDIBLE!!! YOU'RE ON FIRE!!! 🔥🔥🔥"
 
-**Good:** "Waiting for Sarah to join..."  
-**Bad:** "⏳ Hurry up! Your friend is taking forever!"
+- **Good:** "Waiting for Sarah to join..."
+- **Bad:** "⏳ Hurry up! Your friend is taking forever!"
 
 ### Brand Adjectives
 
