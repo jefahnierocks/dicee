@@ -114,7 +114,8 @@ scan_pattern 'workers.dev hostname with an account subdomain' '\.[a-z0-9-]+\.wor
 while IFS= read -r -d '' file; do
   [[ -f "$file" ]] || continue
   [[ "$file" == "scripts/public-safety-scan.sh" ]] && continue
-  case "$file" in
+  # Apply private-name rules at every depth, including package-local env files.
+  case "${file##*/}" in
     .env.example|.infisical.example.json) ;;
     .env|.env.*|*.pem|*.key|*.p12|*.pfx|.infisical.json)
       printf 'FAIL: private file is part of the publication candidate\n  %s\n' "$file" >&2
