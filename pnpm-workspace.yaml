@@ -1,2 +1,84 @@
 packages:
   - 'packages/*'
+
+# pnpm 11 project configuration. Keep dependency versions centralized and make
+# script execution deterministic for humans, CI, and coding agents.
+nodeVersion: 24.18.0
+engineStrict: true
+pmOnFail: error
+verifyDepsBeforeRun: error
+enableGlobalVirtualStore: false
+strictPeerDependencies: true
+minimumReleaseAge: 1440
+catalogMode: strict
+cleanupUnusedCatalogs: true
+enablePrePostScripts: true
+
+# One version authority for direct JavaScript/TypeScript dependencies across
+# the monorepo. Exact versions plus the lockfile make automated edits reviewable.
+catalog:
+  '@biomejs/biome': 2.5.4
+  '@dicebear/collection': 9.4.3
+  '@dicebear/core': 9.4.3
+  '@modelcontextprotocol/sdk': 1.30.0
+  '@playwright/test': 1.61.1
+  '@supabase/ssr': 0.12.3
+  '@supabase/supabase-js': 2.110.7
+  '@sveltejs/adapter-cloudflare': 7.2.9
+  '@sveltejs/kit': 2.70.3
+  '@sveltejs/vite-plugin-svelte': 7.2.0
+  '@testing-library/jest-dom': 7.0.0
+  '@testing-library/svelte': 5.4.2
+  '@testing-library/user-event': 14.6.1
+  '@types/node': 24.13.3
+  jsdom: 29.1.1
+  jose: 6.2.3
+  lefthook: 2.1.10
+  # Must equal the exact miniflare version wrangler depends on, so workerd
+  # runtime tests exercise the same local runtime as `wrangler dev`.
+  miniflare: 4.20260721.0
+  nanoid: 6.0.0
+  qrcode-terminal: 0.12.0
+  reconnecting-websocket: 4.4.0
+  svelte: 5.56.7
+  svelte-check: 4.7.3
+  ts-morph: 28.0.0
+  tsx: 4.23.1
+  typescript: 6.0.3
+  vite: 8.1.5
+  vite-plugin-wasm: 3.6.0
+  vitest: 4.1.11
+  vitest-axe: 0.1.0
+  wasm-pack: 0.15.0
+  # Held on the miniflare 4 line: wrangler 4.117.0 and later depend on a
+  # miniflare 5 alpha. Bump miniflare above in lockstep with wrangler.
+  wrangler: 4.113.0
+  ws: 8.21.1
+  zod: 4.4.3
+
+# pnpm 11 blocks dependency lifecycle scripts unless they are reviewed here.
+# These packages install platform-specific binaries used by this repository.
+allowBuilds:
+  esbuild: true
+  lefthook: true
+  sharp: true
+  wasm-pack: true
+  workerd: true
+
+# Security releases younger than minimumReleaseAge may be listed here as exact
+# versions (never ranges or whole packages). Remove each entry once the release
+# is older than the policy window. None are currently required.
+# minimumReleaseAgeExclude: []
+
+# Narrow vulnerable-range overrides for patched releases that upstream ranges
+# exclude. Remove each one once the owning package widens or bumps its range.
+overrides:
+  # @sveltejs/kit still depends on cookie ^0.6.0.
+  cookie@<0.7.0: ^0.7.0
+  # vite 8.1.5 resolved postcss 8.5.20, which pins nanoid 3.3.16
+  # (GHSA-2v37-7h3g-55p8 fixed in 3.3.18); postcss 8.5.23+ requires the fix.
+  'postcss@<8.5.23': 8.5.28
+  # miniflare 4.x pins sharp 0.34.5 (GHSA-rgj7-g3m4-5g8c fixed in 0.35.4).
+  'sharp@<0.35.4': 0.35.4
+  # miniflare 4.x pins undici 7.28.0 (GHSA-4cwx-7wf7-3272 fixed in 7.29.0).
+  'undici@<7.29.0': 7.29.1

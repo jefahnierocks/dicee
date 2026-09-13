@@ -1,24 +1,29 @@
 pre-commit:
   parallel: true
   commands:
-    rust-fmt:
-      glob: "packages/engine/src/**/*.rs"
-      run: mise exec -- cargo fmt --manifest-path packages/engine/Cargo.toml --check
-      stage_fixed: true
+    rust:
+      glob: "packages/engine/**/*.{rs,toml}"
+      run: mise exec -- sh -c 'cargo fmt --manifest-path packages/engine/Cargo.toml --check && cargo clippy --manifest-path packages/engine/Cargo.toml --all-targets --all-features -- -D warnings'
 
-    rust-clippy:
-      glob: "packages/engine/src/**/*.rs"
-      run: mise exec -- cargo clippy --manifest-path packages/engine/Cargo.toml -- -D warnings
+    typescript:
+      glob: "packages/{web,cloudflare-do,shared,simulation}/**/*.{ts,js,svelte,json,jsonc}"
+      run: mise exec -- pnpm check:typescript
 
-    biome-check:
-      glob: "packages/web/src/**/*.{ts,js,svelte}"
-      run: mise exec -- pnpm --filter @dicee/web biome:check
+    biome:
+      glob: "packages/{web,cloudflare-do,simulation}/**/*.{ts,js,svelte,json,jsonc}"
+      run: mise exec -- pnpm biome:check
 
-    svelte-check:
-      glob: "packages/web/src/**/*.{ts,svelte}"
-      run: mise exec -- pnpm --filter @dicee/web check
+    python:
+      glob: "packages/analysis/**/*.{py,toml}"
+      run: mise exec -- sh -c 'pnpm lint:analysis && pnpm check:analysis'
+
+    worker-types:
+      glob: "packages/{web,cloudflare-do}/wrangler.jsonc"
+      run: mise exec -- pnpm check:workers
 
 pre-push:
   commands:
-    rust-test:
-      run: mise exec -- cargo test --manifest-path packages/engine/Cargo.toml
+    # validate:ci = validate, then the high-severity dependency audit and the
+    # public-safety scan (the same gate CI runs).
+    validate-ci:
+      run: mise exec -- pnpm validate:ci
