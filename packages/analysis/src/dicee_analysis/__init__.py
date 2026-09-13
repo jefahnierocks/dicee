@@ -17,25 +17,25 @@ __version__ = "0.1.0"
 
 # Re-export main interfaces
 from dicee_analysis.loaders import (
+    convert_to_parquet,
     load_games,
     load_turns,
-    convert_to_parquet,
 )
 from dicee_analysis.schemas import (
+    DescriptiveStats,
     GameResult,
     PlayerResult,
     TurnResult,
-    DescriptiveStats,
 )
 from dicee_analysis.stats import (
-    describe_scores,
     compare_profiles,
+    describe_scores,
     test_calibration,
 )
 from dicee_analysis.viz import (
-    plot_score_distribution,
-    plot_score_boxplot,
     plot_profile_comparison,
+    plot_score_boxplot,
+    plot_score_distribution,
 )
 
 __all__ = [

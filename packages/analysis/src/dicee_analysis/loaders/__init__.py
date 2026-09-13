@@ -15,11 +15,11 @@ Example:
 """
 
 from dicee_analysis.loaders.ndjson import (
-    load_games,
-    load_turns,
-    load_decisions,
     iter_games,
     iter_turns,
+    load_decisions,
+    load_games,
+    load_turns,
 )
 from dicee_analysis.loaders.parquet import (
     convert_to_parquet,

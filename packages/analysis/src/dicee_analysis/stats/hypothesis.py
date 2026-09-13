@@ -13,7 +13,7 @@ from scipy import stats as scipy_stats
 @dataclass
 class TestResult:
     """Result of a statistical hypothesis test."""
-    
+
     test_name: str
     statistic: float
     p_value: float
@@ -21,7 +21,7 @@ class TestResult:
     effect_interpretation: str
     significant: bool
     conclusion: str
-    
+
     def __repr__(self) -> str:
         sig = "✓" if self.significant else "✗"
         return (
@@ -34,13 +34,13 @@ def _cohens_d(group1: np.ndarray, group2: np.ndarray) -> float:
     """Calculate Cohen's d effect size."""
     n1, n2 = len(group1), len(group2)
     var1, var2 = np.var(group1, ddof=1), np.var(group2, ddof=1)
-    
+
     # Pooled standard deviation
     pooled_std = np.sqrt(((n1 - 1) * var1 + (n2 - 1) * var2) / (n1 + n2 - 2))
-    
+
     if pooled_std == 0:
         return 0.0
-    
+
     return float((np.mean(group1) - np.mean(group2)) / pooled_std)
 
 
@@ -87,19 +87,19 @@ def t_test(
         TestResult with test statistics and conclusion
     """
     result = scipy_stats.ttest_ind(group1, group2, equal_var=False, alternative=alternative)
-    
+
     effect_size = _cohens_d(group1, group2)
     effect_interp = _interpret_effect_size(effect_size)
     significant = result.pvalue < alpha
-    
+
     mean1, mean2 = np.mean(group1), np.mean(group2)
-    
+
     if significant:
         direction = "higher" if mean1 > mean2 else "lower"
         conclusion = f"Group 1 mean ({mean1:.2f}) is significantly {direction} than Group 2 ({mean2:.2f})"
     else:
         conclusion = f"No significant difference between groups (p={result.pvalue:.4f})"
-    
+
     return TestResult(
         test_name="Welch's t-test",
         statistic=float(result.statistic),
@@ -131,22 +131,22 @@ def mann_whitney_test(
         TestResult with test statistics and conclusion
     """
     result = scipy_stats.mannwhitneyu(group1, group2, alternative=alternative)
-    
+
     # Effect size: rank-biserial correlation
     n1, n2 = len(group1), len(group2)
     r = 1 - (2 * result.statistic) / (n1 * n2)  # Rank-biserial correlation
-    
+
     effect_interp = _interpret_effect_size(r)
     significant = result.pvalue < alpha
-    
+
     median1, median2 = np.median(group1), np.median(group2)
-    
+
     if significant:
         direction = "higher" if median1 > median2 else "lower"
         conclusion = f"Group 1 median ({median1:.2f}) is significantly {direction} than Group 2 ({median2:.2f})"
     else:
         conclusion = f"No significant difference between groups (p={result.pvalue:.4f})"
-    
+
     return TestResult(
         test_name="Mann-Whitney U",
         statistic=float(result.statistic),
@@ -183,17 +183,17 @@ def compare_profiles(
     """
     scores1 = df.filter(pl.col("profile_id") == profile1)[score_col].to_numpy()
     scores2 = df.filter(pl.col("profile_id") == profile2)[score_col].to_numpy()
-    
+
     if len(scores1) == 0:
         raise ValueError(f"No data found for profile '{profile1}'")
     if len(scores2) == 0:
         raise ValueError(f"No data found for profile '{profile2}'")
-    
+
     if test == "t":
         result = t_test(scores1, scores2, alpha=alpha)
     else:
         result = mann_whitney_test(scores1, scores2, alpha=alpha)
-    
+
     # Update conclusion with profile names
     mean1, mean2 = np.mean(scores1), np.mean(scores2)
     if result.significant:
@@ -207,7 +207,7 @@ def compare_profiles(
             f"{profile1} (mean={mean1:.2f}) vs {profile2} (mean={mean2:.2f}): "
             f"No significant difference (p={result.p_value:.4f})"
         )
-    
+
     return result
 
 
@@ -237,25 +237,25 @@ def test_calibration(
         TestResult indicating calibration status
     """
     scores = df.filter(pl.col("profile_id") == profile_id)[score_col].to_numpy()
-    
+
     if len(scores) == 0:
         raise ValueError(f"No data found for profile '{profile_id}'")
-    
+
     # One-sample t-test against target
     result = scipy_stats.ttest_1samp(scores, target_mean)
-    
+
     effect_size = _cohens_d_one_sample(scores, target_mean)
     effect_interp = _interpret_effect_size(effect_size)
-    
+
     actual_mean = float(np.mean(scores))
     deviation = abs(actual_mean - target_mean)
     within_tolerance = deviation <= tolerance
-    
+
     # Calibration passes if:
     # 1. Not significantly different from target, OR
     # 2. Within tolerance range
     calibrated = result.pvalue >= alpha or within_tolerance
-    
+
     if calibrated:
         conclusion = (
             f"{profile_id} is calibrated: mean={actual_mean:.2f}, "
@@ -266,7 +266,7 @@ def test_calibration(
             f"{profile_id} NOT calibrated: mean={actual_mean:.2f} "
             f"(deviation={deviation:.1f} from target {target_mean:.1f})"
         )
-    
+
     return TestResult(
         test_name="Calibration Test",
         statistic=float(result.statistic),

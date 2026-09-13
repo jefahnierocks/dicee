@@ -15,10 +15,9 @@ Example:
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
-
 
 # =============================================================================
 # Enums
@@ -31,9 +30,14 @@ class ProfileId(StrEnum):
     RILEY = "riley"
     CARMEN = "carmen"
     LIAM = "liam"
+    SAGE = "sage"
     PROFESSOR = "professor"
     CHARLIE = "charlie"
     CUSTOM = "custom"
+    PHASE_GREEDY = "phase-greedy"
+    PHASE_CONSERVATIVE = "phase-conservative"
+    PHASE_UPPER = "phase-upper"
+    PHASE_LOWER = "phase-lower"
 
 
 class BrainType(StrEnum):
@@ -42,8 +46,68 @@ class BrainType(StrEnum):
     OPTIMAL = "optimal"
     PROBABILISTIC = "probabilistic"
     PERSONALITY = "personality"
+    ADAPTIVE = "adaptive"
     RANDOM = "random"
     LLM = "llm"
+
+
+class Category(StrEnum):
+    """Score categories matching the shared TypeScript schema."""
+
+    ONES = "ones"
+    TWOS = "twos"
+    THREES = "threes"
+    FOURS = "fours"
+    FIVES = "fives"
+    SIXES = "sixes"
+    THREE_OF_A_KIND = "threeOfAKind"
+    FOUR_OF_A_KIND = "fourOfAKind"
+    FULL_HOUSE = "fullHouse"
+    SMALL_STRAIGHT = "smallStraight"
+    LARGE_STRAIGHT = "largeStraight"
+    DICEE = "dicee"
+    CHANCE = "chance"
+
+
+class MetricId(StrEnum):
+    """Metrics supported by the simulation experiment schema."""
+
+    TOTAL_SCORE = "total_score"
+    UPPER_SECTION_SCORE = "upper_section_score"
+    LOWER_SECTION_SCORE = "lower_section_score"
+    UPPER_BONUS_RATE = "upper_bonus_rate"
+    DICEE_RATE = "dicee_rate"
+    DICEE_BONUS_RATE = "dicee_bonus_rate"
+    OPTIMAL_DECISION_RATE = "optimal_decision_rate"
+    EV_LOSS_PER_DECISION = "ev_loss_per_decision"
+    WIN_RATE = "win_rate"
+
+
+class OutputFormat(StrEnum):
+    """Batch result destinations."""
+
+    NDJSON = "ndjson"
+    MEMORY = "memory"
+
+
+class HypothesisDirection(StrEnum):
+    """Supported hypothesis directions."""
+
+    GREATER_THAN = "greater_than"
+    LESS_THAN = "less_than"
+    NOT_EQUAL = "not_equal"
+    WITHIN_RANGE = "within_range"
+
+
+class StatisticalTest(StrEnum):
+    """Supported statistical tests."""
+
+    T_TEST_ONE_SAMPLE = "t_test_one_sample"
+    T_TEST_TWO_SAMPLE = "t_test_two_sample"
+    WELCH_T_TEST = "welch_t_test"
+    MANN_WHITNEY_U = "mann_whitney_u"
+    CHI_SQUARE = "chi_square"
+    ANOVA = "anova"
 
 
 class ExperimentType(StrEnum):
@@ -98,6 +162,8 @@ class Scorecard(BaseModel):
     large_straight: int | None = Field(None, alias="largeStraight")
     dicee: int | None = None
     chance: int | None = None
+    dicee_bonus: int = Field(alias="diceeBonus", ge=0)
+    upper_bonus: int = Field(alias="upperBonus", ge=0)
 
     @property
     def upper_section_score(self) -> int:
@@ -124,9 +190,54 @@ class Scorecard(BaseModel):
         )
 
     @property
-    def upper_bonus(self) -> bool:
+    def has_upper_bonus(self) -> bool:
         """Check if upper bonus threshold (63) is met."""
-        return self.upper_section_score >= 63
+        return self.upper_bonus > 0
+
+
+# =============================================================================
+# Simulation Configuration Models
+# =============================================================================
+
+
+UnitInterval = Annotated[float, Field(ge=0, le=1)]
+
+
+class PlayerConfig(BaseModel):
+    """Configuration for one simulated player."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str = Field(min_length=1)
+    profile_id: ProfileId = Field(alias="profileId")
+    brain_override: BrainType | None = Field(None, alias="brainOverride")
+    skill_override: UnitInterval | None = Field(None, alias="skillOverride")
+    traits_override: dict[str, UnitInterval] | None = Field(None, alias="traitsOverride")
+
+
+class SimulationConfig(BaseModel):
+    """Configuration for a single deterministic or random game."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    players: Annotated[list[PlayerConfig], Field(min_length=1, max_length=4)]
+    seed: int | None = None
+    capture_decisions: bool = Field(False, alias="captureDecisions")
+    capture_intermediate_states: bool = Field(False, alias="captureIntermediateStates")
+
+
+class BatchConfig(BaseModel):
+    """Configuration for a bounded batch simulation run."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    game_count: int = Field(alias="gameCount", ge=1, le=1_000_000)
+    worker_count: int = Field(12, alias="workerCount", ge=1, le=32)
+    base_seed: int | None = Field(None, alias="baseSeed")
+    output_format: OutputFormat = Field(OutputFormat.NDJSON, alias="outputFormat")
+    output_path: str | None = Field(None, alias="outputPath")
+    batch_size: int = Field(10_000, alias="batchSize", ge=100, le=100_000)
+    progress_interval_ms: int = Field(1000, alias="progressIntervalMs", ge=100)
 
 
 # =============================================================================
@@ -140,7 +251,7 @@ class PlayerResult(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
-    profile_id: str = Field(alias="profileId")
+    profile_id: ProfileId = Field(alias="profileId")
     final_score: int = Field(alias="finalScore", ge=0)
     scorecard: Scorecard
     upper_bonus: bool = Field(alias="upperBonus")
@@ -163,7 +274,7 @@ class GameResult(BaseModel):
     duration_ms: int = Field(alias="durationMs", ge=0)
     players: list[PlayerResult]
     winner_id: str = Field(alias="winnerId")
-    winner_profile_id: str = Field(alias="winnerProfileId")
+    winner_profile_id: ProfileId = Field(alias="winnerProfileId")
 
     def get_player(self, player_id: str) -> PlayerResult | None:
         """Get player result by ID."""
@@ -186,9 +297,9 @@ class TurnResult(BaseModel):
     turn_number: int = Field(alias="turnNumber", ge=1, le=13)
     roll_count: int = Field(alias="rollCount", ge=1, le=3)
     final_dice: tuple[int, int, int, int, int] = Field(alias="finalDice")
-    scored_category: str = Field(alias="scoredCategory")
+    scored_category: Category = Field(alias="scoredCategory")
     scored_points: int = Field(alias="scoredPoints", ge=0)
-    optimal_category: str | None = Field(None, alias="optimalCategory")
+    optimal_category: Category | None = Field(None, alias="optimalCategory")
     optimal_points: int | None = Field(None, alias="optimalPoints")
     ev_difference: float | None = Field(None, alias="evDifference")
     was_optimal: bool | None = Field(None, alias="wasOptimal")
@@ -209,6 +320,95 @@ class DecisionResult(BaseModel):
     kept_mask: tuple[bool, bool, bool, bool, bool] = Field(alias="keptMask")
     was_optimal_hold: bool | None = Field(None, alias="wasOptimalHold")
     ev_loss: float | None = Field(None, alias="evLoss")
+
+
+# =============================================================================
+# Experiment Definition Models
+# =============================================================================
+
+
+class HypothesisRange(BaseModel):
+    """Inclusive target range for a hypothesis."""
+
+    low: float
+    high: float
+
+
+class Hypothesis(BaseModel):
+    """A single, reproducible statistical hypothesis."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str = Field(pattern=r"^H\d+$")
+    null_hypothesis: str = Field(alias="nullHypothesis", min_length=10)
+    alternative_hypothesis: str = Field(alias="alternativeHypothesis", min_length=10)
+    metric: MetricId
+    profile_id: ProfileId | None = Field(None, alias="profileId")
+    direction: HypothesisDirection
+    target: float | HypothesisRange
+    test: StatisticalTest
+    alpha: float = Field(0.05, ge=0.001, le=0.2)
+    min_effect_size: float = Field(0.5, alias="minEffectSize", ge=0.1, le=2.0)
+    power: float = Field(0.8, ge=0.7, le=0.99)
+
+
+class FixedStoppingRule(BaseModel):
+    """Run an exact number of games per experimental unit."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: Literal["FIXED"]
+    games_per_unit: int = Field(alias="gamesPerUnit", ge=10, le=100_000)
+
+
+class SequentialStoppingRule(BaseModel):
+    """Check periodically for significance or futility."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: Literal["SEQUENTIAL"]
+    min_games: int = Field(50, alias="minGames", ge=30)
+    max_games: int = Field(10_000, alias="maxGames", le=100_000)
+    check_every_n: int = Field(50, alias="checkEveryN", ge=5)
+    futility_p_value: float = Field(0.001, alias="futilityPValue", ge=0.001, le=0.1)
+
+
+class AdaptiveStoppingRule(BaseModel):
+    """Stop after reaching a target confidence-interval width."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: Literal["ADAPTIVE"]
+    target_ci_width: float = Field(alias="targetCIWidth", ge=1, le=50)
+    max_games: int = Field(5_000, alias="maxGames", le=100_000)
+    min_games: int = Field(100, alias="minGames", ge=30)
+
+
+StoppingRule = Annotated[
+    FixedStoppingRule | SequentialStoppingRule | AdaptiveStoppingRule,
+    Field(discriminator="type"),
+]
+
+
+class ExperimentDefinition(BaseModel):
+    """Complete source-of-truth definition for a simulation experiment."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: str = Field(min_length=3, max_length=50, pattern=r"^[a-z][a-z0-9_]*$")
+    version: str = Field("1.0.0", pattern=r"^\d+\.\d+\.\d+$")
+    title: str = Field(min_length=5, max_length=200)
+    description: str = Field(min_length=20)
+    type: ExperimentType
+    created_at: datetime = Field(alias="createdAt")
+    author: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    hypotheses: Annotated[list[Hypothesis], Field(min_length=1)]
+    profile_ids: Annotated[list[ProfileId], Field(min_length=1)] = Field(alias="profileIds")
+    stopping_rule: StoppingRule = Field(alias="stoppingRule")
+    metrics: Annotated[list[MetricId], Field(min_length=1)]
+    master_seed: int | None = Field(None, alias="masterSeed")
+    players_per_game: Literal[1, 2, 3, 4] = Field(1, alias="playersPerGame")
 
 
 # =============================================================================
@@ -299,3 +499,8 @@ def parse_decision_result(data: dict[str, Any]) -> DecisionResult:
 def parse_experiment_results(data: dict[str, Any]) -> ExperimentResults:
     """Parse and validate experiment results from JSON dict."""
     return ExperimentResults.model_validate(data)
+
+
+def parse_experiment_definition(data: dict[str, Any]) -> ExperimentDefinition:
+    """Parse and validate an experiment definition from a JSON dict."""
+    return ExperimentDefinition.model_validate(data)

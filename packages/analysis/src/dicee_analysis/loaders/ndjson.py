@@ -5,7 +5,7 @@ Provides both streaming (memory-efficient) and batch loading options.
 """
 
 import json
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +15,6 @@ from tqdm import tqdm
 from dicee_analysis.schemas import (
     DecisionResult,
     GameResult,
-    PlayerResult,
     TurnResult,
 )
 
@@ -78,7 +77,7 @@ def load_games(
         Polars DataFrame with one row per player per game
     """
     path = Path(path)
-    
+
     # Count lines for progress bar
     total = None
     if progress:
@@ -86,17 +85,17 @@ def load_games(
             total = sum(1 for _ in f)
         if limit:
             total = min(total, limit)
-    
+
     records: list[dict[str, Any]] = []
-    
-    iterator = iter_games(path)
+
+    iterator: Iterable[GameResult] = iter_games(path)
     if progress:
         iterator = tqdm(iterator, total=total, desc="Loading games")
-    
+
     for i, game in enumerate(iterator):
         if limit and i >= limit:
             break
-            
+
         for player in game.players:
             records.append({
                 "game_id": game.game_id,
@@ -134,7 +133,7 @@ def load_games(
                 "dicee": player.scorecard.dicee,
                 "chance": player.scorecard.chance,
             })
-    
+
     return pl.DataFrame(records)
 
 
@@ -156,24 +155,24 @@ def load_turns(
         Polars DataFrame with turn data
     """
     path = Path(path)
-    
+
     total = None
     if progress:
         with path.open() as f:
             total = sum(1 for _ in f)
         if limit:
             total = min(total, limit)
-    
+
     records: list[dict[str, Any]] = []
-    
-    iterator = iter_turns(path)
+
+    iterator: Iterable[TurnResult] = iter_turns(path)
     if progress:
         iterator = tqdm(iterator, total=total, desc="Loading turns")
-    
+
     for i, turn in enumerate(iterator):
         if limit and i >= limit:
             break
-            
+
         records.append({
             "turn_id": turn.turn_id,
             "game_id": turn.game_id,
@@ -189,7 +188,7 @@ def load_turns(
             "ev_difference": turn.ev_difference,
             "was_optimal": turn.was_optimal,
         })
-    
+
     return pl.DataFrame(records)
 
 
@@ -211,23 +210,23 @@ def load_decisions(
         Polars DataFrame with decision data
     """
     path = Path(path)
-    
+
     records: list[dict[str, Any]] = []
-    
+
     with path.open() as f:
-        iterator: Iterator[str] = f
+        iterator: Iterable[str] = f
         if progress:
             iterator = tqdm(f, desc="Loading decisions")
-        
+
         for i, line in enumerate(iterator):
             if limit and i >= limit:
                 break
             if not line.strip():
                 continue
-                
+
             data = json.loads(line)
             decision = DecisionResult.model_validate(data)
-            
+
             records.append({
                 "decision_id": decision.decision_id,
                 "turn_id": decision.turn_id,
@@ -240,5 +239,5 @@ def load_decisions(
                 "was_optimal_hold": decision.was_optimal_hold,
                 "ev_loss": decision.ev_loss,
             })
-    
+
     return pl.DataFrame(records)
