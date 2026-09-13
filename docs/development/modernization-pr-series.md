@@ -21,6 +21,9 @@ The two original status commits are incorporated with updated publication and
 operator boundaries. The privacy migration is intentionally absent from the
 baseline branch so the urgent privilege fix can be selected independently.
 
+The [database review](database-privacy-review.md) explains the second PR's
+visibility rules, generated types, and local database validation.
+
 CI and CodeQL accept PRs against predecessor branches. Push validation remains
 limited to `main`; the candidate workflow permits production deployment only
 through an explicit manual dispatch with `deploy=true` on `main`.
