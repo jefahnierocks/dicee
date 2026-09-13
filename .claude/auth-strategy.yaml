@@ -1,367 +1,39 @@
-# Dicee Project: Authentication Strategy
-# Comprehensive specification for auth implementation
-# Last updated: 2024-12-02
-
-# =============================================================================
-# SUPABASE AUTH CONFIGURATION
-# =============================================================================
+# Public authentication strategy. Live project identifiers and provider
+# credentials are operator-managed and intentionally absent from this file.
 
 supabase_auth:
-  project_ref: "duhsbuyxyppgbkwbbtqg"
-  dashboard_url: "https://supabase.com/dashboard/project/duhsbuyxyppgbkwbbtqg/auth/providers"
-
+  project_ref: "${SUPABASE_PROJECT_REF}"
+  project_url: "${PUBLIC_SUPABASE_URL}"
   settings:
     allow_new_users: true
-    allow_manual_linking: true      # REQUIRED for anonymous → permanent upgrade
-    allow_anonymous_signins: true   # REQUIRED for "Play Now" flow
-    confirm_email: false            # Magic link handles verification implicitly
-
+    allow_manual_linking: true
+    allow_anonymous_signins: true
+    confirm_email: false
   providers:
     email:
       enabled: true
-      mode: "magic_link"            # OTP-based, no passwords stored
-      double_confirm_changes: false
-
+      mode: "magic_link"
     google:
       enabled: true
-      client_id: "infisical:GOOGLE_OAUTH_CLIENT_ID"
-      client_secret: "infisical:GOOGLE_OAUTH_CLIENT_SECRET"
-      skip_nonce_checks: false      # Keep secure
-      allow_users_without_email: false
-
+      client_id: "secret:GOOGLE_OAUTH_CLIENT_ID"
+      client_secret: "secret:GOOGLE_OAUTH_CLIENT_SECRET"
+      skip_nonce_checks: false
     anonymous:
       enabled: true
-      captcha: "recommended"        # Enable Turnstile/hCaptcha for abuse prevention
-      rate_limit: "30/hour"         # Default IP-based rate limit
+      captcha: "required-before-public-launch"
 
-# =============================================================================
-# GOOGLE CLOUD PROJECT
-# =============================================================================
+redirects:
+  application_origin: "https://dicee.games"
+  callback_path: "/auth/callback"
+  provider_callback: "${PUBLIC_SUPABASE_URL}/auth/v1/callback"
+  rules:
+    - "Only same-origin relative next paths are accepted"
+    - "Provider error descriptions are never reflected to the browser"
 
-google_cloud:
-  project:
-    name: "dicee"
-    id: "dicee-480100"
-    number: "1071795876982"
-    console_url: "https://console.cloud.google.com/welcome?project=dicee-480100"
-
-  oauth_consent_screen:
-    user_type: "External"
-    app_name: "Dicee"
-    support_email: "[YOUR_EMAIL]"
-    authorized_domains:
-      - "supabase.co"
-      - "dicee.games"               # Production domain
-    scopes:
-      - "email"
-      - "profile"
-      - "openid"
-
-  oauth_client:
-    name: "Dicee Web"
-    type: "Web application"
-    authorized_origins:
-      - "http://localhost:5173"               # Local dev
-      - "https://dicee.games"                 # Production (apex domain)
-    authorized_redirect_uris:
-      - "https://duhsbuyxyppgbkwbbtqg.supabase.co/auth/v1/callback"
-
-# =============================================================================
-# IDENTITY LINKING STRATEGY
-# =============================================================================
-
-identity_linking:
-  strategy: "manual"                # Using manual linking (not automatic)
-
-  automatic_linking:
-    description: "Links identities with same email automatically"
-    our_usage: false
-    reason: "We use manual linking for explicit user control"
-
-  manual_linking:
-    description: "User initiates linking via linkIdentity() when logged in"
-    our_usage: true
-    enabled_via: "Supabase Dashboard > Auth > Allow manual linking"
-
-  linking_methods:
-    oauth_to_anonymous:
-      method: "linkIdentity({ provider: 'google' })"
-      description: "Link Google OAuth to anonymous user"
-      redirects: true
-      notes: "User redirected to Google, then back to /auth/callback"
-
-    email_to_anonymous:
-      method: "updateUser({ email: 'user@example.com' })"
-      description: "Link email to anonymous user"
-      redirects: false
-      notes: "Sends verification email, user must confirm before adding password"
-
-    password_after_email:
-      method: "updateUser({ password: 'newpassword' })"
-      description: "Add password after email is verified"
-      requires: "Email must be verified first"
-
-  unlinking:
-    method: "unlinkIdentity(identity)"
-    requirements:
-      - "User must be logged in"
-      - "User must have at least 2 linked identities"
-
-  conflict_resolution:
-    scenario: "Anonymous user tries to link to existing account"
-    strategy: "merge_data"
-    implementation: |
-      1. Detect conflict (updateUser returns error for existing email)
-      2. Prompt user to sign in to existing account
-      3. Reassign anonymous user's data to existing account
-      4. Apply merge strategy (keep both, prefer existing, prefer anonymous)
-
-# =============================================================================
-# ANONYMOUS USERS
-# =============================================================================
-
-anonymous_users:
-  jwt_claim: "is_anonymous"         # Check this in RLS policies
-  postgres_role: "authenticated"    # Same as permanent users
-
-  capabilities:
-    can_do:
-      - "Play games"
-      - "View own session stats"
-      - "Join public rooms"
-      - "Create rooms (1 at a time)"
-    cannot_do:
-      - "Appear on leaderboards"
-      - "Have persistent profile across devices"
-      - "Access account after signout/clear data"
-
-  rls_pattern: |
-    -- Restrictive policy for permanent users only
-    create policy "Only permanent users can post to leaderboard"
-    on leaderboards as restrictive for insert
-    to authenticated
-    with check ((select (auth.jwt()->>'is_anonymous')::boolean) is false);
-
-    -- Permissive policy for all authenticated users
-    create policy "All users can view leaderboard"
-    on leaderboards for select
-    to authenticated
-    using (true);
-
-  cleanup:
-    automatic: false                # Not yet available in Supabase
-    manual_sql: |
-      -- Delete anonymous users older than 30 days
-      delete from auth.users
-      where is_anonymous is true
-      and created_at < now() - interval '30 days';
-
-  abuse_prevention:
-    captcha: "Cloudflare Turnstile"   # Recommended
-    rate_limit: "30 requests/hour per IP"
-    monitoring: "Track anonymous user creation rate"
-
-# =============================================================================
-# AUTH FLOW SPECIFICATIONS
-# =============================================================================
-
-auth_flows:
-  play_now:
-    trigger: "User clicks 'Play Now' button"
-    steps:
-      1: "Check if session exists"
-      2: "If no session, call signInAnonymously()"
-      3: "Wait for session to be established"
-      4: "Redirect to game"
-    error_handling:
-      - "Show toast on failure"
-      - "Retry once after 1s delay"
-      - "Fall back to error page"
-
-  google_oauth:
-    trigger: "User clicks 'Continue with Google'"
-    steps:
-      1: "Call signInWithOAuth({ provider: 'google' })"
-      2: "User redirected to Google consent screen"
-      3: "Google redirects to Supabase callback"
-      4: "Supabase redirects to /auth/callback"
-      5: "Exchange code for session"
-      6: "Redirect to game or intended destination"
-    error_handling:
-      - "Catch OAuth errors in callback"
-      - "Redirect to home with error param"
-      - "Display user-friendly error message"
-
-  magic_link:
-    trigger: "User submits email in magic link form"
-    steps:
-      1: "Call signInWithOtp({ email })"
-      2: "Show 'Check your email' message"
-      3: "User clicks link in email"
-      4: "Link opens /auth/callback with token"
-      5: "Exchange token for session"
-      6: "Redirect to game"
-    email_template:
-      subject: "Sign in to Dicee"
-      link_format: "{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email"
-
-  upgrade_anonymous:
-    trigger: "Anonymous user clicks upgrade prompt"
-    google_path:
-      1: "Call linkIdentity({ provider: 'google' })"
-      2: "User redirected to Google"
-      3: "On return, identity linked to existing anonymous user"
-      4: "User ID preserved, data intact"
-    email_path:
-      1: "Call updateUser({ email })"
-      2: "User receives verification email"
-      3: "After verification, call updateUser({ password })"
-      4: "User now has email/password auth"
-
-# =============================================================================
-# SESSION MANAGEMENT
-# =============================================================================
-
-session:
-  storage: "cookies"                # For SSR compatibility
-  jwt_expiry: "1 hour"              # Access token lifetime
-  refresh_token:
-    rotation: true
-    reuse_interval: "10 seconds"
-
-  server_validation:
-    method: "getClaims() or getUser()"
-    never_use: "getSession()"       # Doesn't validate JWT signature
-    reason: "getSession() can be spoofed, getClaims() validates against public keys"
-
-  persistence:
-    across_refresh: true
-    across_tabs: true
-    across_devices: false           # Requires auth
-
-# =============================================================================
-# URL CONFIGURATION
-# =============================================================================
-
-urls:
-  development:
-    site_url: "http://localhost:5173"
-    redirect_urls:
-      - "http://localhost:5173/auth/callback"
-
-  production:
-    site_url: "https://dicee.games"
-    redirect_urls:
-      - "https://dicee.games/auth/callback"
-    notes: |
-      Auth flow: Users auth on dicee.games → JWT in Supabase session
-      Durable Objects validate JWTs via JWKS endpoint
-      All services unified under dicee.games domain
-
-  game_lobby:
-    domain: "dicee.games"
-    auth_method: "JWT validation (not OAuth redirect)"
-    jwt_source: "Supabase session from dicee.games"
-    notes: |
-      The game lobby (Durable Objects) does NOT handle OAuth redirects.
-      It validates JWTs passed via WebSocket connection params.
-      Users must authenticate on dicee.games first.
-
-  supabase_callback: "https://duhsbuyxyppgbkwbbtqg.supabase.co/auth/v1/callback"
-
-# =============================================================================
-# RLS POLICY REQUIREMENTS
-# =============================================================================
-
-rls_policies:
-  profiles:
-    select: "Public profiles or own profile"
-    update: "Own profile only"
-    anonymous_check: false          # Anonymous can have profiles
-
-  player_stats:
-    select: "Public (for leaderboards)"
-    insert: "Service role only"
-    update: "Service role only"
-    anonymous_check: false
-
-  games:
-    select: "Participants or waiting rooms"
-    insert: "Authenticated users"
-    update: "Host only, while waiting"
-    anonymous_check: false          # Anonymous can play
-
-  game_players:
-    select: "Participants of same game"
-    insert: "Self only"
-    update: "Self only"
-    anonymous_check: false
-
-  rooms:
-    select: "Public rooms or participants"
-    insert: "Authenticated users"
-    update: "Creator only"
-    delete: "Creator only"
-    anonymous_check: false
-
-  telemetry_events:
-    select: "None (privacy)"
-    insert: "Any authenticated user"
-    anonymous_check: false
-
-  leaderboards:                     # Future table
-    select: "All authenticated"
-    insert: "Permanent users only"  # REQUIRES is_anonymous check
-    anonymous_check: true           # Use restrictive policy
-
-# =============================================================================
-# UPGRADE PROMPT TRIGGERS
-# =============================================================================
-
-upgrade_prompts:
-  soft_triggers:                    # Non-blocking prompts
-    - after_game_count: 3
-    - in_profile_area: true
-    - on_stats_page: true
-
-  hard_triggers:                    # Blocking prompts
-    - leaderboard_access: true
-    - persistent_room_create: true
-    - cross_device_access: true
-
-  prompt_content:
-    title: "Keep Your Progress"
-    message: "Sign in to save your stats across devices and appear on leaderboards."
-    cta_primary: "Continue with Google"
-    cta_secondary: "Use Email Instead"
-    cta_dismiss: "Maybe Later"
-
-# =============================================================================
-# DEVELOPMENT CHECKLIST
-# =============================================================================
-
-checklist:
-  supabase_dashboard:
-    - "[x] Enable 'Allow new users to sign up'"
-    - "[x] Enable 'Allow manual linking'"
-    - "[x] Enable 'Allow anonymous sign-ins'"
-    - "[ ] Disable 'Confirm email' (magic link handles it)"
-    - "[x] Configure Google OAuth with client ID/secret"
-    - "[x] Set redirect URLs for dev and production"
-    - "[ ] Update email templates for magic link (optional)"
-
-  google_cloud:
-    - "[x] Create OAuth consent screen"
-    - "[x] Add authorized domains"
-    - "[x] Create OAuth 2.0 Web Client credentials"
-    - "[x] Add authorized redirect URIs"
-    - "[x] Store runtime credentials in Infisical"
-
-  codebase:
-    - "[ ] Install @supabase/supabase-js and @supabase/ssr"
-    - "[ ] Create hooks.server.ts with session validation"
-    - "[ ] Create auth.svelte.ts state store"
-    - "[ ] Create auth callback route"
-    - "[ ] Create auth UI components"
-    - "[ ] Update RLS policies for is_anonymous checks"
-    - "[ ] Add upgrade prompt logic"
+session_security:
+  server_validation: "Always validate with getUser() before trusting a session"
+  websocket_transport: "Authorization header through the same-origin service binding"
+  prohibited:
+    - "access tokens in URLs"
+    - "email or provider full name as an automatic public display name"
+    - "untrusted external avatar URLs"

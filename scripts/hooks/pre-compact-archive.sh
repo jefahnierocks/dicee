@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-PROJECT_DIR="${CLAUDE_PROJECT_DIR:-/Users/verlyn13/Development/personal/dicee}"
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)}"
 cd "$PROJECT_DIR"
 
 TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")

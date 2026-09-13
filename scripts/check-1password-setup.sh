@@ -44,18 +44,17 @@ log "1Password vault:   $DICEE_OP_VAULT"
 log "Infisical runtime authority remains: $DICEE_INFISICAL_PROJECT_SLUG ($DICEE_INFISICAL_INSTANCE_URL)"
 log
 
-check_field "$DICEE_OP_ITEM_INFISICAL_DEV" client-id "dicee-infisical-dev-auth/client-id"
-check_field "$DICEE_OP_ITEM_INFISICAL_DEV" client-secret "dicee-infisical-dev-auth/client-secret"
-check_field "$DICEE_OP_ITEM_INFISICAL_STAGING" client-id "dicee-infisical-staging-auth/client-id"
-check_field "$DICEE_OP_ITEM_INFISICAL_STAGING" client-secret "dicee-infisical-staging-auth/client-secret"
-check_field "$DICEE_OP_ITEM_INFISICAL_PROD" client-id "dicee-infisical-prod-auth/client-id"
-check_field "$DICEE_OP_ITEM_INFISICAL_PROD" client-secret "dicee-infisical-prod-auth/client-secret"
-check_field "$DICEE_OP_ITEM_CLOUDFLARE" api-token "dicee-cloudflare-api/api-token"
-check_field "$DICEE_OP_ITEM_SUPABASE_MCP" token "dicee-supabase-mcp/token"
+check_field "$DICEE_OP_ITEM_INFISICAL_DEV" client-id "development Infisical client-id"
+check_field "$DICEE_OP_ITEM_INFISICAL_DEV" client-secret "development Infisical client-secret"
+check_field "$DICEE_OP_ITEM_INFISICAL_STAGING" client-id "staging Infisical client-id"
+check_field "$DICEE_OP_ITEM_INFISICAL_STAGING" client-secret "staging Infisical client-secret"
+check_field "$DICEE_OP_ITEM_INFISICAL_PROD" client-id "production Infisical client-id"
+check_field "$DICEE_OP_ITEM_INFISICAL_PROD" client-secret "production Infisical client-secret"
+check_field "$DICEE_OP_ITEM_CLOUDFLARE" api-token "Cloudflare API token"
 
 check_field "$DICEE_OP_ITEM_VERCEL" token "dicee-vercel-api/token" true
 check_field "$DICEE_OP_ITEM_PARTYKIT" token "dicee-partykit-api/token" true
-check_field "$DICEE_OP_ITEM_ELEVENLABS_LOCAL" api-key "dicee-elevenlabs-local/api-key" true
+check_field "$DICEE_OP_ITEM_ELEVENLABS_LOCAL" api-key "ElevenLabs API key" true
 
 if [[ "$quiet" == false ]]; then
 	cat <<EOF
