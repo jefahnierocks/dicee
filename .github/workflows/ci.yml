@@ -39,6 +39,13 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Install publication scanner
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ripgrep
+          rg --version
+          printf 'probe\n' | rg --pcre2 --quiet 'probe'
+
       # pnpm version comes from packageManager in package.json.
       - name: Set up pnpm
         uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6

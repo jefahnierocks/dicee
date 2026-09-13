@@ -29,6 +29,12 @@ run_scan() {
 	bash "$repo_dir/scripts/public-safety-scan.sh" >"$scan_output" 2>&1 || scan_status=$?
 }
 
+print_scan_output() {
+	# This scanner only reads the disposable repository's synthetic fixtures.
+	printf 'Synthetic scanner output:\n' >&2
+	cat "$scan_output" >&2
+}
+
 assert_scan_passes() {
 	local label="$1"
 	run_scan
@@ -36,6 +42,7 @@ assert_scan_passes() {
 		printf 'ok: %s\n' "$label"
 	else
 		fail "$label (scanner exited $scan_status)"
+		print_scan_output
 	fi
 }
 
@@ -48,7 +55,8 @@ assert_private_file_rejected() {
 		rg --fixed-strings --line-regexp --quiet -- "  $path" "$scan_output"; then
 		printf 'ok: tracked private file rejected: %s\n' "$path"
 	else
-		fail "tracked private file was not rejected by filename: $path"
+		fail "tracked private file was not rejected by filename: $path (scanner exited $scan_status)"
+		print_scan_output
 	fi
 	if rg --fixed-strings --quiet -- 'synthetic-placeholder' "$scan_output"; then
 		fail "scanner printed fixture contents: $path"

@@ -13,7 +13,8 @@ of record. `.claude/state/` is private and archival only. Update this file,
 Phase 1 fixes the blockers in the July 2026 toolchain and agent-framework
 refresh. The original 19-commit handoff remains on
 `work/2026-09-modernization`; review work is grouped into two branches:
-`review/2026-09-baseline`, followed by `review/2026-09-database-privacy`.
+[`review/2026-09-baseline` (PR #3)](https://github.com/verlyn13/dicee/pull/3),
+followed by [`review/2026-09-database-privacy` (PR #4)](https://github.com/verlyn13/dicee/pull/4).
 See [the PR review guide](development/modernization-pr-series.md) for scope,
 dependencies, and the distinction between merge and rollout.
 

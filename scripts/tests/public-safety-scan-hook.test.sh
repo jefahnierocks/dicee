@@ -79,6 +79,9 @@ EOF
 		printf 'ok: fixture suite passes with %s hook variables\n' "$scenario"
 	else
 		fail "fixture suite failed with $scenario hook variables (exit $fixture_status)"
+		# This child only operates on disposable repositories with synthetic data.
+		printf 'Synthetic fixture suite output:\n' >&2
+		cat "$work_dir/fixture-$scenario-output" >&2
 	fi
 	assert_file_unchanged .git/config
 	assert_file_unchanged .git/HEAD
