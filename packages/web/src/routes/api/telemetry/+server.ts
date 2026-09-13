@@ -11,10 +11,30 @@ function sameOriginPath(value: string | null | undefined, origin: string): strin
 	if (!value) return null;
 	try {
 		const parsed = new URL(value, origin);
-		if (parsed.origin !== origin) return null;
-		return `${parsed.pathname}${parsed.search}`.slice(0, 512);
+		if (parsed.origin !== origin || !['http:', 'https:'].includes(parsed.protocol)) return null;
+		return parsed.pathname.slice(0, 512);
 	} catch {
 		return null;
+	}
+}
+
+function normalizedPayload(event: TelemetryEvent, origin: string): Json {
+	// Only the URL-bearing fields defined by each event schema are normalized.
+	switch (event.event_type) {
+		case 'session_start':
+			return {
+				...event.payload,
+				entry_page: sameOriginPath(event.payload.entry_page, origin),
+				referrer: sameOriginPath(event.payload.referrer, origin),
+			};
+		case 'page_view':
+			return {
+				...event.payload,
+				page: sameOriginPath(event.payload.page, origin),
+				previous_page: sameOriginPath(event.payload.previous_page, origin),
+			};
+		default:
+			return event.payload;
 	}
 }
 
@@ -60,7 +80,7 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 			// Never trust a client-supplied user identifier.
 			user_id: user?.id ?? null,
 			event_type: event.event_type,
-			payload: event.payload as unknown as Json,
+			payload: normalizedPayload(event, url.origin),
 			page_url: sameOriginPath(event.page_url, url.origin),
 			referrer: sameOriginPath(event.referrer, url.origin),
 			user_agent: requestUserAgent,
