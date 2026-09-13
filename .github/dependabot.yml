@@ -21,6 +21,15 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@dicebear/core"
         update-types: ["version-update:semver-major"]
+      # Owner hold (docs/status.md decision 5): stay on the miniflare 4 line with
+      # wrangler 4.113.0. miniflare must match the exact version wrangler depends
+      # on, so both move together in a manual change when the hold lifts. This
+      # also suppresses Dependabot security PRs for these two packages.
+      - dependency-name: wrangler
+      - dependency-name: miniflare
+      # Runtime is Node 24 LTS (.mise.toml); keep type definitions on that line.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: cargo
     directory: /packages/engine
