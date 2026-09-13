@@ -4,61 +4,56 @@
  * DO→Supabase persistence bridge for game data.
  */
 
-// Schemas and types
-export {
-	GameRecordSchema,
-	GamePlayerRecordSchema,
-	DomainEventSchema,
-	PersistenceResultSchema,
-	AggregationRequestSchema,
-	GAME_STATUSES,
-	GAME_MODES,
-	DOMAIN_EVENT_TYPES,
-	type GameRecord,
-	type GamePlayerRecord,
-	type DomainEvent,
-	type PersistenceResult,
-	type AggregationRequest,
-	type GameStatus,
-	type GameMode,
-	type DomainEventType,
-} from './schemas';
-
 // Services
 export { GamePersistenceService } from './game-persistence.service';
-
-// RPC Client
+// Migrations and helpers
 export {
-	SupabaseRpcClient,
-	OperationResultSchema,
-	StatsUpdateResultSchema,
-	type OperationResult,
-	type StatsUpdateResult,
-	type PlayerRanking,
-	type GamePlayerInput,
-	type DomainEventInput,
-	type RpcResult,
-} from './supabase-rpc';
-
+	clearGameMetadata,
+	clearPendingEvents,
+	getEventSequence,
+	getPendingEvents,
+	getSupabaseGameId,
+	initPersistenceTables,
+	setEventSequence,
+	setSupabaseGameId,
+} from './migrations';
 // Queue
 export {
-	PersistenceQueue,
 	PERSISTENCE_TASK_TYPES,
+	PersistenceQueue,
 	type PersistenceTask,
 	type PersistenceTaskType,
 } from './persistence-queue';
-
-// Migrations and helpers
-export {
-	initPersistenceTables,
-	clearPendingEvents,
-	clearGameMetadata,
-	getSupabaseGameId,
-	setSupabaseGameId,
-	getEventSequence,
-	setEventSequence,
-	getPendingEvents,
-} from './migrations';
-
 // Schema validation (compile-time only, ensures no schema drift)
 export { SCHEMA_MAPPINGS } from './schema-validation';
+// Schemas and types
+export {
+	type AggregationRequest,
+	AggregationRequestSchema,
+	DOMAIN_EVENT_TYPES,
+	type DomainEvent,
+	DomainEventSchema,
+	type DomainEventType,
+	GAME_MODES,
+	GAME_STATUSES,
+	type GameMode,
+	type GamePlayerRecord,
+	GamePlayerRecordSchema,
+	type GameRecord,
+	GameRecordSchema,
+	type GameStatus,
+	type PersistenceResult,
+	PersistenceResultSchema,
+} from './schemas';
+// RPC Client
+export {
+	type DomainEventInput,
+	type GamePlayerInput,
+	type OperationResult,
+	OperationResultSchema,
+	type PlayerRanking,
+	type RpcResult,
+	type StatsUpdateResult,
+	StatsUpdateResultSchema,
+	SupabaseRpcClient,
+} from './supabase-rpc';

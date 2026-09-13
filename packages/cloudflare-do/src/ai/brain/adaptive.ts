@@ -13,7 +13,7 @@
 
 import type { Category, KeptMask } from '../../game';
 import { calculateAllPotentialScores, getRemainingCategories } from '../../game';
-import { type Logger, createLogger } from '../../lib/logger';
+import { createLogger, type Logger } from '../../lib/logger';
 import type { AIProfile, AITraits, GameContext, TurnDecision } from '../types';
 import { OptimalBrain } from './optimal';
 import type { AIBrain } from './types';

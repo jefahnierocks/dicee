@@ -160,8 +160,7 @@ export class SupabaseRpcClient {
 	}): Promise<RpcResult<OperationResult>> {
 		// Format players as PostgreSQL array of composite type
 		const playersArray = params.players.map(
-			(p) =>
-				`(${this.#escapeUuid(p.user_id)},${p.seat_number},${p.turn_order},${p.is_ai})`
+			(p) => `(${this.#escapeUuid(p.user_id)},${p.seat_number},${p.turn_order},${p.is_ai})`,
 		);
 
 		return this.#callRpc<OperationResult>('create_game_atomic', {
@@ -190,7 +189,7 @@ export class SupabaseRpcClient {
 		// Format rankings as PostgreSQL array of composite type
 		const rankingsArray = params.rankings.map(
 			(r) =>
-				`(${this.#escapeUuid(r.player_id)},${r.rank},${r.score},'${this.#escapeJson(r.scorecard)}',${r.is_ai})`
+				`(${this.#escapeUuid(r.player_id)},${r.rank},${r.score},'${this.#escapeJson(r.scorecard)}',${r.is_ai})`,
 		);
 
 		return this.#callRpc<OperationResult>('complete_game_atomic', {
@@ -207,9 +206,7 @@ export class SupabaseRpcClient {
 	 * - Idempotent: duplicate event IDs are skipped (ON CONFLICT DO NOTHING)
 	 * - All events must belong to the same game
 	 */
-	async persistDomainEvents(
-		events: DomainEventInput[]
-	): Promise<RpcResult<OperationResult>> {
+	async persistDomainEvents(events: DomainEventInput[]): Promise<RpcResult<OperationResult>> {
 		if (events.length === 0) {
 			return {
 				success: true,
@@ -225,7 +222,7 @@ export class SupabaseRpcClient {
 		// Format events as PostgreSQL array of composite type
 		const eventsArray = events.map(
 			(e) =>
-				`(${this.#escapeUuid(e.id)},'${e.event_type}','${e.event_version}',${e.sequence_number},${this.#escapeUuid(e.game_id)},${this.#escapeUuid(e.player_id)},${e.turn_number ?? 'NULL'},${e.roll_number ?? 'NULL'},'${this.#escapeJson(e.payload)}')`
+				`(${this.#escapeUuid(e.id)},'${e.event_type}','${e.event_version}',${e.sequence_number},${this.#escapeUuid(e.game_id)},${this.#escapeUuid(e.player_id)},${e.turn_number ?? 'NULL'},${e.roll_number ?? 'NULL'},'${this.#escapeJson(e.payload)}')`,
 		);
 
 		return this.#callRpc<OperationResult>('persist_domain_events', {
@@ -271,24 +268,18 @@ export class SupabaseRpcClient {
 	/**
 	 * Call a Supabase RPC function.
 	 */
-	async #callRpc<T>(
-		functionName: string,
-		params: Record<string, unknown>
-	): Promise<RpcResult<T>> {
+	async #callRpc<T>(functionName: string, params: Record<string, unknown>): Promise<RpcResult<T>> {
 		try {
-			const response = await fetch(
-				`${this.#supabaseUrl}/rest/v1/rpc/${functionName}`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						apikey: this.#serviceRoleKey,
-						Authorization: `Bearer ${this.#serviceRoleKey}`,
-						Prefer: 'return=representation',
-					},
-					body: JSON.stringify(params),
-				}
-			);
+			const response = await fetch(`${this.#supabaseUrl}/rest/v1/rpc/${functionName}`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					apikey: this.#serviceRoleKey,
+					Authorization: `Bearer ${this.#serviceRoleKey}`,
+					Prefer: 'return=representation',
+				},
+				body: JSON.stringify(params),
+			});
 
 			if (!response.ok) {
 				const text = await response.text();
@@ -340,12 +331,7 @@ export class SupabaseRpcClient {
 	#isRetriableError(errorCode: string | null): boolean {
 		if (!errorCode) return true;
 
-		const nonRetriable = [
-			'INVALID_INPUT',
-			'INVALID_REFERENCE',
-			'NOT_FOUND',
-			'INVALID_STATE',
-		];
+		const nonRetriable = ['INVALID_INPUT', 'INVALID_REFERENCE', 'NOT_FOUND', 'INVALID_STATE'];
 
 		return !nonRetriable.includes(errorCode);
 	}

@@ -12,18 +12,18 @@
  */
 
 import type { Category, KeptMask, MultiplayerGameState, Scorecard } from '../game';
-import { type Logger, createLogger } from '../lib/logger';
+import { createLogger, type Logger } from '../lib/logger';
 import { TimeoutError, withTimeout } from '../lib/timeout';
 import type { AIBrain } from './brain';
 import { createBrain, initializeBrainFactory } from './brain';
 import { getProfile } from './profiles';
 import type {
-    AIEvent,
-    AIPlayerState,
-    AIProfile,
-    AISpeedMode,
-    GameContext,
-    TurnDecision,
+	AIEvent,
+	AIPlayerState,
+	AIProfile,
+	AISpeedMode,
+	GameContext,
+	TurnDecision,
 } from './types';
 
 // ============================================================================
@@ -69,8 +69,8 @@ export interface AIControllerConfig {
 }
 
 const DEFAULT_CONFIG: AIControllerConfig = {
-	minDelayMs: 300,      // was 500
-	maxDelayMs: 8000,     // was 10000
+	minDelayMs: 300, // was 500
+	maxDelayMs: 8000, // was 10000
 	enableChat: true,
 	emitThinkingEvents: true,
 	speedMode: 'normal',
@@ -344,11 +344,7 @@ export class AIController {
 		// Get brain decision with timeout protection
 		let decision: TurnDecision;
 		try {
-			decision = await withTimeout(
-				brain.decide(context),
-				BRAIN_DECIDE_TIMEOUT_MS,
-				'brain.decide',
-			);
+			decision = await withTimeout(brain.decide(context), BRAIN_DECIDE_TIMEOUT_MS, 'brain.decide');
 		} catch (error) {
 			if (error instanceof TimeoutError) {
 				this.logger.warn('Brain decision timed out, using fallback', {

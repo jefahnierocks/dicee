@@ -36,27 +36,26 @@ import {
 	type KeptMask,
 	type MultiplayerGameState,
 } from './game';
-import { AlarmQueue, createAlarmQueue } from './lib/alarm-queue';
+import { type AlarmQueue, createAlarmQueue } from './lib/alarm-queue';
 import { createJoinRequestManager, type JoinRequestManager } from './lib/join-request';
-import {
-	SupabaseRpcClient,
-	PersistenceQueue,
-	initPersistenceTables,
-	setSupabaseGameId,
-	getSupabaseGameId,
-	getEventSequence,
-	setEventSequence,
-	getPendingEvents,
-	clearPendingEvents,
-	clearGameMetadata,
-	type DomainEvent,
-	type DomainEventType,
-} from './lib/persistence';
 import { Loggers } from './lib/logger';
 import { createInstrumentation, type Instrumentation } from './lib/observability/instrumentation';
+import {
+	clearGameMetadata,
+	clearPendingEvents,
+	type DomainEvent,
+	type DomainEventType,
+	getEventSequence,
+	getPendingEvents,
+	getSupabaseGameId,
+	initPersistenceTables,
+	PersistenceQueue,
+	SupabaseRpcClient,
+	setEventSequence,
+	setSupabaseGameId,
+} from './lib/persistence';
 import type {
 	AlarmData,
-	AlarmType,
 	ConnectionRole,
 	ConnectionState,
 	Env,
@@ -335,10 +334,9 @@ export class GameRoom extends DurableObject<Env> {
 					this.ctx,
 					this.rpcClient,
 					(task, error) => {
-						console.error(`[GameRoom] Persistence task failed permanently:`, {
+						this.logger.error('Persistence task failed permanently', {
+							operation: 'persistence_task_failed',
 							type: task.type,
-							gameId: task.gameId,
-							error,
 							retryCount: task.retryCount,
 						});
 						// Log as handler failure for observability
@@ -675,9 +673,9 @@ export class GameRoom extends DurableObject<Env> {
 	// WebSocket Upgrade with Authentication
 	// ─────────────────────────────────────────────────────────────────────────────
 
-	private async handleWebSocketUpgrade(_request: Request, url: URL): Promise<Response> {
-		// Extract JWT from query params
-		const token = url.searchParams.get('token');
+	private async handleWebSocketUpgrade(request: Request, url: URL): Promise<Response> {
+		const authorization = request.headers.get('Authorization');
+		const token = authorization?.match(/^Bearer ([^\s]+)$/)?.[1];
 		if (!token) {
 			return new Response('Missing token', { status: 401 });
 		}
@@ -762,6 +760,10 @@ export class GameRoom extends DurableObject<Env> {
 			ws.close(1003, 'Binary messages not supported');
 			return;
 		}
+		if (new TextEncoder().encode(message).byteLength > 64 * 1024) {
+			ws.close(1009, 'Message too large');
+			return;
+		}
 
 		// Recover connection state after potential hibernation
 		const connState = ws.deserializeAttachment() as ConnectionState;
@@ -772,6 +774,16 @@ export class GameRoom extends DurableObject<Env> {
 				payload?: unknown;
 				correlationId?: string;
 			};
+			if (
+				!parsed ||
+				typeof parsed !== 'object' ||
+				typeof parsed.type !== 'string' ||
+				(parsed.correlationId !== undefined &&
+					(typeof parsed.correlationId !== 'string' ||
+						!/^[A-Za-z0-9._:-]{1,64}$/.test(parsed.correlationId)))
+			) {
+				throw new Error('Invalid message envelope');
+			}
 			await this.handleMessage(ws, connState, parsed);
 		} catch {
 			this.sendError(ws, 'INVALID_MESSAGE', 'Failed to parse message');
@@ -839,7 +851,10 @@ export class GameRoom extends DurableObject<Env> {
 			try {
 				await this.persistenceQueue.processDueTasks();
 			} catch (err) {
-				console.error(`[GameRoom] Error processing persistence queue:`, err);
+				this.logger.error('Persistence queue processing failed', {
+					operation: 'persistence_queue_failed',
+				});
+				this.instr?.errorHandlerFailed('persistence_queue_failed', err);
 			}
 		}
 
@@ -1759,11 +1774,7 @@ export class GameRoom extends DurableObject<Env> {
 		for (const [userId, seat] of seats) {
 			if (seat.odal === odal) {
 				// Check if actually expired (might have reconnected)
-				if (
-					!seat.isConnected &&
-					seat.reconnectDeadline !== null &&
-					now >= seat.reconnectDeadline
-				) {
+				if (!seat.isConnected && seat.reconnectDeadline !== null && now >= seat.reconnectDeadline) {
 					expiredSeat = seat;
 					seatUserId = userId;
 					seats.delete(userId);
@@ -2092,22 +2103,6 @@ export class GameRoom extends DurableObject<Env> {
 			const duration = Date.now() - startTime;
 			this.instr?.errorStorageFailed('put', key, error);
 			this.instr?.storageWriteEnd(key, false, duration);
-			throw error;
-		}
-	}
-
-	/**
-	 * Instrumented storage.delete wrapper
-	 */
-	private async deleteStorage(key: string): Promise<boolean> {
-		await this.ensureInstrumentation();
-		try {
-			await this.ctx.storage.delete(key);
-			this.instr?.storageDelete(key, true);
-			return true;
-		} catch (error) {
-			this.instr?.errorStorageFailed('delete', key, error);
-			this.instr?.storageDelete(key, false);
 			throw error;
 		}
 	}
@@ -3048,8 +3043,6 @@ export class GameRoom extends DurableObject<Env> {
 	 * Only the requester can cancel their own pending request.
 	 */
 	async cancelJoinRequest(requestId: string, userId: string): Promise<JoinRequestRPCResponse> {
-		const roomCode = this.getRoomCode();
-
 		// Get the request
 		const request = this.joinRequestManager.getRequest(requestId);
 		if (!request) {
@@ -4196,7 +4189,10 @@ export class GameRoom extends DurableObject<Env> {
 
 			// Schedule persistence tasks via queue (async, non-blocking)
 			this.schedulePersistenceTasks(rankings).catch((err) => {
-				console.error(`[GameRoom] Failed to schedule persistence tasks:`, err);
+				this.logger.error('Persistence scheduling failed', {
+					operation: 'persistence_schedule_failed',
+				});
+				this.instr?.errorHandlerFailed('persistence_schedule_failed', err);
 			});
 		}
 	}

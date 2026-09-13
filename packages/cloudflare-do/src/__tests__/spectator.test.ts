@@ -76,7 +76,7 @@ describe('Spectator Types', () => {
 describe('Spectator Connection Logic', () => {
 	describe('role query parameter parsing', () => {
 		it('should default to player role when no role param', () => {
-			const url = new URL('wss://example.com/ws/room/ABC123?token=test');
+			const url = new URL('wss://example.com/ws/room/ABC123');
 			const roleParam = url.searchParams.get('role');
 			const role: ConnectionRole = roleParam === 'spectator' ? 'spectator' : 'player';
 
@@ -84,7 +84,7 @@ describe('Spectator Connection Logic', () => {
 		});
 
 		it('should parse spectator role from query param', () => {
-			const url = new URL('wss://example.com/ws/room/ABC123?token=test&role=spectator');
+			const url = new URL('wss://example.com/ws/room/ABC123?role=spectator');
 			const roleParam = url.searchParams.get('role');
 			const role: ConnectionRole = roleParam === 'spectator' ? 'spectator' : 'player';
 
@@ -92,7 +92,7 @@ describe('Spectator Connection Logic', () => {
 		});
 
 		it('should default to player for invalid role param', () => {
-			const url = new URL('wss://example.com/ws/room/ABC123?token=test&role=invalid');
+			const url = new URL('wss://example.com/ws/room/ABC123?role=invalid');
 			const roleParam = url.searchParams.get('role');
 			const role: ConnectionRole = roleParam === 'spectator' ? 'spectator' : 'player';
 

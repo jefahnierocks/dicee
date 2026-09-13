@@ -248,7 +248,7 @@ describe('verifySupabaseJWT', () => {
 			expect(result.success).toBe(false);
 			if (!result.success) {
 				expect(result.code).toBe('INVALID_CLAIMS');
-				expect(result.error).toContain('subject');
+				expect(result.error).toBe('Token is missing required claims');
 			}
 		});
 
@@ -279,7 +279,7 @@ describe('extractDisplayName', () => {
 		expect(extractDisplayName(claims)).toBe('Display Name');
 	});
 
-	it('should fallback to full_name', () => {
+	it('should not expose provider full_name as a display name', () => {
 		const claims: JWTClaims = {
 			...validClaims,
 			user_metadata: {
@@ -287,32 +287,32 @@ describe('extractDisplayName', () => {
 			},
 		};
 
-		expect(extractDisplayName(claims)).toBe('Full Name');
+		expect(extractDisplayName(claims)).toBe('Player-user-1');
 	});
 
-	it('should fallback to email username', () => {
+	it('should not expose an email username as a display name', () => {
 		const claims: JWTClaims = {
 			...validClaims,
 			email: 'john.doe@example.com',
 			user_metadata: {},
 		};
 
-		expect(extractDisplayName(claims)).toBe('john.doe');
+		expect(extractDisplayName(claims)).toBe('Player-user-1');
 	});
 
-	it('should fallback to Player when no info available', () => {
+	it('should use a non-identifying stable fallback when no display name is available', () => {
 		const claims: JWTClaims = {
 			...validClaims,
 			email: undefined,
 			user_metadata: undefined,
 		};
 
-		expect(extractDisplayName(claims)).toBe('Player');
+		expect(extractDisplayName(claims)).toBe('Player-user-1');
 	});
 });
 
 describe('extractAvatarUrl', () => {
-	it('should return avatar_url when present', () => {
+	it('should reject an avatar URL from an untrusted host', () => {
 		const claims: JWTClaims = {
 			...validClaims,
 			user_metadata: {
@@ -320,7 +320,18 @@ describe('extractAvatarUrl', () => {
 			},
 		};
 
-		expect(extractAvatarUrl(claims)).toBe('https://example.com/avatar.png');
+		expect(extractAvatarUrl(claims)).toBeNull();
+	});
+
+	it('should accept an HTTPS DiceBear avatar URL', () => {
+		const claims: JWTClaims = {
+			...validClaims,
+			user_metadata: {
+				avatar_url: 'https://api.dicebear.com/9.x/identicon/svg?seed=test',
+			},
+		};
+
+		expect(extractAvatarUrl(claims)).toBe('https://api.dicebear.com/9.x/identicon/svg?seed=test');
 	});
 
 	it('should return null when no avatar_url', () => {

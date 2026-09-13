@@ -85,6 +85,61 @@ export interface AuthFailure {
  */
 export type AuthResult = AuthSuccess | AuthFailure;
 
+function optionalString(value: unknown): string | undefined {
+	return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function parseVerifiedClaims(payload: jose.JWTPayload, expectedIssuer: string): JWTClaims | null {
+	if (
+		typeof payload.sub !== 'string' ||
+		payload.sub.length === 0 ||
+		payload.aud !== 'authenticated' ||
+		payload.iss !== expectedIssuer ||
+		typeof payload.exp !== 'number' ||
+		!Number.isFinite(payload.exp) ||
+		typeof payload.iat !== 'number' ||
+		!Number.isFinite(payload.iat)
+	) {
+		return null;
+	}
+
+	const rawUserMetadata =
+		typeof payload.user_metadata === 'object' && payload.user_metadata !== null
+			? (payload.user_metadata as Record<string, unknown>)
+			: undefined;
+	const rawAppMetadata =
+		typeof payload.app_metadata === 'object' && payload.app_metadata !== null
+			? (payload.app_metadata as Record<string, unknown>)
+			: undefined;
+	const providers = rawAppMetadata?.providers;
+
+	return {
+		sub: payload.sub,
+		aud: payload.aud,
+		exp: payload.exp,
+		iat: payload.iat,
+		iss: payload.iss,
+		email: optionalString(payload.email),
+		role: optionalString(payload.role),
+		session_id: optionalString(payload.session_id),
+		user_metadata: rawUserMetadata
+			? {
+					display_name: optionalString(rawUserMetadata.display_name),
+					avatar_url: optionalString(rawUserMetadata.avatar_url),
+					full_name: optionalString(rawUserMetadata.full_name),
+				}
+			: undefined,
+		app_metadata: rawAppMetadata
+			? {
+					provider: optionalString(rawAppMetadata.provider),
+					providers: Array.isArray(providers)
+						? providers.filter((provider): provider is string => typeof provider === 'string')
+						: undefined,
+				}
+			: undefined,
+	};
+}
+
 // =============================================================================
 // JWKS Cache
 // =============================================================================
@@ -205,18 +260,18 @@ export async function verifySupabaseJWT(
 				clockTolerance: 30,
 			});
 
-			// Validate required claims
-			if (!payload.sub || typeof payload.sub !== 'string') {
+			const claims = parseVerifiedClaims(payload, `${supabaseUrl}/auth/v1`);
+			if (!claims) {
 				return {
 					success: false,
-					error: 'Token missing subject claim',
+					error: 'Token is missing required claims',
 					code: 'INVALID_CLAIMS',
 				};
 			}
 
 			return {
 				success: true,
-				claims: payload as unknown as JWTClaims,
+				claims,
 			};
 		} catch (jwksError) {
 			// If JWKS fails and we have a JWT secret, try HS256 fallback
@@ -227,21 +282,24 @@ export async function verifySupabaseJWT(
 				const secret = new TextEncoder().encode(jwtSecret);
 
 				const { payload } = await jose.jwtVerify(token, secret, {
+					algorithms: ['HS256'],
+					issuer: `${supabaseUrl}/auth/v1`,
 					audience: 'authenticated',
 					clockTolerance: 30,
 				});
 
-				if (!payload.sub || typeof payload.sub !== 'string') {
+				const claims = parseVerifiedClaims(payload, `${supabaseUrl}/auth/v1`);
+				if (!claims) {
 					return {
 						success: false,
-						error: 'Token missing subject claim',
+						error: 'Token is missing required claims',
 						code: 'INVALID_CLAIMS',
 					};
 				}
 
 				return {
 					success: true,
-					claims: payload as unknown as JWTClaims,
+					claims,
 				};
 			}
 
@@ -261,7 +319,7 @@ export async function verifySupabaseJWT(
 		if (error instanceof jose.errors.JWTClaimValidationFailed) {
 			return {
 				success: false,
-				error: `Invalid token claims: ${error.message}`,
+				error: 'Invalid token claims',
 				code: 'INVALID_CLAIMS',
 			};
 		}
@@ -317,12 +375,7 @@ export async function verifySupabaseJWT(
  * Falls back through metadata sources.
  */
 export function extractDisplayName(claims: JWTClaims): string {
-	return (
-		claims.user_metadata?.display_name ||
-		claims.user_metadata?.full_name ||
-		claims.email?.split('@')[0] ||
-		'Player'
-	);
+	return claims.user_metadata?.display_name || `Player-${claims.sub.slice(0, 6)}`;
 }
 
 /**
@@ -330,7 +383,15 @@ export function extractDisplayName(claims: JWTClaims): string {
  * Returns null if not available.
  */
 export function extractAvatarUrl(claims: JWTClaims): string | null {
-	return claims.user_metadata?.avatar_url ?? null;
+	const avatarUrl = claims.user_metadata?.avatar_url;
+	if (!avatarUrl) return null;
+
+	try {
+		const url = new URL(avatarUrl);
+		return url.protocol === 'https:' && url.hostname === 'api.dicebear.com' ? url.toString() : null;
+	} catch {
+		return null;
+	}
 }
 
 /**

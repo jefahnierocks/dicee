@@ -12,35 +12,35 @@ import type { AIProfile, AITiming } from './types';
 // ============================================================================
 
 const QUICK_TIMING: AITiming = {
-	rollDecisionMs: 300,      // was 500
-	keepDecisionMs: 500,      // was 800
-	scoreDecisionMs: 600,     // was 1000
-	varianceMs: 150,          // was 300
-	thinkingMultiplier: 1.1,  // was 1.2
+	rollDecisionMs: 300, // was 500
+	keepDecisionMs: 500, // was 800
+	scoreDecisionMs: 600, // was 1000
+	varianceMs: 150, // was 300
+	thinkingMultiplier: 1.1, // was 1.2
 };
 
 const NORMAL_TIMING: AITiming = {
-	rollDecisionMs: 600,      // was 1000
-	keepDecisionMs: 900,      // was 1500
-	scoreDecisionMs: 1200,    // was 2000
-	varianceMs: 300,          // was 500
-	thinkingMultiplier: 1.3,  // was 1.5
+	rollDecisionMs: 600, // was 1000
+	keepDecisionMs: 900, // was 1500
+	scoreDecisionMs: 1200, // was 2000
+	varianceMs: 300, // was 500
+	thinkingMultiplier: 1.3, // was 1.5
 };
 
 const DELIBERATE_TIMING: AITiming = {
-	rollDecisionMs: 900,      // was 1500
-	keepDecisionMs: 1500,     // was 2500
-	scoreDecisionMs: 2000,    // was 3500
-	varianceMs: 500,          // was 800
-	thinkingMultiplier: 1.6,  // was 2.0
+	rollDecisionMs: 900, // was 1500
+	keepDecisionMs: 1500, // was 2500
+	scoreDecisionMs: 2000, // was 3500
+	varianceMs: 500, // was 800
+	thinkingMultiplier: 1.6, // was 2.0
 };
 
 const SLOW_TIMING: AITiming = {
-	rollDecisionMs: 1200,     // was 2000
-	keepDecisionMs: 1800,     // was 3000
-	scoreDecisionMs: 2400,    // was 4000
-	varianceMs: 600,          // was 1000
-	thinkingMultiplier: 2.0,  // was 2.5
+	rollDecisionMs: 1200, // was 2000
+	keepDecisionMs: 1800, // was 3000
+	scoreDecisionMs: 2400, // was 4000
+	varianceMs: 600, // was 1000
+	thinkingMultiplier: 2.0, // was 2.5
 };
 
 // ============================================================================

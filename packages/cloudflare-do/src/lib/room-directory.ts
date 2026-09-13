@@ -69,10 +69,10 @@ export function createRoomDirectory(storage: DurableObjectStorage): RoomDirector
 	/**
 	 * Load rooms from storage (lazy, called on first access)
 	 */
-		async function load(): Promise<Map<string, RoomInfo>> {
-			if (rooms === null) {
-				const stored = await storage.get<[string, RoomInfo][]>(STORAGE_KEY);
-				rooms = new Map(stored ?? []);
+	async function load(): Promise<Map<string, RoomInfo>> {
+		if (rooms === null) {
+			const stored = await storage.get<[string, RoomInfo][]>(STORAGE_KEY);
+			rooms = new Map(stored ?? []);
 		}
 		return rooms;
 	}

@@ -56,7 +56,7 @@ export function createPerformanceTimer(
 		end(eventType: string, additionalData?: Record<string, unknown>): void {
 			if (cancelled) return;
 
-			const duration = Date.now() - startTime;
+			const _duration = Date.now() - startTime;
 
 			// Log performance metric if instrumentation is available
 			// Note: This would require a new event type 'performance.metric'
@@ -106,4 +106,3 @@ export async function measureOperation<T>(
 		throw error;
 	}
 }
-

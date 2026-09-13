@@ -59,6 +59,33 @@ interface LogEntry {
 	[key: string]: unknown;
 }
 
+const PRIVATE_LOG_KEY =
+	/(?:authorization|token|secret|password|cookie|email|displayname|avatar|userid|connectionid|sessionid|gameid|roomcode|targetid)/i;
+
+/** Remove credentials and personal identifiers before data reaches provider logs. */
+export function sanitizeLogValue(value: unknown, key = '', depth = 0): unknown {
+	if (PRIVATE_LOG_KEY.test(key)) return '[REDACTED]';
+	if (depth > 6) return '[TRUNCATED]';
+	if (value instanceof Error) return { name: value.name };
+	if (Array.isArray(value))
+		return value.slice(0, 50).map((item) => sanitizeLogValue(item, '', depth + 1));
+	if (value && typeof value === 'object') {
+		return Object.fromEntries(
+			Object.entries(value).map(([childKey, childValue]) => [
+				childKey,
+				sanitizeLogValue(childValue, childKey, depth + 1),
+			]),
+		);
+	}
+	if (typeof value === 'string') {
+		return value
+			.replace(/Bearer\s+[A-Za-z0-9._~+/-]+=*/gi, 'Bearer [REDACTED]')
+			.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[REDACTED_EMAIL]')
+			.slice(0, 1024);
+	}
+	return value;
+}
+
 /**
  * Create a structured logger with base context
  *
@@ -74,22 +101,23 @@ export function createLogger(baseContext: Partial<LogContext> = {}): Logger {
 			...baseContext,
 			...context,
 		};
+		const safeEntry = sanitizeLogValue(entry) as LogEntry;
 
 		// Use appropriate console method
 		// Note: In Workers, all output goes to console.log but we use the methods
 		// for semantic clarity and potential future differentiation
 		switch (level) {
 			case 'debug':
-				console.log(JSON.stringify(entry));
+				console.log(JSON.stringify(safeEntry));
 				break;
 			case 'info':
-				console.info(JSON.stringify(entry));
+				console.info(JSON.stringify(safeEntry));
 				break;
 			case 'warn':
-				console.warn(JSON.stringify(entry));
+				console.warn(JSON.stringify(safeEntry));
 				break;
 			case 'error':
-				console.error(JSON.stringify(entry));
+				console.error(JSON.stringify(safeEntry));
 				break;
 		}
 	};
@@ -126,8 +154,7 @@ export const Loggers = {
 	GameRoom: (roomCode?: string) => createLogger({ component: 'GameRoom', roomCode }),
 	GlobalLobby: () => createLogger({ component: 'GlobalLobby' }),
 	ChatManager: (roomCode?: string) => createLogger({ component: 'ChatManager', roomCode }),
-	JoinRequestRepo: (roomCode?: string) =>
-		createLogger({ component: 'JoinRequestRepo', roomCode }),
+	JoinRequestRepo: (roomCode?: string) => createLogger({ component: 'JoinRequestRepo', roomCode }),
 	// AI components
 	AIController: (roomCode?: string) => createLogger({ component: 'AIController', roomCode }),
 	AIRoomManager: (roomCode?: string) => createLogger({ component: 'AIRoomManager', roomCode }),

@@ -9,7 +9,7 @@
  */
 
 import type { TablesInsert } from '@dicee/web/src/lib/types/database';
-import type { GameRecord, GamePlayerRecord, DomainEvent } from './schemas';
+import type { DomainEvent, GamePlayerRecord, GameRecord } from './schemas';
 
 // ============================================================================
 // Type Helpers
@@ -20,15 +20,6 @@ import type { GameRecord, GamePlayerRecord, DomainEvent } from './schemas';
  * If incompatible, TypeScript emits an error showing the mismatch.
  */
 type AssertAssignable<T, U> = T extends U ? true : never;
-
-/**
- * Makes all properties optional (for comparing partial shapes).
- * Used when Zod schema has optional fields that map to DB required fields
- * (we ensure values are provided before insert).
- */
-type Relaxed<T> = {
-	[K in keyof T]?: T[K] extends object ? Relaxed<T[K]> : T[K];
-};
 
 // ============================================================================
 // Supabase Insert Types (from generated database.ts)
@@ -79,8 +70,14 @@ type _PlayerFieldsCheck = AssertAssignable<
  * - payload: z.looseObject({}) vs Json
  */
 type _EventFieldsCheck = AssertAssignable<
-	Pick<DomainEvent, 'id' | 'game_id' | 'player_id' | 'sequence_number' | 'turn_number' | 'roll_number'>,
-	Pick<DomainEventsInsert, 'id' | 'game_id' | 'player_id' | 'sequence_number' | 'turn_number' | 'roll_number'>
+	Pick<
+		DomainEvent,
+		'id' | 'game_id' | 'player_id' | 'sequence_number' | 'turn_number' | 'roll_number'
+	>,
+	Pick<
+		DomainEventsInsert,
+		'id' | 'game_id' | 'player_id' | 'sequence_number' | 'turn_number' | 'roll_number'
+	>
 >;
 
 // ============================================================================
@@ -94,7 +91,10 @@ type _EventGameIdIsString = AssertAssignable<DomainEvent['game_id'], string>;
 
 // Verify nullable fields match
 type _WinnerNullable = AssertAssignable<GameRecord['winner_id'], string | null | undefined>;
-type _FinalScoreNullable = AssertAssignable<GamePlayerRecord['final_score'], number | null | undefined>;
+type _FinalScoreNullable = AssertAssignable<
+	GamePlayerRecord['final_score'],
+	number | null | undefined
+>;
 
 // ============================================================================
 // Runtime Export (prevents tree-shaking)

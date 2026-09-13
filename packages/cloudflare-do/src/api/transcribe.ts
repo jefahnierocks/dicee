@@ -1,15 +1,11 @@
-/**
- * Audio Transcription API
- * 
- * HTTP endpoint for transcribing audio using Cloudflare Workers AI.
- * Uses Whisper model for speech-to-text conversion.
- */
+/** Authenticated audio transcription through Workers AI. */
 
+import { verifySupabaseJWT } from '../auth';
 import type { Env } from '../types';
 
 export interface TranscriptionRequest {
-	audio: string; // Base64-encoded audio data
-	mimeType: string; // e.g., 'audio/webm;codecs=opus'
+	audio: string;
+	mimeType: string;
 }
 
 export interface TranscriptionResponse {
@@ -19,111 +15,85 @@ export interface TranscriptionResponse {
 	error?: string;
 }
 
-/**
- * Handle transcription requests
- */
-export async function handleTranscribe(
-	request: Request,
-	env: Env
-): Promise<Response> {
-	// Only accept POST requests
-	if (request.method !== 'POST') {
-		return new Response('Method not allowed', { status: 405 });
+const MAX_AUDIO_BYTES = 5 * 1024 * 1024;
+const MAX_REQUEST_BYTES = 7 * 1024 * 1024;
+const ALLOWED_AUDIO_TYPES = new Set([
+	'audio/mp4',
+	'audio/mpeg',
+	'audio/ogg',
+	'audio/wav',
+	'audio/webm',
+]);
+
+function jsonError(error: string, status: number): Response {
+	return Response.json({ error }, { status, headers: { 'Cache-Control': 'no-store' } });
+}
+
+function bearerToken(request: Request): string | null {
+	const authorization = request.headers.get('Authorization');
+	if (!authorization?.startsWith('Bearer ')) return null;
+	const token = authorization.slice('Bearer '.length).trim();
+	return token.length > 0 ? token : null;
+}
+
+export async function handleTranscribe(request: Request, env: Env): Promise<Response> {
+	if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+	if (request.headers.get('Content-Type')?.split(';', 1)[0] !== 'application/json') {
+		return jsonError('Content-Type must be application/json', 415);
 	}
 
-	try {
-		const body = await request.json() as TranscriptionRequest;
+	const token = bearerToken(request);
+	if (!token) return jsonError('Authentication required', 401);
+	const authentication = await verifySupabaseJWT(token, env.SUPABASE_URL, env.SUPABASE_JWT_SECRET);
+	if (!authentication.success) return jsonError('Authentication failed', 401);
 
-		if (!body.audio || !body.mimeType) {
-			return Response.json({
-				error: 'Missing audio data or mimeType'
-			}, { status: 400 });
+	const declaredLength = Number(request.headers.get('Content-Length') ?? 0);
+	if (declaredLength > MAX_REQUEST_BYTES) return jsonError('Request too large', 413);
+
+	try {
+		const rawBody = await request.text();
+		if (new TextEncoder().encode(rawBody).byteLength > MAX_REQUEST_BYTES) {
+			return jsonError('Request too large', 413);
+		}
+		const body = JSON.parse(rawBody) as Partial<TranscriptionRequest>;
+		if (typeof body.audio !== 'string' || typeof body.mimeType !== 'string') {
+			return jsonError('Invalid transcription request', 400);
 		}
 
-		// Decode base64 audio
+		const mimeType = body.mimeType.split(';', 1)[0].toLowerCase();
+		if (!ALLOWED_AUDIO_TYPES.has(mimeType)) return jsonError('Unsupported audio type', 415);
+
 		const audioBuffer = base64ToArrayBuffer(body.audio);
-		
-		// Transcribe using Workers AI
-		const transcription = await transcribeAudio(audioBuffer, env);
+		if (audioBuffer.byteLength === 0) return jsonError('Audio data is empty', 400);
+		if (!validateAudioSize(audioBuffer)) return jsonError('Audio data is too large', 413);
 
-		return Response.json(transcription);
-
-	} catch (error) {
-		console.error('Transcription error:', error);
-		
-		return Response.json({
-			error: 'Transcription failed',
-			details: error instanceof Error ? error.message : 'Unknown error'
-		}, { status: 500 });
-	}
-}
-
-/**
- * Transcribe audio using Cloudflare Workers AI Whisper model
- */
-async function transcribeAudio(
-	audioBuffer: ArrayBuffer,
-	env: Env
-): Promise<TranscriptionResponse> {
-	try {
-		const ai = env.AI;
-
-		// @ts-ignore - Workers AI types may not be up to date
-		const response = await ai.run('@cf/openai/whisper-tiny-en', {
+		const response = await env.AI.run('@cf/openai/whisper-tiny-en', {
 			audio: [...new Uint8Array(audioBuffer)],
 		});
-
-		// Extract text from response
-		const text = response.text || '';
-		
-		// Note: Whisper model doesn't provide confidence scores
-		// We'll return undefined for confidence as it's not available
-
-		return {
-			text,
-		};
-
-	} catch (error) {
-		console.error('Workers AI transcription error:', error);
-		
-		return {
-			text: '',
-			error: error instanceof Error ? error.message : 'Transcription failed'
-		};
+		return Response.json(
+			{ text: typeof response.text === 'string' ? response.text : '' },
+			{ headers: { 'Cache-Control': 'no-store' } },
+		);
+	} catch {
+		return jsonError('Transcription failed', 400);
 	}
 }
 
-/**
- * Convert base64 string to ArrayBuffer
- */
-function base64ToArrayBuffer(base64: string): ArrayBuffer {
-	// Remove data URL prefix if present
-	const base64Data = base64.replace(/^data:audio\/[^;]+;base64,/, '');
-	
+function base64ToArrayBuffer(value: string): ArrayBuffer {
+	const base64Data = value.replace(/^data:audio\/[a-zA-Z0-9.+-]+(?:;[^,]*)?;base64,/, '');
+	if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64Data) || base64Data.length % 4 !== 0) {
+		throw new Error('Invalid base64');
+	}
 	const binaryString = atob(base64Data);
 	const bytes = new Uint8Array(binaryString.length);
-	
-	for (let i = 0; i < binaryString.length; i++) {
-		bytes[i] = binaryString.charCodeAt(i);
-	}
-	
+	for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
 	return bytes.buffer;
 }
 
-/**
- * Validate audio file size (max 25MB for Whisper model)
- */
 export function validateAudioSize(audioBuffer: ArrayBuffer): boolean {
-	const maxSizeBytes = 25 * 1024 * 1024; // 25MB
-	return audioBuffer.byteLength <= maxSizeBytes;
+	return audioBuffer.byteLength <= MAX_AUDIO_BYTES;
 }
 
-/**
- * Get audio duration from buffer (approximate)
- * This is a rough estimate - for accurate duration you'd need to parse the audio file
- */
-export function estimateAudioDuration(audioBuffer: ArrayBuffer, mimeType: string): number {
-	// Rough estimate: 16kbps audio = 2KB per second
-	const bytesPerSecond = 2000;
-	return Math.round(audioBuffer.byteLength / bytesPerSecond);
+export function estimateAudioDuration(audioBuffer: ArrayBuffer, _mimeType: string): number {
+	return Math.round(audioBuffer.byteLength / 2000);
 }

@@ -722,4 +722,3 @@ export function getEventCategory(eventType: EventType): string {
 	if (DIAGNOSTIC_EVENTS.includes(eventType as DiagnosticEvent)) return 'diagnostic';
 	return 'unknown';
 }
-

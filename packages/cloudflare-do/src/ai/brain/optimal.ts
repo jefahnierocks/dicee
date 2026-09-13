@@ -7,7 +7,7 @@
 
 import type { Category, KeptMask, Scorecard } from '../../game';
 import { calculateAllPotentialScores, getRemainingCategories } from '../../game';
-import { type Logger, createLogger } from '../../lib/logger';
+import { createLogger, type Logger } from '../../lib/logger';
 import type { AIProfile, GameContext, TurnDecision } from '../types';
 import type { AIBrain, CategoryEV, KeepAnalysis } from './types';
 

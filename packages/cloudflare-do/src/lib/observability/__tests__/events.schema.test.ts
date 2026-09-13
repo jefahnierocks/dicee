@@ -5,15 +5,15 @@
  * Tests are written BEFORE implementation to ensure type safety and validation.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-	LIFECYCLE_EVENTS,
 	ALL_EVENT_TYPES,
-	type LifecycleEvent,
-	LifecycleWakeEventSchema,
-	type LifecycleWakeEvent,
-	validateLogEntry,
 	isEventType,
+	LIFECYCLE_EVENTS,
+	type LifecycleEvent,
+	type LifecycleWakeEvent,
+	LifecycleWakeEventSchema,
+	validateLogEntry,
 } from '../events.schema.js';
 
 describe('Event Schema Foundation', () => {
@@ -218,4 +218,3 @@ describe('Event Schema Foundation', () => {
 		});
 	});
 });
-
