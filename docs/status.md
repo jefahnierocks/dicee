@@ -51,10 +51,13 @@ Owner decisions recorded 2026-09-12:
    `compatibility_date` 2026-07-21.
 6. **Status of record.** This tracked file.
 
-Under evaluation (owner intent, not yet decided): whether Cloudflare-native
-storage should replace Supabase, and moving the repository and its Cloudflare
-resources into an organization governed with policy and infrastructure as code.
-Until an RFC is accepted, none of this changes current architecture.
+Under evaluation (owner intent, not yet decided): the data platform and an
+organization move. A 2026-09-12 read-only evaluation recommends staying on
+Supabase, hardened and minimized, and meeting the governance goal with a GitHub
+organization transfer, an organization-governed Cloudflare account, and
+OpenTofu with policy checks. Its RFC-005 revision, a new RFC-006, and an
+ADR-005 addendum are drafts pending owner review and are not yet in this
+repository. Until an RFC is accepted, none of this changes current architecture.
 
 ## Open operator follow-ups
 
@@ -64,7 +67,9 @@ without a first-hand readback recorded below.
 - [ ] Database migrations, in this order. Both migrations and both pgTAP files
       pass on a local stack (see [Local verification](#local-verification)); none
       has run against the hosted project.
-      1. Back up the Supabase database.
+      1. Read back the Supabase plan tier, then take an off-site
+         `supabase db dump` and a Storage export. Free projects have no
+         platform backups.
       2. Apply only `20260913000001_profiles_column_privileges.sql` live.
          `supabase db push` applies every pending file, so either push from a
          tree that does not yet contain `20260913000002`, or run `000001` in the
@@ -86,6 +91,13 @@ without a first-hand readback recorded below.
 - [ ] Apply the explicit Supabase Data API grants (P6-01) before 2026-10-30,
       when Supabase starts enforcing them on existing projects.
 - [ ] Disable workers.dev and Preview URLs on every Dicee Worker script.
+- [ ] Undeploy the `aggregate-game-stats` Edge Function, which P6-02 retires.
+      It runs with the service role for any caller that has the public anon key
+      and a game id. The Worker treats the resulting 404 as a non-retriable
+      failure, so undeploying it does not cause retry loops.
+- [ ] Find legacy Worker scripts that still hold Supabase secrets, and remove
+      their routes and custom domains or undeploy them until the Supabase key
+      migration retires those keys.
 - [ ] Opt-in MCP servers: sign in with `claude mcp login cloudflare-api` and
       `claude mcp login supabase` (or `/mcp`) only when a task needs them, and
       use the equivalent Cursor OAuth flow. See [`MCP-SETUP.md`](MCP-SETUP.md).
