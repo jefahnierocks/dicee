@@ -21,6 +21,10 @@ pre-commit:
       glob: "packages/{web,cloudflare-do}/wrangler.jsonc"
       run: mise exec -- pnpm check:workers
 
+    docs:
+      glob: "*.{md,mdc,json,jsonc,toml,yaml,yml,rules}"
+      run: mise exec -- node scripts/check-docs.mjs
+
 pre-push:
   commands:
     # validate:ci = validate, then the high-severity dependency audit and the

@@ -2,7 +2,7 @@
  * Dicee Audio Asset Registry
  *
  * Complete definition of all audio assets for the Dicee game.
- * Based on: docs/references/audio-plan.md
+ * @see packages/web/src/tools/audio-gen/README.md#audio-plan
  *
  * Asset ID Format:
  *   MVP-XX  = Phase 1 MVP assets

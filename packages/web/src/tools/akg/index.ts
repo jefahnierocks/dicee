@@ -4,8 +4,7 @@
  * Static architectural analysis for Dicee codebase.
  * Provides graph-based invariant checking and dependency analysis.
  *
- * @see docs/architecture/akg/PRE_AKG_PLANNING.md
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 // Re-export config utilities

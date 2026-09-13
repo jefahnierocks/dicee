@@ -19,7 +19,7 @@
  *   --sarif            Output results as SARIF 2.1.0 (for GitHub Code Scanning)
  *   --list             List available invariants
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { existsSync, readFileSync } from 'node:fs';

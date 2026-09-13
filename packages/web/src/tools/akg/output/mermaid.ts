@@ -4,7 +4,7 @@
  * Generates Mermaid diagrams from the AKG graph for architectural visualization.
  * Outputs both Markdown (for humans/GitHub) and JSON sidecar (for agent queries).
  *
- * @see docs/architecture/akg/RFC_MERMAID_VISUALIZATION.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { createHash } from 'node:crypto';

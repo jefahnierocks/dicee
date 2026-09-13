@@ -4,8 +4,7 @@
  * HTTP client for ElevenLabs Sound Effects API.
  * Handles authentication, retries, and response parsing.
  *
- * @see docs/references/elevenlabs/elevenlabs-api-auth.md
- * @see docs/references/elevenlabs/elevenlabs-sound-effects.md
+ * @see packages/web/src/tools/audio-gen/README.md#elevenlabs-api-references
  */
 
 import {

@@ -2,9 +2,8 @@
  * Supabase RPC Client
  *
  * Type-safe client for calling PostgreSQL RPC functions.
- * Part of Phase 4: RPC-Based Persistence.
  *
- * @see docs/architecture/PERSISTENCE_ARCHITECTURE_ANALYSIS.md
+ * @see docs/architecture/README.md#persistence-bridge
  */
 
 import { z } from 'zod';

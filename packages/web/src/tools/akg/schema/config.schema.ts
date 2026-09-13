@@ -3,7 +3,7 @@
  *
  * Zod 4 schemas for AKG configuration files.
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { z } from 'zod';

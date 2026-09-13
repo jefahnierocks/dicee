@@ -9,8 +9,8 @@
  * 2. A mock JWKS endpoint that serves test keys
  * 3. Real Supabase credentials (not suitable for CI)
  *
- * For comprehensive WebSocket testing, see wscat testing documentation
- * in docs/testing/websocket-testing.md
+ * For manual WebSocket testing, see
+ * docs/development/testing.md#websocket-manual-test
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -136,7 +136,7 @@ describe('Worker Integration Tests', () => {
 	// 2. Playwright E2E tests with real browser WebSocket connections
 	// 3. Native Node.js WebSocket client against running worker
 	//
-	// See docs/testing/websocket-testing.md for detailed instructions.
+	// See docs/development/testing.md#websocket-manual-test for the manual steps.
 	//
 	describe('WebSocket Upgrade (requires real WebSocket client)', () => {
 		it('should reject WebSocket upgrade without token', async () => {

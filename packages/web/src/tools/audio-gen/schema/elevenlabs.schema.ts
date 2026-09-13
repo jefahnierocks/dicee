@@ -2,7 +2,7 @@
  * ElevenLabs API Schemas
  *
  * Zod 4 schemas for ElevenLabs Sound Effects API.
- * Based on: docs/references/elevenlabs/
+ * @see packages/web/src/tools/audio-gen/README.md#elevenlabs-api-references
  *
  * @see https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert
  */

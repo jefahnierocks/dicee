@@ -1,6 +1,6 @@
 /**
  * Dicee Design System Tokens
- * Neo-Brutalist design language per RFC-002
+ * Neo-Brutalist design language per RFC-002 (docs/architecture/README.md#ui-principles)
  *
  * Core tenets:
  * - Hard edges (no rounded corners)
@@ -148,7 +148,7 @@
 	--radius-md: 4px;
 
 	/* ==========================================================================
-	 * Z-Index Stack (per RFC-002 HUD Architecture)
+	 * Z-Index Stack (per RFC-002 HUD Architecture; docs/architecture/README.md#ui-principles)
 	 * ========================================================================== */
 
 	--z-background: 0;

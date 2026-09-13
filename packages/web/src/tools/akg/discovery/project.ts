@@ -4,7 +4,7 @@
  * Initializes and manages the ts-morph Project for TypeScript AST analysis.
  * Handles loading TypeScript configuration and adding source files.
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { existsSync } from 'node:fs';

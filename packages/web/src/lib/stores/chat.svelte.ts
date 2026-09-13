@@ -12,8 +12,6 @@
  * - Message grouping helpers
  * - Sound notification preferences
  * - Auto-scroll behavior hints
- *
- * @see docs/game-lobby-chat.md for full specification
  */
 
 import { getContext, setContext } from 'svelte';

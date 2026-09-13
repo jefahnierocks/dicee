@@ -22,7 +22,7 @@
  *   ELEVENLABS_API_KEY  Required. Prefer:
  *                       ./scripts/with-dicee-elevenlabs-local.sh -- bun run packages/web/src/tools/audio-gen/cli/generate.ts ...
  *
- * @see docs/references/audio-plan.md
+ * @see packages/web/src/tools/audio-gen/README.md#audio-plan
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';

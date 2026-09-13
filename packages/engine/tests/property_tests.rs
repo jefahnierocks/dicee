@@ -1,4 +1,4 @@
-//! Property-based tests for the Dicee engine (ADR-005 implementation).
+//! Property-based tests for the Dicee engine.
 //!
 //! These tests use proptest to validate mathematical correctness of the engine:
 //! - Probability distributions sum to 1.0

@@ -19,7 +19,7 @@
   --watch, -w       Watch mode: re-run on file changes
   --check           Run invariant checks after discovery (watch mode)
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { execSync } from 'node:child_process';

@@ -8,7 +8,7 @@
  * Currently disabled by default as the AKG discovery doesn't capture prop types yet.
  * Enable once discovery is enhanced to extract props from Svelte components.
  *
- * @see .claude/CONVENTIONS.md for naming conventions
+ * @see AGENTS.md for naming conventions
  */
 
 import type { AKGGraph } from '../../schema/graph.schema.js';

@@ -1,6 +1,6 @@
 /**
  * Dicee Type Definitions
- * Aligned with RFC-003 Data Contracts
+ * Aligned with RFC-003 Data Contracts (docs/architecture/README.md#data-contracts)
  */
 
 // =============================================================================

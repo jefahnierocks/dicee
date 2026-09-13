@@ -4,7 +4,7 @@
  * Zod 4 schemas for the Architectural Knowledge Graph structure.
  * Defines nodes, edges, and the complete graph container.
  *
- * @see docs/architecture/akg/WEEK_1_2_SCHEMA_INFRASTRUCTURE.md
+ * @see docs/architecture/akg/README.md
  */
 
 import { createHash } from 'node:crypto';

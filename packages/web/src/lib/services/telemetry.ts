@@ -2,7 +2,7 @@
  * Telemetry Service
  *
  * Client-side telemetry collection with batching, session management,
- * and privacy controls. Follows RFC-003 three-stream architecture.
+ * and privacy controls. Follows RFC-003 three-stream architecture (docs/architecture/README.md#data-contracts).
  *
  * @module services/telemetry
  */

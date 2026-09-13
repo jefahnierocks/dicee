@@ -3,7 +3,7 @@
  *
  * Public exports for the AKG Model Context Protocol server.
  *
- * @see docs/architecture/akg/RFC_MERMAID_VISUALIZATION.md
+ * @see docs/architecture/akg/README.md
  */
 
 // Server is the main entry point - run with:
