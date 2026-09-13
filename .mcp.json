@@ -1,22 +1,5 @@
 {
-  "$schema": "https://modelcontextprotocol.io/schema/mcp-config.schema.json",
   "mcpServers": {
-    "memory": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ],
-      "env": {
-        "MEMORY_FILE_PATH": ".claude/state/memory.jsonl"
-      }
-    },
-    "supabase": {
-      "command": "bash",
-      "args": [
-        "./scripts/mcp-wrappers/supabase-wrapper.sh"
-      ]
-    },
     "akg": {
       "command": "bun",
       "args": [
@@ -30,46 +13,16 @@
       }
     },
     "cloudflare-docs": {
-      "command": "bash",
-      "args": [
-        "./scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "docs"
-      ]
+      "type": "http",
+      "url": "https://docs.mcp.cloudflare.com/mcp"
     },
-    "cloudflare-bindings": {
-      "command": "bash",
-      "args": [
-        "./scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "bindings"
-      ]
+    "cloudflare-api": {
+      "type": "http",
+      "url": "https://mcp.cloudflare.com/mcp"
     },
-    "cloudflare-observability": {
-      "command": "bash",
-      "args": [
-        "./scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "observability"
-      ]
-    },
-    "cloudflare-builds": {
-      "command": "bash",
-      "args": [
-        "./scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "builds"
-      ]
-    },
-    "cloudflare-logpush": {
-      "command": "bash",
-      "args": [
-        "./scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "logpush"
-      ]
-    },
-    "cloudflare-graphql": {
-      "command": "bash",
-      "args": [
-        "./scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "graphql"
-      ]
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=${DICEE_SUPABASE_PROJECT_REF}&read_only=true&features=database,docs,functions"
     }
   }
 }

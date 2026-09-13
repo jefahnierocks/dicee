@@ -1,5 +1,7 @@
 # Observability Implementation Status
 
+> **Historical MCP note (2026-09-12):** the narrow `cloudflare-observability`, `cloudflare-builds`, `cloudflare-bindings`, `cloudflare-logpush`, and `cloudflare-graphql` MCP servers named in this document were retired. Use the opt-in `cloudflare-api` server (per-client OAuth) or `cloudflare-docs`; see [`docs/MCP-SETUP.md`](../MCP-SETUP.md).
+
 > **Version**: 2.0.0  
 > **Last Updated**: 2025-01-XX  
 > **Status**: ✅ **COMPLETE - Full Consistency Achieved**

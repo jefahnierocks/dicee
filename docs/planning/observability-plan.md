@@ -1,5 +1,7 @@
 # Comprehensive Observability Plan for Dicee Game States & Connections
 
+> **Historical MCP note (2026-09-12):** the narrow `cloudflare-observability`, `cloudflare-builds`, `cloudflare-bindings`, `cloudflare-logpush`, and `cloudflare-graphql` MCP servers named in this document were retired. Use the opt-in `cloudflare-api` server (per-client OAuth) or `cloudflare-docs`; see [`docs/MCP-SETUP.md`](../MCP-SETUP.md).
+
 > **Version**: 1.0.0
 > **Created**: 2025-01-XX
 > **Status**: Planning

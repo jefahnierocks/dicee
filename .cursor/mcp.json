@@ -1,22 +1,7 @@
 {
-  "$schema": "https://modelcontextprotocol.io/schema/mcp-config.schema.json",
   "mcpServers": {
-    "memory": {
-      "command": "node",
-      "args": [
-        "${workspaceFolder}/node_modules/@modelcontextprotocol/server-memory/dist/index.js"
-      ],
-      "env": {
-        "MEMORY_FILE_PATH": "${workspaceFolder}/.claude/state/memory.jsonl"
-      }
-    },
-    "supabase": {
-      "command": "bash",
-      "args": [
-        "${workspaceFolder}/scripts/mcp-wrappers/supabase-wrapper.sh"
-      ]
-    },
     "akg": {
+      "type": "stdio",
       "command": "bun",
       "args": [
         "run",
@@ -29,46 +14,13 @@
       }
     },
     "cloudflare-docs": {
-      "command": "bash",
-      "args": [
-        "${workspaceFolder}/scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "docs"
-      ]
+      "url": "https://docs.mcp.cloudflare.com/mcp"
     },
-    "cloudflare-bindings": {
-      "command": "bash",
-      "args": [
-        "${workspaceFolder}/scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "bindings"
-      ]
+    "cloudflare-api": {
+      "url": "https://mcp.cloudflare.com/mcp"
     },
-    "cloudflare-observability": {
-      "command": "bash",
-      "args": [
-        "${workspaceFolder}/scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "observability"
-      ]
-    },
-    "cloudflare-builds": {
-      "command": "bash",
-      "args": [
-        "${workspaceFolder}/scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "builds"
-      ]
-    },
-    "cloudflare-logpush": {
-      "command": "bash",
-      "args": [
-        "${workspaceFolder}/scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "logpush"
-      ]
-    },
-    "cloudflare-graphql": {
-      "command": "bash",
-      "args": [
-        "${workspaceFolder}/scripts/mcp-wrappers/cloudflare-wrapper.sh",
-        "graphql"
-      ]
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=${env:DICEE_SUPABASE_PROJECT_REF}&read_only=true&features=database,docs,functions"
     }
   }
 }
