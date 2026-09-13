@@ -1,8 +1,0 @@
-# Infisical secrets scanner ignore file
-# https://infisical.com/docs/cli/scanning-overview
-
-# False positive: Supabase anon key placeholder in CI config
-# This is a PUBLIC key (anon keys are designed to be exposed in frontend code)
-# and is further invalidated by the `.placeholder` suffix
-# Fingerprint from historical commit where the pattern was introduced
-7c4fde3b3275c95dbc2a1415aeb65ae41b56138a:.github/workflows/ci.yml:jwt:101

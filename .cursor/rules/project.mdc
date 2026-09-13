@@ -1,6 +1,0 @@
----
-description: Dicee repository-wide agent instructions
-alwaysApply: true
----
-
-Read and follow `AGENTS.md`. Treat it as authoritative over legacy plans and archived agent state. Keep remote infrastructure and secret operations operator-gated, use the canonical pnpm commands, and verify relevant tests before completion.
