@@ -9,6 +9,11 @@ repository = "https://github.com/verlyn13/dicee"
 keywords = ["dicee", "probability", "wasm", "game-theory"]
 categories = ["game-engines", "mathematics", "wasm"]
 
+[package.metadata.wasm-pack.profile.release]
+# Cached Cargo-built and prebuilt bindgen CLIs emit different producer metadata.
+# Strip it before -O so Binaryen retains its optimized instruction form.
+wasm-opt = ["--strip-producers", "-O"]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 
