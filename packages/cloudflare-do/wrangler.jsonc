@@ -1,0 +1,66 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "dicee",
+	"main": "src/worker.ts",
+	"workers_dev": false,
+	"preview_urls": false,
+	"compatibility_date": "2026-07-21",
+	"compatibility_flags": ["nodejs_compat"],
+	// Durable Object lifecycle: the legacy `migrations` array, identical to the tags already
+	// applied from the previous wrangler.toml. Never edit or reorder an applied tag. Declarative
+	// `exports` is deferred to a standalone operator deploy once ADR-005 is accepted.
+	"migrations": [
+		{ "tag": "v1", "new_sqlite_classes": ["GameRoom"] },
+		{ "tag": "v2", "new_sqlite_classes": ["GlobalLobby"] }
+	],
+	"durable_objects": {
+		"bindings": [
+			{ "name": "GAME_ROOM", "class_name": "GameRoom" },
+			{ "name": "GLOBAL_LOBBY", "class_name": "GlobalLobby" }
+		]
+	},
+	"ai": { "binding": "AI" },
+	"secrets": {
+		"required": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]
+	},
+	"observability": {
+		"enabled": true,
+		"logs": { "enabled": true, "head_sampling_rate": 1 },
+		"traces": { "enabled": true, "head_sampling_rate": 0.1 }
+	},
+	"vars": {
+		"ENVIRONMENT": "production"
+	},
+	"env": {
+		"development": {
+			"vars": { "ENVIRONMENT": "development" },
+			"secrets": {
+				"required": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]
+			},
+			"durable_objects": {
+				"bindings": [
+					{ "name": "GAME_ROOM", "class_name": "GameRoom" },
+					{ "name": "GLOBAL_LOBBY", "class_name": "GlobalLobby" }
+				]
+			},
+			"ai": { "binding": "AI" }
+		},
+		"staging": {
+			"vars": { "ENVIRONMENT": "staging" },
+			"secrets": {
+				"required": ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]
+			},
+			"durable_objects": {
+				"bindings": [
+					{ "name": "GAME_ROOM", "class_name": "GameRoom" },
+					{ "name": "GLOBAL_LOBBY", "class_name": "GlobalLobby" }
+				]
+			},
+			"ai": { "binding": "AI" }
+		}
+	}
+}
+
+// Runtime secrets are never committed. Provision SUPABASE_URL,
+// SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, and (for legacy HS256 tokens)
+// SUPABASE_JWT_SECRET with `wrangler secret put` for each deployed environment.
