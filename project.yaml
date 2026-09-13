@@ -1,6 +1,6 @@
 # Meta-inventory interop header; contract:
 # Conforms to the project-intelligence manifest contract.
-# (enum registry: meta-inventory docs/ontology/dimensions.yaml)
+# (enum registry: meta-inventory:docs/ontology/dimensions.yaml)
 spec_version: 0.1
 project:
   id: dicee
@@ -10,7 +10,7 @@ role: canonical
 peers: []
 status:
   posture: deployed-system
-  local_phase: "2026-09 modernization, Phase 1 PR review (no deployment)"
+  local_phase: "2026-09 docs streamline; operator safety rollout open (no deployment)"
   as_of: "2026-09-13"
 authority:
   status_of_record: docs/status.md
