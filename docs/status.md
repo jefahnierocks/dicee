@@ -230,3 +230,12 @@ or account identifiers here.
   (error code 10000); trigger configuration remains unverified through this token.
   Account identifiers are omitted. These reads do not prove ingress containment,
   secret rotation, database remediation, or production deployment.
+- 2026-09-13T04:49:47Z: authenticated
+  `GET https://github.com/verlyn13/dicee/settings/installations` returned HTTP
+  200. The repository's Installed GitHub Apps page listed no Cloudflare Workers
+  and Pages app. Together with Pages `source: null`, this rules out the documented
+  native GitHub build integration for these branch pushes. This is an inference
+  from the repository access readback and Cloudflare's
+  [GitHub integration requirements](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/github-integration/).
+  The token's Workers Builds API access remains unverified; no app installation,
+  permission, or provider setting was changed.
