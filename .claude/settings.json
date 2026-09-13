@@ -2,17 +2,40 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(pnpm check:*)",
-      "Bash(pnpm lint:*)",
-      "Bash(pnpm test:*)",
-      "Bash(pnpm build:*)",
-      "Bash(pnpm validate:*)",
-      "Bash(pnpm --filter:*)",
+      "Bash(pnpm check*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm validate*)",
+      "Bash(pnpm akg*)",
+      "Bash(pnpm cf:audit*)",
+      "Bash(pnpm --filter @dicee/web biome:check)",
+      "Bash(pnpm --filter @dicee/web build)",
+      "Bash(pnpm --filter @dicee/web check)",
+      "Bash(pnpm --filter @dicee/web test)",
+      "Bash(pnpm --filter @dicee/web test:agent)",
+      "Bash(pnpm --filter @dicee/web types)",
+      "Bash(pnpm --filter @dicee/web types:check)",
+      "Bash(pnpm --filter @dicee/cloudflare-do lint)",
+      "Bash(pnpm --filter @dicee/cloudflare-do test)",
+      "Bash(pnpm --filter @dicee/cloudflare-do test:agent)",
+      "Bash(pnpm --filter @dicee/cloudflare-do typecheck)",
+      "Bash(pnpm --filter @dicee/cloudflare-do types)",
+      "Bash(pnpm --filter @dicee/cloudflare-do types:check)",
+      "Bash(pnpm --filter @dicee/simulation build)",
+      "Bash(pnpm --filter @dicee/simulation lint)",
+      "Bash(pnpm --filter @dicee/simulation test)",
+      "Bash(pnpm --filter @dicee/simulation test:agent)",
+      "Bash(pnpm --filter @dicee/simulation typecheck)",
+      "Bash(pnpm --filter @dicee/shared build)",
+      "Bash(pnpm --filter @dicee/shared typecheck)",
       "Bash(cargo check:*)",
       "Bash(cargo test:*)",
       "Bash(cargo fmt:*)",
       "Bash(cargo clippy:*)",
-      "Bash(uv run:*)",
+      "Bash(uv run --project packages/analysis --group dev pytest *)",
+      "Bash(uv run --project packages/analysis --group dev mypy *)",
+      "Bash(uv run --project packages/analysis --group dev ruff check *)",
       "Bash(git status:*)",
       "Bash(git diff:*)"
     ],
@@ -25,9 +48,12 @@
       "Bash(pnpm --filter * deploy*)",
       "Bash(pnpm --filter * pages:deploy*)",
       "Bash(pnpm --filter * tail*)",
+      "Bash(pnpm --filter * exec wrangler *)",
+      "Bash(pnpm --filter * exec supabase *)",
       "Bash(pnpm --dir * deploy*)",
       "Bash(pnpm --dir * pages:deploy*)",
       "Bash(pnpm --dir * tail*)",
+      "Bash(pnpm --dir * exec wrangler *)",
       "Bash(pnpm exec wrangler deploy*)",
       "Bash(pnpm exec wrangler versions deploy*)",
       "Bash(pnpm exec wrangler pages deploy*)",
@@ -63,56 +89,12 @@
       "Bash(git clean *)",
       "Bash(git push --force*)",
       "Bash(git push -f*)",
+      "Bash(git diff --no-index*)",
+      "Bash(git diff * --no-index*)",
+      "Bash(git diff *--output*)",
       "Read(./.dicee/**)",
       "Edit(./.dicee/**)"
     ]
   },
-  "enabledMcpjsonServers": ["akg", "cloudflare-docs"],
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/session-init.sh",
-            "timeout": 15
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/session-finalize.sh",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Bash|Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/log-tool-use.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PROJECT_DIR}/scripts/hooks/pre-compact-archive.sh",
-            "timeout": 30
-          }
-        ]
-      }
-    ]
-  }
+  "enabledMcpjsonServers": ["akg", "cloudflare-docs"]
 }
