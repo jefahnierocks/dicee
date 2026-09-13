@@ -66,15 +66,15 @@ akg:
     contents: read
     security-events: write  # Required for SARIF upload
   steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@<full-commit-sha>
 
     - name: Setup pnpm
-      uses: pnpm/action-setup@v4
+      uses: pnpm/action-setup@<full-commit-sha>
       with:
         version: 10
 
     - name: Setup Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@<full-commit-sha>
       with:
         node-version: 24
         cache: pnpm
@@ -90,7 +90,7 @@ akg:
       continue-on-error: true
 
     - name: Upload SARIF to Code Scanning
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@<full-commit-sha>
       with:
         sarif_file: akg-results.sarif
         category: architecture

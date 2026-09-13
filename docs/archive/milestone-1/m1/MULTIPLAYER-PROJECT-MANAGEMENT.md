@@ -166,7 +166,7 @@ VITE_SUPABASE_ANON_KEY=your-anon-key
 **API Keys Needed**:
 ```bash
 # Add to .env
-VITE_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
+VITE_SENTRY_DSN=https://user@example.com/xxx
 ```
 
 **Cost**: Free tier (5K events/month)
@@ -589,7 +589,7 @@ VITE_PARTYKIT_HOST=localhost:1999  # Dev
 # VITE_SUPABASE_ANON_KEY=your-anon-key
 
 # Sentry (Week 4, optional)
-# VITE_SENTRY_DSN=https://xxx@xxx.ingest.sentry.io/xxx
+# VITE_SENTRY_DSN=https://user@example.com/xxx
 
 # Feature Flags (optional)
 VITE_ENABLE_MULTIPLAYER=true

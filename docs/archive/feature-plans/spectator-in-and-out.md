@@ -500,7 +500,7 @@ function getWatchLink(roomCode: string): string {
 }
 
 // UI: "Share Watch Link" button in game
-// Copies: https://gamelobby.jefahnierocks.com/games/dicee/room/ABC123?mode=spectator
+// Copies: https://gamelobby.legacy.example/games/dicee/room/ABC123?mode=spectator
 ```
 
 ---

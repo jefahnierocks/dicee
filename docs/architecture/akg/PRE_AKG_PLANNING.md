@@ -632,7 +632,7 @@ pnpm test
 
 # 5. Secrets scan
 echo "→ Scanning for secrets..."
-infisical scan --domain=https://infisical.jefahnierocks.com || true
+infisical scan --domain=https://infisical.example.com || true
 
 # 6. Build check
 echo "→ Running build..."

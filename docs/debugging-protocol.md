@@ -1,5 +1,12 @@
 # Agentic Debugging Protocol
 
+> **Cloudflare operations warning:** The direct `npx wrangler deploy`, log-tail,
+> production URL, and ad hoc identifier-logging examples below are legacy and
+> must not be executed as agent instructions. Use
+> [`docs/cloudflare/README.md`](cloudflare/README.md), current structured logging,
+> focused local tests, and dry runs. Live deployment and observability access
+> remain operator-gated.
+
 ## The Anti-Pattern: Code Reading
 
 ```

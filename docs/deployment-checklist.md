@@ -1,197 +1,49 @@
-# Dicee Deployment Checklist
+# Dicee Cloudflare deployment guidance
 
-## Overview
+- **Status:** superseded checklist retained as a safe pointer
+- **Operational authority:** none
+- **Replacement tracked by:** [`docs/planning/dicee-cloudflare-resource-guidance.md`](planning/dicee-cloudflare-resource-guidance.md)
 
-Dicee uses a two-part deployment:
-1. **Cloudflare Workers** (Durable Objects) - Game state, WebSockets
-2. **Cloudflare Pages** (SvelteKit) - Frontend with Service Binding to Worker
+The previous contents described an obsolete automatic-deployment,
+`wrangler.toml`, named-production-environment, secret, permission, and rollback
+model. Those executable instructions were removed on 2026-07-21 because they
+conflicted with current repository configuration and agent safety rules. The old
+text remains recoverable from Git history.
 
-## Prerequisites
+Start at [`docs/cloudflare/README.md`](cloudflare/README.md). Current deployment
+structure is expressed by `.github/workflows/ci.yml`, the package scripts, and
+the two `wrangler.jsonc` files, but repository configuration is not evidence of
+live Cloudflare state.
 
-### GitHub Secrets Required
+## Current repository facts
 
-| Secret | Description | Where to Get |
-|--------|-------------|--------------|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Workers/Pages permissions | Cloudflare Dashboard → API Tokens |
-| `CLOUDFLARE_ACCOUNT_ID` | Your Cloudflare account ID | Cloudflare Dashboard → Overview |
-| `SUPABASE_URL` | Supabase project URL | Supabase Dashboard → Settings → API |
-| `SUPABASE_ANON_KEY` | Supabase anonymous key (for Worker) | Supabase Dashboard → Settings → API |
-| `PUBLIC_SUPABASE_ANON_KEY` | Same as above (for Pages build) | Same as above |
+- Validation runs on pushes and pull requests.
+- Production deployment is available only through an explicit manual workflow
+  dispatch in the current working tree.
+- The Durable Objects Worker deploy precedes the Pages deployment because the
+  web application depends on its Service Binding.
+- Both deployment jobs target the GitHub `Production` environment.
+- Live deployment, secrets, migrations, routes, and rollback remain
+  operator-gated.
 
-### Cloudflare API Token Permissions
+## Blockers before an authoritative runbook can be published
 
-Create a custom token with:
-- **Account** → Workers Scripts → Edit
-- **Account** → Workers KV Storage → Edit
-- **Account** → Workers R2 Storage → Edit (if using R2)
-- **Account** → Cloudflare Pages → Edit
-- **Zone** → Workers Routes → Edit (if using custom domains)
+1. Incorporate the applicable organization Cloudflare, DNS, token, environment,
+   approval, and infrastructure-as-code policies.
+2. Download and compare the live Pages configuration with the repository before
+   the first configuration-driven Pages deployment.
+3. Confirm the deployed Durable Object namespace/migration history before the
+   first live declarative-`exports` deployment; lifecycle changes cannot use a
+   gradual rollout or an ordinary rollback across the transition.
+4. Resolve the runtime-secret custody mismatch between the documented
+   Infisical/1Password model and the GitHub Environment secrets consumed by CI.
+5. Protect the GitHub `Production` environment and main branch according to the
+   accepted organization policy.
+6. Define and test environment-specific deployment, smoke-test, failure,
+   rollback, and incident procedures without exposing credentials or personal
+   identifiers.
+7. Decide the candidate target architecture in the consolidation plan before
+   adding OpenTofu, D1, R2, new Worker identities, or custom-domain ownership.
 
-## Deployment Order
-
-The CI/CD pipeline deploys in this order:
-
-```
-1. rust (tests)
-2. wasm (build)
-3. web (tests) ──────────┐
-4. cloudflare-do (tests) │
-5. akg (architecture) ───┤
-                         ▼
-6. deploy-worker (DO to Cloudflare)
-                         │
-                         ▼
-7. deploy-pages (SvelteKit to Pages)
-```
-
-**Important**: Worker must deploy before Pages because Pages uses Service Binding to the Worker.
-
-## Manual Deployment
-
-### Deploy Worker (Durable Objects)
-
-```bash
-cd packages/cloudflare-do
-
-# Set secrets (first time only)
-wrangler secret put SUPABASE_URL
-wrangler secret put SUPABASE_ANON_KEY
-
-# Deploy to production
-wrangler deploy --env production
-```
-
-### Deploy Pages (SvelteKit)
-
-```bash
-cd packages/web
-
-# Build
-pnpm build
-
-# Deploy to production
-wrangler pages deploy .svelte-kit/cloudflare --project-name=dicee
-```
-
-## Environment Configuration
-
-### Worker Environments
-
-| Environment | Command | Notes |
-|-------------|---------|-------|
-| Development | `wrangler dev` | Local with hot reload |
-| Staging | `wrangler deploy --env staging` | Preview environment |
-| Production | `wrangler deploy --env production` | Live site |
-
-### Pages Environments
-
-| Environment | Trigger | Notes |
-|-------------|---------|-------|
-| Preview | PR branches | Auto-deployed |
-| Production | `main` branch | Auto-deployed via CI |
-
-## Domain Configuration
-
-### Current Setup
-
-| Domain | Target |
-|--------|--------|
-| `dicee.games` | Cloudflare Pages (main site) |
-
-### Custom Domain Setup
-
-1. Go to Cloudflare Dashboard → Pages → dicee
-2. Click "Custom domains"
-3. Add `dicee.games`
-4. DNS will be auto-configured
-
-## Verification Steps
-
-After deployment, verify:
-
-### 1. Worker Health
-```bash
-# Check worker is responding
-curl https://dicee.games/api/health
-```
-
-### 2. WebSocket Connection
-- Open browser to `https://dicee.games`
-- Open DevTools → Network → WS
-- Create/join a room
-- Verify WebSocket connects to Worker
-
-### 3. Game Flow
-- [ ] Can create a room
-- [ ] Can join a room with code
-- [ ] Can start game (host)
-- [ ] Dice roll works
-- [ ] Keep/release dice works
-- [ ] Scoring works
-- [ ] Turn advancement works
-- [ ] Game over shows rankings
-
-### 4. AI Players (Phase 12)
-- [ ] AI opponent selector appears
-- [ ] Can select AI profile
-- [ ] AI takes turns correctly
-- [ ] AI chat messages appear
-
-## Rollback
-
-### Rollback Worker
-```bash
-# List deployments
-wrangler deployments list
-
-# Rollback to previous
-wrangler rollback
-```
-
-### Rollback Pages
-- Go to Cloudflare Dashboard → Pages → dicee → Deployments
-- Click on previous deployment
-- Click "Rollback to this deployment"
-
-## Monitoring
-
-### Cloudflare Analytics
-- Workers → Analytics → dicee
-- Pages → Analytics → dicee
-
-### Logs
-```bash
-# Stream worker logs
-wrangler tail --env production
-```
-
-## Troubleshooting
-
-### Service Binding Not Working
-- Ensure Worker deployed before Pages
-- Check `wrangler.toml` service binding name matches
-- Verify Worker is in same Cloudflare account
-
-### WebSocket Disconnects
-- Check Durable Object hibernation settings
-- Verify `webSocketClose` handler in GameRoom
-- Check client reconnection logic
-
-### Supabase Auth Failing
-- Verify `SUPABASE_URL` secret is set
-- Verify `SUPABASE_ANON_KEY` secret is set
-- Check JWT verification in Worker
-
-## CI/CD Pipeline
-
-The GitHub Actions workflow (`.github/workflows/ci.yml`) handles:
-
-1. **Rust Tests** - Engine unit tests, property tests (uses `dtolnay/rust-toolchain@1.95.0`)
-2. **WASM Build** - Build and size check (150KB limit) - adds `wasm32-unknown-unknown` target
-3. **Web Tests** - TypeScript, Svelte, Vitest
-4. **DO Tests** - Cloudflare DO unit tests
-5. **AKG Checks** - Architecture validation
-6. **Deploy Worker** - Durable Objects to Cloudflare
-7. **Deploy Pages** - SvelteKit to Cloudflare Pages
-
-All jobs must pass before deployment proceeds.
+Until these blockers are resolved, no document in this repository should be
+used as a copy-paste production deployment or rollback runbook.

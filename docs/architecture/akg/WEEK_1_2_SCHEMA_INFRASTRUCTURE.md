@@ -935,7 +935,7 @@ Based on Decision 3 from PRE_AKG_PLANNING.md:
 {
   "version": "1.0.0",
   "generatedAt": "2025-12-05T12:00:00.000Z",
-  "projectRoot": "/Users/.../dicee",
+  "projectRoot": "/workspace/dicee",
   "nodes": [
     {
       "id": "component::Die::components_dice_Die_svelte",

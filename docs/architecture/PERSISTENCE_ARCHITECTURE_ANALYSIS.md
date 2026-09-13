@@ -104,7 +104,7 @@ export const DomainEventSchema = z.object({
 
 **Option A (Recommended)**: Generate TypeScript types from Supabase schema
 ```bash
-supabase gen types typescript --project-id duhsbuyxyppgbkwbbtqg > src/lib/types/database.ts
+supabase gen types typescript --project-id your-project-ref > src/lib/types/database.ts
 ```
 Then derive Zod schemas from generated types using `zod-to-ts` or similar.
 

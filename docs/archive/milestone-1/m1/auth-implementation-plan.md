@@ -9,9 +9,9 @@
 ## Completed Setup (2025-12-02)
 
 ### Google Cloud OAuth ✅
-- **Project**: dicee (dicee-480100)
-- **OAuth Client ID**: `1071795876982-a11c39lnkpf9t0cuu5dke4cqo29oq9rs.apps.googleusercontent.com`
-- **Redirect URI**: `https://duhsbuyxyppgbkwbbtqg.supabase.co/auth/v1/callback`
+- **Project**: dicee (`<gcp-project-id>`)
+- **OAuth Client ID**: `<google-oauth-client-id>`
+- **Redirect URI**: `https://your-project-ref.supabase.co/auth/v1/callback`
 - **Scopes**: email, profile, openid
 
 ### Supabase Auth ✅
@@ -23,7 +23,7 @@
 All environments (dev, staging, prod) configured:
 - `GOOGLE_CLIENT_ID` - OAuth client ID
 - `GOOGLE_CLIENT_SECRET` - OAuth client secret
-- `PUBLIC_SUPABASE_URL` - https://duhsbuyxyppgbkwbbtqg.supabase.co
+- `PUBLIC_SUPABASE_URL` - https://your-project-ref.supabase.co
 - `PUBLIC_SUPABASE_ANON_KEY` - Publishable key
 - `SUPABASE_SERVICE_ROLE_KEY` - Service role key
 
@@ -496,7 +496,7 @@ packages/web/src/
 
 Add to `.env.local` (and Infisical):
 ```bash
-PUBLIC_SUPABASE_URL=https://duhsbuyxyppgbkwbbtqg.supabase.co
+PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 PUBLIC_SUPABASE_ANON_KEY=<publishable-key-from-gopass>
 ```
 
