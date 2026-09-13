@@ -1,8 +1,8 @@
 # Dicee status
 
-**As of:** 2026-09-13T20:46:01Z
+**As of:** 2026-09-13T21:41:56Z
 
-**Current phase:** 2026-09 operator safety rollout; profile-role migration applied (no deployment)
+**Current phase:** 2026-09 operator safety rollout; profile-role audit complete (no deployment)
 
 Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 
@@ -10,6 +10,7 @@ Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 
 - `main` carries the reviewed baseline, the database privacy work and current dependency updates (Vitest 5, jsdom 30).
 - Migration `20260913000001` is applied to the hosted project and recorded in migration history. Authenticated clients cannot update `profiles.role`; their editable profile fields remain granted. Migration `20260913000002` remains local-only.
+- Phase 8 is complete: 7 profiles comprise 5 users and 2 super admins, with no moderators or admins. The operator confirmed both elevated assignments as intentional after private record review; no role changes were needed. Audit-log absence cannot establish that the old privilege was never exploited.
 - The database backup is encrypted and verified on off-machine storage; Storage contained 0 objects. The plaintext exports were removed after verification.
 - No application deployment has run during this operator rollout. CI deploys only on a manual `workflow_dispatch` from `main` with `deploy=true`.
 - Legacy client layers are retired and the docs are consolidated into this file, the roadmap, `docs/cloudflare.md`, `docs/architecture/` and `docs/development/`. Git history is the archive.
@@ -32,7 +33,7 @@ Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 These need operator authority and live access, in this order. Mark one done only with a first-hand readback in [Latest live readbacks](#latest-live-readbacks).
 
 1. [x] **Backup.** The operator confirmed the Free plan. Five SQL dumps and the Storage inventory were verified in an AES-256 image on off-machine storage; Storage contained 0 objects. Plaintext exports were removed only after the copied image passed verification.
-2. [ ] **Finish the profile-role audit.** Migration `20260913000001` is applied and recorded; do not reapply it. Record role counts and review existing elevated roles. Any corrective role changes remain operator follow-up.
+2. [x] **Profile-role audit.** Migration `20260913000001` is applied and recorded; do not reapply it. Role counts and both elevated records were retrieved privately. The operator confirmed both super-admin assignments as intentional; 0 unresolved accounts and 0 corrections.
 3. [ ] **Deploy Pages from `main`.** CI `deploy-pages` needs `deploy-worker`. Use CI only if action 5's readback shows the `dicee` script holds both the `GameRoom` and `GlobalLobby` namespaces at migration tag v2; otherwise use the operator-local `pnpm pages:deploy` and deploy no Worker. `pnpm pages:deploy` inlines the Supabase public values from the local build environment; read the warning in [cloudflare.md](cloudflare.md#deploy-path) first. Then run the post-deploy smoke checks there.
 4. [ ] **Apply `20260913000002`** only after a Pages deploy that includes the profile visibility opt-in control. It makes every existing profile private, so players disappear from leaderboards and stats until they opt in; the web app has no opt-in control yet. It also drops the `bug_reports` columns `user_email`, `user_display_name`, `user_context` and `console_capture`, which the previous web build still writes; applied earlier, bug-report submission fails.
 5. [ ] **Worker namespace check.** Before any Worker deploy, read back which Worker script holds the live `GameRoom` and `GlobalLobby` namespaces, their migration tag where a read-only source exists, and what the Pages `GAME_WORKER` binding targets ([method](cloudflare.md#live-checks-still-needed)).
@@ -52,6 +53,8 @@ One row per subject, replaced when superseded. Counts and names only; never secr
 
 | Subject | UTC | Request | Result |
 |---|---|---|---|
+| Profile-role counts | 2026-09-13T21:39:34Z / 21:40:14Z | CLI: grouped profile-role counts, then private elevated-profile query | user 5; moderator 0; admin 0; super_admin 2; both elevated records match the counts |
+| Elevated-role intent | 2026-09-13T21:41:56Z | Operator confirmation after private review of both captured records | Both super-admin assignments intentional; 0 unresolved accounts; 0 corrections |
 | Encrypted backup | 2026-09-13T20:32:35Z | Supabase CLI exports and Storage count; mounted-image and SHA-256 checks | 5 SQL dumps; 0 Storage objects; all 11 backup files verified in the NAS image; plaintext exports removed |
 | Profile privileges | 2026-09-13T20:44:17Z | CLI: privilege and migration-object queries | Authenticated table-level and role UPDATE revoked; display_name UPDATE retained; anon UPDATE revoked; service_role unchanged; both triggers and insert policy present; 0 anonymous-flag mismatches |
 | Migration history | 2026-09-13T20:46:01Z | CLI: transactional execution of 000001, migration repair, migration list | 23 local and 22 remote versions; all 21 older versions and 000001 present remotely; 000002 remains local-only |

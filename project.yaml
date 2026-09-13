@@ -10,8 +10,8 @@ role: canonical
 peers: []
 status:
   posture: deployed-system
-  local_phase: "2026-09 operator safety rollout; profile-role migration applied (no deployment)"
-  as_of: "2026-09-13T20:46:01Z"
+  local_phase: "2026-09 operator safety rollout; profile-role audit complete (no deployment)"
+  as_of: "2026-09-13T21:41:56Z"
 authority:
   status_of_record: docs/status.md
 presentation:
