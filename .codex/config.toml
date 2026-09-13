@@ -1,0 +1,22 @@
+# Repository-scoped Codex configuration. Personal model, authentication,
+# approval, and sandbox choices belong in the user configuration.
+
+[features]
+hooks = true
+multi_agent = true
+shell_snapshot = true
+
+[agents]
+max_threads = 4
+max_depth = 1
+interrupt_message = true
+
+[agents.reviewer]
+description = "Read-only cross-stack reviewer for correctness, security, regressions, and missing tests."
+config_file = "./agents/reviewer.toml"
+nickname_candidates = ["Ada", "Turing"]
+
+[agents.researcher]
+description = "Read-only researcher for primary-source release notes, framework guidance, and implementation evidence."
+config_file = "./agents/researcher.toml"
+nickname_candidates = ["Curie", "Hopper"]
