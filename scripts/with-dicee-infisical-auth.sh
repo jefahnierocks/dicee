@@ -48,7 +48,19 @@ esac
 
 dicee_require_op
 
-exec env \
+INFISICAL_CLIENT_ID="$(dicee_op_read "$item" client-id)"
+if [[ -z "$INFISICAL_CLIENT_ID" ]]; then
+	printf 'Missing required credential: INFISICAL_CLIENT_ID\n' >&2
+	exit 1
+fi
+
+INFISICAL_CLIENT_SECRET="$(dicee_op_read "$item" client-secret)"
+if [[ -z "$INFISICAL_CLIENT_SECRET" ]]; then
+	printf 'Missing required credential: INFISICAL_CLIENT_SECRET\n' >&2
+	exit 1
+fi
+
+export \
 	DICEE_ENV="$environment" \
 	INFISICAL_API_URL="$DICEE_INFISICAL_INSTANCE_URL" \
 	INFISICAL_PROJECT_ID="$DICEE_INFISICAL_PROJECT_ID" \
@@ -56,6 +68,7 @@ exec env \
 	INFISICAL_ORG_NAME="$DICEE_INFISICAL_ORG_NAME" \
 	INFISICAL_IDENTITY_NAME="$identity_name" \
 	INFISICAL_IDENTITY_ID="$identity_id" \
-	INFISICAL_CLIENT_ID="$(dicee_op_read "$item" client-id)" \
-	INFISICAL_CLIENT_SECRET="$(dicee_op_read "$item" client-secret)" \
-	"$@"
+	INFISICAL_CLIENT_ID \
+	INFISICAL_CLIENT_SECRET
+
+exec "$@"
