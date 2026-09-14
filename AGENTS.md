@@ -2,6 +2,8 @@
 
 This is the repository contract for every coding agent. Package `AGENTS.md` files add package rules; client files such as `CLAUDE.md` add only client-specific deltas.
 
+Workstation integration follows the [system-config project contract](https://github.com/jefahnierocks/system-config/blob/main/docs/project-conventions.md). Dicee owns its runtime pins, editor configuration, project MCP and command-scoped credential launchers. Its explicit client permission deltas are recorded in [agent-clients.md](docs/development/agent-clients.md).
+
 ## Product and repository map
 
 Dicee is an educational multiplayer dice game for a few family players:

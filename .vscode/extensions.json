@@ -1,0 +1,9 @@
+{
+	"recommendations": [
+		"svelte.svelte-vscode",
+		"biomejs.biome",
+		"rust-lang.rust-analyzer",
+		"ms-python.python",
+		"charliermarsh.ruff"
+	]
+}

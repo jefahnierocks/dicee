@@ -1,0 +1,20 @@
+{
+	"servers": {
+		"akg": {
+			"type": "stdio",
+			"command": "mise",
+			"args": [
+				"exec",
+				"--",
+				"bun",
+				"run",
+				"packages/web/src/tools/akg/mcp/server.ts"
+			],
+			"cwd": "${workspaceFolder}"
+		},
+		"cloudflare-docs": {
+			"type": "http",
+			"url": "https://docs.mcp.cloudflare.com/mcp"
+		}
+	}
+}
