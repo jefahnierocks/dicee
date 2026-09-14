@@ -1,8 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Tables, TablesUpdate } from '$lib/types/database';
+import type { Database, Tables } from '$lib/types/database';
 
+/** Derived projection maintained by the database; clients only read it. */
 export type PlayerStats = Tables<'player_stats'>;
-export type PlayerStatsUpdate = TablesUpdate<'player_stats'>;
 export type GamePlayer = Tables<'game_players'>;
 export type Game = Tables<'games'>;
 
@@ -41,73 +41,6 @@ export async function getPlayerStats(
 	}
 
 	return { data, error: null };
-}
-
-/**
- * Create or initialize player stats for a user
- */
-export async function createPlayerStats(
-	supabase: SupabaseClient<Database>,
-	userId: string,
-): Promise<{ data: PlayerStats | null; error: Error | null }> {
-	const { data, error } = await supabase
-		.from('player_stats')
-		.insert({ user_id: userId })
-		.select()
-		.single();
-
-	if (error) {
-		return { data: null, error: new Error(error.message) };
-	}
-
-	return { data, error: null };
-}
-
-/**
- * Update player statistics
- * Typically called after a game completes to aggregate new results
- */
-export async function updatePlayerStats(
-	supabase: SupabaseClient<Database>,
-	userId: string,
-	updates: PlayerStatsUpdate,
-): Promise<{ data: PlayerStats | null; error: Error | null }> {
-	const { data, error } = await supabase
-		.from('player_stats')
-		.update(updates)
-		.eq('user_id', userId)
-		.select()
-		.single();
-
-	if (error) {
-		return { data: null, error: new Error(error.message) };
-	}
-
-	return { data, error: null };
-}
-
-/**
- * Get or create player stats (ensures stats record exists)
- */
-export async function ensurePlayerStats(
-	supabase: SupabaseClient<Database>,
-	userId: string,
-): Promise<{ data: PlayerStats | null; error: Error | null }> {
-	// Try to get existing stats
-	const getResult = await getPlayerStats(supabase, userId);
-
-	// If stats exist, return them
-	if (getResult.data) {
-		return getResult;
-	}
-
-	// If there was an error other than "not found", return it
-	if (getResult.error) {
-		return getResult;
-	}
-
-	// Stats don't exist, create them
-	return createPlayerStats(supabase, userId);
 }
 
 /**
@@ -330,7 +263,10 @@ export async function getGameAnalysis(
 	let worstDecision: GameAnalysis['summary']['worstDecision'] = null;
 
 	for (const player of players) {
-		const playerEvents = events?.filter((e) => e.player_id === player.user_id) ?? [];
+		// AI seats have no profile and no decision events.
+		const userId = player.user_id;
+		if (!userId) continue;
+		const playerEvents = events?.filter((e) => e.player_id === userId) ?? [];
 		const decisions: TurnDecision[] = [];
 		let optimalCount = 0;
 		let totalEvLoss = 0;
@@ -370,7 +306,7 @@ export async function getGameAnalysis(
 				const evGain = Math.abs(decision.evDifference);
 				if (!bestDecision || evGain > bestDecision.evGain) {
 					bestDecision = {
-						playerId: player.user_id,
+						playerId: userId,
 						turn: decision.turn,
 						category: decision.category,
 						evGain,
@@ -380,7 +316,7 @@ export async function getGameAnalysis(
 				// EV loss
 				if (!worstDecision || decision.evDifference > worstDecision.evLoss) {
 					worstDecision = {
-						playerId: player.user_id,
+						playerId: userId,
 						turn: decision.turn,
 						category: decision.category,
 						evLoss: decision.evDifference,
@@ -395,7 +331,7 @@ export async function getGameAnalysis(
 		const profileData = player.profiles as { display_name: string } | null;
 
 		playerAnalyses.push({
-			userId: player.user_id,
+			userId,
 			displayName: profileData?.display_name ?? 'Unknown',
 			finalScore: player.final_score ?? 0,
 			finalRank: player.final_rank ?? 0,

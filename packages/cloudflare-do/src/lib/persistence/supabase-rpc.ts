@@ -41,13 +41,17 @@ export type StatsUpdateResult = z.infer<typeof StatsUpdateResultSchema>;
 // ============================================================================
 // RPC Input Types
 // ============================================================================
+// Array parameters are sent as JSON arrays of objects; PostgREST converts them
+// to the composite array types. Omitted attributes arrive as NULL.
 
 /**
  * Player ranking for game completion.
  * Maps to the `player_ranking` composite type in SQL.
+ * Human rankings match by player_id; AI rankings (player_id null) match by seat_number.
  */
 export interface PlayerRanking {
-	player_id: string;
+	player_id: string | null;
+	seat_number: number;
 	rank: number;
 	score: number;
 	scorecard: Record<string, number>;
@@ -57,12 +61,14 @@ export interface PlayerRanking {
 /**
  * Player input for game creation.
  * Maps to the `game_player_input` composite type in SQL.
+ * AI seats have no profile: user_id is null and ai_profile names the AI profile.
  */
 export interface GamePlayerInput {
-	user_id: string;
+	user_id: string | null;
 	seat_number: number;
 	turn_order: number;
 	is_ai: boolean;
+	ai_profile: string | null;
 }
 
 /**
@@ -114,18 +120,13 @@ export type RpcResult<T> =
  *   gameId: crypto.randomUUID(),
  *   roomCode: 'ABC123',
  *   hostId: 'host-uuid',
- *   gameMode: 'multiplayer',
+ *   gameMode: 'solo',
  *   settings: {},
  *   players: [
- *     { user_id: 'host-uuid', seat_number: 0, turn_order: 0, is_ai: false },
+ *     { user_id: 'host-uuid', seat_number: 0, turn_order: 0, is_ai: false, ai_profile: null },
+ *     { user_id: null, seat_number: 1, turn_order: 1, is_ai: true, ai_profile: 'carmen' },
  *   ],
  * });
- *
- * if (result.success) {
- *   console.log('Game created:', result.data.affected_rows);
- * } else {
- *   console.error('Failed:', result.error, 'Retriable:', result.retriable);
- * }
  * ```
  */
 export class SupabaseRpcClient {
@@ -142,12 +143,8 @@ export class SupabaseRpcClient {
 	// ==========================================================================
 
 	/**
-	 * Atomically create a game and all player records.
-	 *
-	 * - Creates game record
-	 * - Creates all player records
-	 * - Fully atomic: all succeed or all rollback
-	 * - Idempotent: safe to retry (duplicate game_id returns success)
+	 * Atomically create a game and all seat records, human and AI.
+	 * Idempotent: a duplicate game_id returns success.
 	 */
 	async createGame(params: {
 		gameId: string;
@@ -157,44 +154,29 @@ export class SupabaseRpcClient {
 		settings: Record<string, unknown>;
 		players: GamePlayerInput[];
 	}): Promise<RpcResult<OperationResult>> {
-		// Format players as PostgreSQL array of composite type
-		const playersArray = params.players.map(
-			(p) => `(${this.#escapeUuid(p.user_id)},${p.seat_number},${p.turn_order},${p.is_ai})`,
-		);
-
 		return this.#callRpc<OperationResult>('create_game_atomic', {
 			p_game_id: params.gameId,
 			p_room_code: params.roomCode,
 			p_host_id: params.hostId,
 			p_game_mode: params.gameMode,
 			p_settings: params.settings,
-			p_players: `{${playersArray.join(',')}}`,
+			p_players: params.players,
 		});
 	}
 
 	/**
-	 * Atomically complete a game and update all player records.
-	 *
-	 * - Updates game status to 'completed'
-	 * - Updates all player final_score, final_rank, scorecard
-	 * - Fully atomic: all succeed or all rollback
-	 * - Idempotent: safe to retry (already completed returns success)
+	 * Atomically complete a game, record seat results and refresh player stats.
+	 * Idempotent: an already completed game returns success.
 	 */
 	async completeGame(params: {
 		gameId: string;
 		winnerId: string | null;
 		rankings: PlayerRanking[];
 	}): Promise<RpcResult<OperationResult>> {
-		// Format rankings as PostgreSQL array of composite type
-		const rankingsArray = params.rankings.map(
-			(r) =>
-				`(${this.#escapeUuid(r.player_id)},${r.rank},${r.score},'${this.#escapeJson(r.scorecard)}',${r.is_ai})`,
-		);
-
 		return this.#callRpc<OperationResult>('complete_game_atomic', {
 			p_game_id: params.gameId,
 			p_winner_id: params.winnerId,
-			p_rankings: `{${rankingsArray.join(',')}}`,
+			p_rankings: params.rankings,
 		});
 	}
 
@@ -203,7 +185,7 @@ export class SupabaseRpcClient {
 	 *
 	 * - Inserts all events in a single transaction
 	 * - Idempotent: duplicate event IDs are skipped (ON CONFLICT DO NOTHING)
-	 * - All events must belong to the same game
+	 * - All events must belong to the same game and reference a player profile
 	 */
 	async persistDomainEvents(events: DomainEventInput[]): Promise<RpcResult<OperationResult>> {
 		if (events.length === 0) {
@@ -218,14 +200,8 @@ export class SupabaseRpcClient {
 			};
 		}
 
-		// Format events as PostgreSQL array of composite type
-		const eventsArray = events.map(
-			(e) =>
-				`(${this.#escapeUuid(e.id)},'${e.event_type}','${e.event_version}',${e.sequence_number},${this.#escapeUuid(e.game_id)},${this.#escapeUuid(e.player_id)},${e.turn_number ?? 'NULL'},${e.roll_number ?? 'NULL'},'${this.#escapeJson(e.payload)}')`,
-		);
-
 		return this.#callRpc<OperationResult>('persist_domain_events', {
-			p_events: `{${eventsArray.join(',')}}`,
+			p_events: events,
 		});
 	}
 
@@ -248,11 +224,8 @@ export class SupabaseRpcClient {
 	}
 
 	/**
-	 * Aggregate stats for a completed game.
-	 *
-	 * - Updates player_stats for all human players
-	 * - Calculates games_played, games_won, total_score, best_score, avg_score
-	 * - Updates category_stats if scorecard data available
+	 * Rebuild the player_stats projection for a game's human seats.
+	 * Values are recomputed from completed games, so repeats and retries are safe.
 	 */
 	async aggregateStats(gameId: string): Promise<RpcResult<StatsUpdateResult[]>> {
 		return this.#callRpc<StatsUpdateResult[]>('aggregate_game_stats', {
@@ -333,21 +306,5 @@ export class SupabaseRpcClient {
 		const nonRetriable = ['INVALID_INPUT', 'INVALID_REFERENCE', 'NOT_FOUND', 'INVALID_STATE'];
 
 		return !nonRetriable.includes(errorCode);
-	}
-
-	/**
-	 * Escape a UUID for PostgreSQL composite type syntax.
-	 */
-	#escapeUuid(uuid: string): string {
-		// UUIDs need no escaping, just ensure proper format
-		return uuid;
-	}
-
-	/**
-	 * Escape a JSON object for PostgreSQL JSONB.
-	 */
-	#escapeJson(obj: Record<string, unknown>): string {
-		// Escape single quotes by doubling them
-		return JSON.stringify(obj).replace(/'/g, "''");
 	}
 }

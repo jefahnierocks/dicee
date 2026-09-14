@@ -5,7 +5,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(99);
+select plan(100);
 
 insert into auth.users (id, email, is_anonymous, raw_user_meta_data) values
   ('dddddddd-0000-4000-8000-000000000001', 'private-owner@example.com', false, '{"is_public":true}'),
@@ -318,6 +318,12 @@ select is(
   'trusted achievement progress persisted'
 );
 select is(
+  (select row(games_played, best_score)::text from public.player_stats
+   where user_id = 'dddddddd-0000-4000-8000-000000000001'),
+  '(1,0)',
+  'untrusted calls did not aggregate or alter stats before the trusted call'
+);
+select is(
   (select count(*)::int from public.aggregate_game_stats('eeeeeeee-0000-4000-8000-000000000001')),
   1,
   'service role can aggregate a completed game'
@@ -325,8 +331,8 @@ select is(
 select is(
   (select row(games_played, best_score)::text from public.player_stats
    where user_id = 'dddddddd-0000-4000-8000-000000000001'),
-  '(2,200)',
-  'untrusted calls did not aggregate or alter stats before the trusted call'
+  '(1,200)',
+  'trusted aggregation projects absolute stats from the completed game'
 );
 select lives_ok(
   $$insert into public.solo_leaderboard (user_id, score)

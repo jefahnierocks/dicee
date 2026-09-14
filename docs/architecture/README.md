@@ -176,15 +176,18 @@ A Durable Object has one native alarm. `AlarmQueue` multiplexes it under the `al
 `GameRoom` writes game records to Supabase through RPCs. Game start awaits `create_game_atomic`; everything after that goes through a queue.
 
 - The bridge runs only when the Worker has the Supabase service-role secret. Without it, persistence is skipped and the reason is logged.
-- `SupabaseRpcClient` (`packages/cloudflare-do/src/lib/persistence/supabase-rpc.ts`) posts to the PostgREST RPC endpoint for `create_game_atomic`, `complete_game_atomic`, `persist_domain_events`, `abandon_game_atomic` and `aggregate_game_stats`. Each result carries a retriable flag.
-- The functions are SECURITY DEFINER plpgsql. They are defined from `supabase/migrations/20260105000002_rpc_create_game.sql` through `supabase/migrations/20260105000006_rpc_aggregate_stats.sql`, and `supabase/tests/rpc_functions.sql` tests them.
+- `SupabaseRpcClient` (`packages/cloudflare-do/src/lib/persistence/supabase-rpc.ts`) posts to the PostgREST RPC endpoint for `create_game_atomic`, `complete_game_atomic`, `persist_domain_events`, `abandon_game_atomic` and `aggregate_game_stats`. Array parameters are JSON arrays of objects, which PostgREST converts to the composite types. Each result carries a retriable flag. No Edge Function is involved.
+- The functions are SECURITY DEFINER plpgsql executable only by `service_role`. `supabase/migrations/20260914000001_player_stats_projection.sql` holds their current definitions, and `supabase/tests/rpc_functions.sql` and `supabase/tests/player_stats_projection.sql` test them.
+- AI seats are `game_players` rows with `is_ai = true`, a NULL `user_id` and the AI profile in `ai_profile`. Seats are keyed by `(game_id, seat_number)`; completion matches human rankings by user id and AI rankings by seat number. An AI winner is stored as a NULL `winner_id`, and only events of human seats are persisted, because both columns reference profiles.
+- `player_stats` is a projection that clients only read. `rebuild_player_stats(user_id)` recomputes a row from completed games and `TurnScored` events, so repeats and retries give the same row. `complete_game_atomic` refreshes the game's human seats in its transaction, and `aggregate_game_stats` refreshes them again after the domain events land.
+- Projection rules: a game counts when it is `completed` and the seat has a final score. A win is `final_rank = 1` in a game with more than one seat, AI seats included. Decisions are `TurnScored` events with a boolean `was_optimal`.
 - `PersistenceQueue` (`packages/cloudflare-do/src/lib/persistence/persistence-queue.ts`) stores tasks in the SQLite table `persistence_queue`. Task types are `PERSIST_GAME_COMPLETION`, `PERSIST_DOMAIN_EVENTS`, `TRIGGER_AGGREGATION` and `ABANDON_GAME`.
 - At game end, `GameRoom` queues the completion, the domain events and, 500 ms later, the stats aggregation.
 - The queue shares the native alarm. It moves the alarm only when its own task is due earlier.
-- The domain-event sequence number survives hibernation as `event_sequence` in `game_metadata`. Completion rankings carry scorecards and AI flags.
+- The domain-event sequence number survives hibernation as `event_sequence` in `game_metadata`. Completion rankings carry scorecards, seat numbers and AI flags.
 - `packages/cloudflare-do/src/lib/persistence/schema-validation.ts` checks at compile time that persistence records are assignable to the generated Supabase insert types. Regenerating those types is an authenticated operator step, not part of the local gate.
 
-Open defects: array RPC parameters, AI seats, abandonment scheduling and unchecked SQLite reads. They are listed under Supabase obligations in the [roadmap](../roadmap.md). Whether to repair the pipeline or freeze it is the owner's decision.
+Open defects: abandonment scheduling and unchecked SQLite reads. They are listed under Supabase obligations in the [roadmap](../roadmap.md).
 
 ## Connection UX principles
 

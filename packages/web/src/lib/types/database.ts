@@ -390,40 +390,46 @@ export type Database = {
       }
       game_players: {
         Row: {
+          ai_profile: string | null
           final_rank: number | null
           final_score: number | null
           game_id: string
+          is_ai: boolean
           is_connected: boolean
           joined_at: string
           left_at: string | null
           scorecard: Json | null
           seat_number: number
           turn_order: number
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          ai_profile?: string | null
           final_rank?: number | null
           final_score?: number | null
           game_id: string
+          is_ai?: boolean
           is_connected?: boolean
           joined_at?: string
           left_at?: string | null
           scorecard?: Json | null
           seat_number: number
           turn_order: number
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          ai_profile?: string | null
           final_rank?: number | null
           final_score?: number | null
           game_id?: string
+          is_ai?: boolean
           is_connected?: boolean
           joined_at?: string
           left_at?: string | null
           scorecard?: Json | null
           seat_number?: number
           turn_order?: number
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -941,6 +947,58 @@ export type Database = {
         }
         Returns: boolean
       }
+      rebuild_player_stats: {
+        Args: { p_user_id: string }
+        Returns: {
+          avg_ev_loss: number
+          avg_score: number
+          best_score: number
+          bonus_dicees: number
+          category_stats: Json
+          dicees_rolled: number
+          games_completed: number
+          games_played: number
+          games_won: number
+          optimal_decisions: number
+          total_decisions: number
+          total_score: number
+          updated_at: string
+          upper_bonuses: number
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "player_stats"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      refresh_player_stats_for_game: {
+        Args: { p_game_id: string }
+        Returns: {
+          avg_ev_loss: number
+          avg_score: number
+          best_score: number
+          bonus_dicees: number
+          category_stats: Json
+          dicees_rolled: number
+          games_completed: number
+          games_played: number
+          games_won: number
+          optimal_decisions: number
+          total_decisions: number
+          total_score: number
+          updated_at: string
+          upper_bonuses: number
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "player_stats"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       unlock_gallery_achievement: {
         Args: {
           p_achievement_id: string
@@ -956,10 +1014,6 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
-      }
-      update_category_stats: {
-        Args: { p_existing: Json; p_new_scorecard: Json }
-        Returns: Json
       }
     }
     Enums: {
@@ -982,6 +1036,7 @@ export type Database = {
         seat_number: number | null
         turn_order: number | null
         is_ai: boolean | null
+        ai_profile: string | null
       }
       operation_result: {
         success: boolean | null
@@ -995,6 +1050,7 @@ export type Database = {
         score: number | null
         scorecard: Json | null
         is_ai: boolean | null
+        seat_number: number | null
       }
       stats_update_result: {
         user_id: string | null

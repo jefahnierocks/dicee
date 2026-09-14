@@ -110,15 +110,3 @@ export const PersistenceResultSchema = z.discriminatedUnion('success', [
 ]);
 
 export type PersistenceResult = z.infer<typeof PersistenceResultSchema>;
-
-// ============================================================================
-// Aggregation Request Schema
-// ============================================================================
-
-export const AggregationRequestSchema = z.object({
-	gameId: z.uuid(),
-	skipRatings: z.boolean().default(false),
-	skipBadges: z.boolean().default(false),
-});
-
-export type AggregationRequest = z.infer<typeof AggregationRequestSchema>;
