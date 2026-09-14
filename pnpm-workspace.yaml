@@ -17,7 +17,7 @@ enablePrePostScripts: true
 # One version authority for direct JavaScript/TypeScript dependencies across
 # the monorepo. Exact versions plus the lockfile make automated edits reviewable.
 catalog:
-  '@biomejs/biome': 2.5.12
+  '@biomejs/biome': 2.5.13
   '@dicebear/collection': 9.4.3
   '@dicebear/core': 9.4.3
   '@modelcontextprotocol/sdk': 1.30.0
@@ -45,7 +45,7 @@ catalog:
   ts-morph: 28.0.0
   tsx: 4.23.13
   typescript: 6.0.3
-  vite: 8.2.2
+  vite: 8.3.0
   vite-plugin-wasm: 3.6.0
   vitest: 5.0.0
   vitest-axe: 0.1.0
@@ -54,7 +54,7 @@ catalog:
   # miniflare 5 alpha. Bump miniflare above in lockstep with wrangler.
   wrangler: 4.113.0
   ws: 8.21.3
-  zod: 4.6.1
+  zod: 4.6.2
 
 # pnpm 11 blocks dependency lifecycle scripts unless they are reviewed here.
 # These packages install platform-specific binaries used by this repository.
