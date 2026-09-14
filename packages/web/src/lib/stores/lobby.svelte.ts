@@ -21,6 +21,11 @@ import {
 	type RoomInfo,
 } from '@dicee/shared';
 import { browser } from '$app/environment';
+import {
+	isUpgradeRequiredClose,
+	protocolUpgrade,
+	withProtocolVersion,
+} from '$lib/services/protocolUpgrade.svelte';
 import { createServiceLogger } from '$lib/utils/logger';
 
 const log = createServiceLogger('Lobby');
@@ -201,7 +206,7 @@ class LobbyState {
 			this.connectionState = 'connecting';
 
 			const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-			this.ws = new WebSocket(`${protocol}//${location.host}/ws/lobby`);
+			this.ws = new WebSocket(withProtocolVersion(`${protocol}//${location.host}/ws/lobby`));
 
 			this.ws.onopen = () => {
 				this.connectionState = 'connected';
@@ -224,6 +229,12 @@ class LobbyState {
 				this.connectionState = 'disconnected';
 				this.connectPromise = null;
 				this.stopPingInterval();
+				if (isUpgradeRequiredClose(event.code)) {
+					// Outdated client: never reconnect; reload once or show the updating notice
+					this.clearReconnectTimer();
+					protocolUpgrade.handleUpgradeRequired();
+					return;
+				}
 				if (!event.wasClean && !this.intentionalDisconnect) {
 					this.scheduleReconnect();
 				}

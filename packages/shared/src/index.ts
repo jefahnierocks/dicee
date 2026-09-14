@@ -33,6 +33,9 @@ export * from './types/index.js';
 // Re-export all events
 export * from './events/index.js';
 
+// Protocol version handshake
+export * from './protocol.js';
+
 // =============================================================================
 // Validation Schemas
 // =============================================================================

@@ -1,6 +1,6 @@
 # Dicee status
 
-**As of:** 2026-09-14T16:39:34Z
+**As of:** 2026-09-14T16:56:19Z
 
 **Current phase:** 2026-09 operator safety rollout; discovery (actions 5 and 8) next, then a first release that ships stats correctness and the dicee-web cutover (no deployment)
 
@@ -36,7 +36,7 @@ These are stable action identifiers, not execution order. [Roadmap section 1](ro
 
 1. [x] **Backup.** The operator confirmed the Free plan. Five SQL dumps and the Storage inventory were verified in an AES-256 image on off-machine storage; Storage contained 0 objects. Plaintext exports were removed only after the copied image passed verification.
 2. [x] **Profile-role audit.** Migration `20260913000001` is applied and recorded; do not reapply it. Role counts and both elevated records were retrieved privately. The operator confirmed both super-admin assignments as intentional; 0 unresolved accounts and 0 corrections.
-3. [ ] **First production release.** After actions 5 and 10, with the action 7 fix merged, release the exact validated commit from a clean checkout at a quiet time: apply the stats migration alone, deploy `dicee`, deploy `dicee-web`, move `dicee.games` off Pages, then run the [post-deploy smoke checks](cloudflare.md#deploy-path). Do not release current `main` as it stands.
+3. [ ] **First production release.** After actions 5 and 10, with the action 7 fix merged, release the exact validated commit from a clean checkout at a quiet time: apply the stats migration alone, deploy `dicee-web`, move `dicee.games` off Pages, then deploy `dicee` (its protocol gate closes the old Pages client's sockets) and run the [post-deploy smoke checks](cloudflare.md#deploy-path). Do not release current `main` as it stands.
 4. [ ] **Apply `20260913000002`** only after the missing profile visibility opt-in control is implemented, tested, merged and verified in production. Current source omits the four bug-report fields this migration drops, but deployed compatibility is unverified. Take a fresh complete encrypted backup, recheck the production link and migration history, and apply only this migration. It resets all profiles to private; verify the schema and two-account privacy behavior before inviting opt-ins. Do not improvise a reverse migration; fix forward with the compatible opt-in build.
 5. [ ] **Worker namespace and binding check.** Read back which scripts hold `GameRoom` and `GlobalLobby` (the Durable Objects Deployments tab shows backing Worker versions), whether both use SQLite, migration tags, and the production/preview `GAME_WORKER` targets. The result decides between a no-op lifecycle deploy to `dicee` and a cutover to it (decision 1); stop only on ambiguous ownership ([method](cloudflare.md#live-checks-still-needed)).
 6. [x] **Worker subdomain URLs.** `workers.dev` and Preview URLs are disabled on `dicee` and `dicee-production`, verified by API. Namespace ownership and other ingress remain for the later reviews in actions 5 and 8.

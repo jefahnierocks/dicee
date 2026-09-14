@@ -168,6 +168,7 @@ A Durable Object has one native alarm. `AlarmQueue` multiplexes it under the `al
 - The lobby store (`packages/web/src/lib/stores/lobby.svelte.ts`) keeps one idempotent native WebSocket to `/ws/lobby`, guarded by `connectPromise` and `intentionalDisconnect`.
 - Rooms connect through `reconnecting-websocket` with up to 10 retries (`packages/web/src/lib/services/roomService.svelte.ts`).
 - Spectators connect to the room socket with `role=spectator` (`packages/web/src/lib/services/spectatorService.svelte.ts`).
+- Protocol handshake: every socket sends `protocol=GAME_PROTOCOL_VERSION` (`packages/shared/src/protocol.ts`), and `GameRoom` and `GlobalLobby` close a missing or different version with code 4426 `upgrade_required` before any seat or presence work. The client stops reconnecting and reloads once; another 4426 within 2 minutes shows "Dicee is updating" with a retry. Deploy the Worker first, then the web app.
 - `packages/web/src/lib/stores/multiplayerGame.svelte.ts` tracks disconnected players and reconnection. `ConnectionStatusBanner` shows the local reconnecting state. `DisconnectedPlayersBanner` shows countdowns for opponents who dropped out.
 
 ## Persistence bridge

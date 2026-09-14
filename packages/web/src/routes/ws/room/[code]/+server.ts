@@ -12,6 +12,7 @@
  * never appear in the browser URL, proxy URL, or request logs.
  */
 
+import { GAME_PROTOCOL_QUERY_PARAM } from '@dicee/shared';
 import { proxyServiceResponse } from '$lib/server/ws-proxy';
 import type { RequestHandler } from './$types';
 
@@ -65,6 +66,12 @@ export const GET: RequestHandler = async ({ request, params, platform, url, loca
 	const role = url.searchParams.get('role');
 	if (role) {
 		proxyUrl.searchParams.set('role', role);
+	}
+
+	// Forward the non-secret protocol version so the DO can refuse outdated clients
+	const protocol = url.searchParams.get(GAME_PROTOCOL_QUERY_PARAM);
+	if (protocol) {
+		proxyUrl.searchParams.set(GAME_PROTOCOL_QUERY_PARAM, protocol);
 	}
 
 	const proxyRequest = new Request(proxyUrl.toString(), {

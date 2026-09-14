@@ -11,7 +11,7 @@ peers: []
 status:
   posture: deployed-system
   local_phase: "2026-09 operator safety rollout; discovery (actions 5 and 8) next, then a first release that ships stats correctness and the dicee-web cutover (no deployment)"
-  as_of: "2026-09-14T16:39:34Z"
+  as_of: "2026-09-14T16:56:19Z"
 authority:
   status_of_record: docs/status.md
 presentation:

@@ -34,6 +34,11 @@ export default {
 		if (request.headers.get('Upgrade') === 'websocket') {
 			const [client, server] = Object.values(new WebSocketPair());
 			server.accept();
+			if (request.headers.get('X-Close-Upgrade-Required') === '1') {
+				// Mirrors packages/cloudflare-do/src/lib/protocol-gate.ts: close before returning the 101.
+				server.close(4426, 'upgrade_required');
+				return new Response(null, { status: 101, webSocket: client });
+			}
 			server.send('hello from GAME_WORKER');
 			return new Response(null, {
 				status: 101,
@@ -142,6 +147,27 @@ describe('ws-proxy in workerd', () => {
 
 		expect(await message).toBe('hello from GAME_WORKER');
 		socket?.close();
+	});
+
+	it('delivers the 4426 upgrade_required close code through the proxy', async () => {
+		const response = await mf.dispatchFetch('https://localhost/ws/lobby', {
+			headers: { Upgrade: 'websocket', 'X-Close-Upgrade-Required': '1' },
+		});
+
+		expect(response.status).toBe(101);
+		const socket = response.webSocket;
+		expect(socket).not.toBeNull();
+
+		const closed = new Promise<{ code: number; reason: string }>((resolve, reject) => {
+			const timer = setTimeout(() => reject(new Error('no WebSocket close')), 5_000);
+			socket?.addEventListener('close', (event) => {
+				clearTimeout(timer);
+				resolve({ code: event.code, reason: event.reason });
+			});
+		});
+		socket?.accept();
+
+		expect(await closed).toEqual({ code: 4426, reason: 'upgrade_required' });
 	});
 
 	it('adds security headers and cookies to a proxied non-upgrade response', async () => {

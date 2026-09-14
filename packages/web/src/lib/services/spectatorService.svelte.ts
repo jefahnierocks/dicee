@@ -17,6 +17,11 @@ import type {
 	ServerEvent,
 } from '$lib/types/multiplayer';
 import { createServiceLogger } from '$lib/utils/logger';
+import {
+	isUpgradeRequiredClose,
+	protocolUpgrade,
+	withProtocolVersion,
+} from './protocolUpgrade.svelte';
 
 const log = createServiceLogger('SpectatorService');
 
@@ -691,7 +696,9 @@ class SpectatorService {
 
 		// Use same-origin WebSocket proxy with role=spectator
 		const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-		const wsUrl = `${protocol}//${location.host}/ws/room/${roomCode.toUpperCase()}?role=spectator`;
+		const wsUrl = withProtocolVersion(
+			`${protocol}//${location.host}/ws/room/${roomCode.toUpperCase()}?role=spectator`,
+		);
 
 		const socket = new ReconnectingWebSocket(wsUrl, [], {
 			maxRetries: 10,
@@ -1125,6 +1132,16 @@ class SpectatorService {
 
 	private handleClose(event: CloseEvent): void {
 		log.debug('Disconnected', { code: event.code, reason: event.reason });
+
+		// Outdated client: stop reconnecting-websocket, then reload once or show the updating notice
+		if (isUpgradeRequiredClose(event.code)) {
+			const socket = this.socket;
+			this.socket = null;
+			this.setStatus('disconnected');
+			socket?.close();
+			protocolUpgrade.handleUpgradeRequired();
+			return;
+		}
 
 		// Handle specific close codes
 		if (event.code === 4004) {

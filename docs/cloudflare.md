@@ -171,7 +171,7 @@ Steps, each with explicit authority:
 
 1. Live checks 1, 2 and 6 show `dicee` as the live backend, the current web origin and an active zone.
 2. From the exact validated commit with production public values, run the web dry run, then `pnpm web:deploy`. The new Worker has no public hostname yet.
-3. Detach `dicee.games` from the Pages project, confirm no CNAME remains on the apex, and attach it to `dicee-web` as a Custom Domain.
+3. Detach `dicee.games` from the Pages project, confirm no CNAME remains on the apex, and attach it to `dicee-web` as a Custom Domain. Deploy `dicee` only after this step, with `pnpm do:deploy` rather than a CI dispatch (which deploys `dicee` first): its protocol gate closes the old Pages client's sockets with code 4426.
 4. Run the post-deploy smoke against `https://dicee.games` and confirm the `www` redirect. Until step 5, rollback is detach from the Worker and reattach to Pages.
 5. Delete the Pages project `dicee`, then remove Pages Write from the deploy token.
 

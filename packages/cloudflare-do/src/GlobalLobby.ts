@@ -21,6 +21,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { generateRoomIdentity } from '@dicee/shared';
 import { createInstrumentation, type Instrumentation } from './lib/observability/instrumentation';
+import { hasCurrentProtocol, rejectOutdatedProtocol } from './lib/protocol-gate';
 import { createRoomDirectory, type RoomDirectory, type RoomInfo } from './lib/room-directory';
 import type {
 	Env,
@@ -168,13 +169,19 @@ export class GlobalLobby extends DurableObject<Env> {
 	// =========================================================================
 
 	async fetch(request: Request): Promise<Response> {
+		const url = new URL(request.url);
+		const isWebSocketUpgrade = request.headers.get('Upgrade') === 'websocket';
+
+		// Close outdated clients with 4426 before any presence or lobby work
+		if (isWebSocketUpgrade && !hasCurrentProtocol(url)) {
+			return rejectOutdatedProtocol(url, 'GlobalLobby');
+		}
+
 		// Initialize instrumentation if not already initialized
 		await this.ensureInstrumentation();
 
-		const url = new URL(request.url);
-
 		// WebSocket upgrade for real-time connection
-		if (request.headers.get('Upgrade') === 'websocket') {
+		if (isWebSocketUpgrade) {
 			return this.handleWebSocketUpgrade(request);
 		}
 
