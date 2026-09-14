@@ -1,19 +1,19 @@
 # Dicee status
 
-**As of:** 2026-09-14T00:53:56Z
+**As of:** 2026-09-14T04:41:28Z
 
-**Current phase:** 2026-09 operator safety rollout; Phase 11 pending, Jefahnierocks governance strategy selected (no deployment)
+**Current phase:** 2026-09 operator safety rollout; credential containment (action 9) pending, Jefahnierocks governance strategy selected (no deployment)
 
 Next work: [roadmap.md](roadmap.md). Cloudflare: [cloudflare.md](cloudflare.md).
 ## Current state
 
 - `main` carries the reviewed baseline, the database privacy work and current dependency updates (Vitest 5, jsdom 30).
 - Migration `20260913000001` is applied to the hosted project and recorded in migration history. Authenticated clients cannot update `profiles.role`; their editable profile fields remain granted. Migration `20260913000002` remains local-only.
-- Phase 8 is complete: 7 profiles comprise 5 users and 2 super admins, with no moderators or admins. The operator confirmed both elevated assignments as intentional after private record review; no role changes were needed. Audit-log absence cannot establish that the old privilege was never exploited.
+- The profile-role audit (action 2) is complete: 7 profiles comprise 5 users and 2 super admins, with no moderators or admins. The operator confirmed both elevated assignments as intentional after private record review; no role changes were needed. Audit-log absence cannot establish that the old privilege was never exploited.
 - The database backup is encrypted and verified on off-machine storage; Storage contained 0 objects. The plaintext exports were removed after verification.
 - `workers.dev` and Preview URLs are disabled on `dicee` and `dicee-production`. Changes were limited to these two scripts; namespace ownership and other ingress remain unverified.
-- The selected Cloudflare strategy targets Jefahnierocks service governance while retaining the existing shared account. Organizational intake, infrastructure adoption and account relocation are not complete; exposed-token rotation remains open.
-- Phase 11 is incomplete: no credential rotation or old-token revocation is established. PR #18 fixed the Cloudflare wrapper so operator credentials are inherited through the environment rather than passed through an intermediate `env` argv; its synthetic regression test, GitHub CI and CodeQL passed before merge. Successful Supabase CLI login does not establish revocation of the exposed token. The last authenticated GitHub secret-placement readback still has the Production token absent and the repository-wide copy present.
+- The selected Cloudflare strategy targets Jefahnierocks service governance while retaining the existing shared account; organizational intake, infrastructure adoption and account relocation are not complete.
+- Credential containment (action 9) is incomplete: the Cloudflare token is replaced and the old one verified dead (see readbacks), but Supabase personal access token replacement and old-token revocation remain open. A successful Supabase CLI login does not establish revocation of the exposed Supabase token.
 - No application deployment has run during this operator rollout. CI deploys only on a manual `workflow_dispatch` from `main` with `deploy=true`.
 - Legacy client layers are retired and the docs are consolidated into this file, the roadmap, `docs/cloudflare.md`, `docs/architecture/` and `docs/development/`. Git history is the archive.
 
@@ -42,7 +42,7 @@ These are stable action identifiers, not execution order. [Roadmap section 1](ro
 6. [x] **Worker subdomain URLs.** `workers.dev` and Preview URLs are disabled on `dicee` and `dicee-production`, verified by API. Namespace ownership and other ingress remain for the later reviews in actions 5 and 8.
 7. [ ] **Retire `aggregate-game-stats` deliberately.** Review the caller and the loss of advanced rating/badge processing before undeploying the Edge Function. A 404 is non-retriable, but the current Worker still schedules new calls and records permanent task failures; deletion alone does not retire the caller.
 8. [ ] Review legacy Worker scripts.
-9. [ ] **Credential containment.** The Cloudflare wrapper argument-exposure prerequisite is complete in PR #18. Identify and rotate or revoke the exposed Cloudflare token and Supabase personal access token. Update the existing 1Password field and GitHub Production token, verify before removing the repository duplicate, and review old local copies privately. Complete old-token revocation; a renewed CLI login is insufficient. An execution-policy rejection is a stop, never a reason to disguise the command or change access policy during the operation.
+9. [ ] **Credential containment.** Cloudflare containment is complete: the replacement is active and canonical in 1Password and GitHub Production, the repository duplicate is removed, and the old token is revoked and verified dead. Replace and revoke the exposed Supabase personal access token, verify CLI authentication after revocation, and remove stale plaintext/local copies. A renewed CLI login is insufficient. An execution-policy rejection is a stop, never a reason to disguise the command or change access policy during the operation.
 10. [ ] **GitHub governance.** A `main` ruleset requiring the check **Full repository validation** (the job display name, not `validate`); a `Production` environment with required reviewers and a main-only deployment branch policy; Dependabot alerts and security updates.
 11. [ ] **Supabase default grants change on 2026-10-30** for newly created tables; existing tables keep their grants. Apply the explicit-grants migration from the roadmap first ([change notice](https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically)).
 12. [ ] Migrate off the legacy `anon` and `service_role` API keys before the announced end-of-2026 deprecation. Verify the final schedule before cutover ([migration guide](https://supabase.com/docs/guides/getting-started/migrating-to-new-api-keys)).
@@ -53,9 +53,9 @@ These are stable action identifiers, not execution order. [Roadmap section 1](ro
 
 One row per subject, replaced when superseded. Counts and names only; never secret values or account identifiers.
 
-### Step 1 result
+### Database hardening (actions 1-2)
 
-These are the recorded Step 1 results; Phase 9 does not rerun the database checks. The operator confirmed that the verified NAS copy satisfies the off-site requirement.
+Recorded results; do not rerun the database checks. The operator confirmed that the verified NAS copy satisfies the off-site requirement.
 
 | Subject | UTC | Request | Result |
 |---|---|---|---|
@@ -72,9 +72,9 @@ These are the recorded Step 1 results; Phase 9 does not rerun the database check
 
 | Subject | UTC | Request | Result |
 |---|---|---|---|
-| Worker inventory | 2026-09-13T22:10:20Z | API: account Worker scripts | 11 scripts; the operator scoped Phase 10 to `dicee` and `dicee-production`, both at migration tag v2 |
+| Worker inventory | 2026-09-13T22:10:20Z | API: account Worker scripts | 11 scripts; the operator scoped the URL change (action 6) to `dicee` and `dicee-production`, both at migration tag v2 |
 | Worker subdomain URLs | 2026-09-13T22:18:29Z | API: per-script subdomain settings after scoped POST updates | `dicee` and `dicee-production`: success true, enabled false, previews_enabled false; no deployment or deletion |
-| GitHub governance and token placement | 2026-09-13T23:48:31Z | REST: rulesets, effective `main` rules, Production environment, automated fixes; CLI: secret names | 0 rulesets and effective rules; Production has no protection rules or branch policy; automated fixes disabled, not paused; repository `CLOUDFLARE_API_TOKEN` present, Production copy absent |
-| Cloudflare wrapper argv containment | 2026-09-14T00:53:56Z | GitHub PR #18 merge readback; PR CI and CodeQL | Merged as `759b668`; wrapper exports/inherits the Cloudflare credentials and directly `exec`s the requested command; synthetic regression test passed; no credential rotation or provider mutation |
+| GitHub governance | 2026-09-13T23:48:31Z | REST: rulesets, effective `main` rules, Production environment, automated fixes | 0 rulesets and effective rules; Production has no protection rules or branch policy; automated fixes disabled, not paused |
+| Cloudflare credential containment | 2026-09-14T04:41:28Z | Private token verification, wrapper auth, GitHub secret-name readback and old-token verification | Replacement active and canonical in 1Password; Production `CLOUDFLARE_API_TOKEN` present; repository duplicate absent; old token revoked and verify returned HTTP 401; wrapper auth passed; no deployment |
 | Cloudflare Pages and build triggers | 2026-09-13T04:35Z | API: Pages project `dicee`, Workers Builds triggers | Pages has no Git source, production branch `main`; trigger reads returned 403, so triggers are unverified |
 | GitHub Apps | 2026-09-13T04:49Z | Repository installed GitHub Apps page | No Cloudflare Workers and Pages app; with no Pages Git source, the native Git build integration is not in use |

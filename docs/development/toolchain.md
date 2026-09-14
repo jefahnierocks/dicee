@@ -89,7 +89,7 @@ Client configuration, MCP servers, skills, and Codex rules live in [agent-client
 - [pnpm settings](https://pnpm.io/settings)
 - [TypeScript 7 announcement and ecosystem caveat](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0/)
 - [Vite 8 migration guide](https://vite.dev/guide/migration.html)
-- [Vitest 4.1 agent reporter](https://vitest.dev/blog/vitest-4-1.html)
+- [Vitest agent reporter (added in 4.1)](https://vitest.dev/blog/vitest-4-1.html) and [Vitest 5 migration guide](https://vitest.dev/guide/migration.html)
 - [Cloudflare Workers changelog](https://developers.cloudflare.com/changelog/product/workers/)
 - [Cloudflare compatibility dates](https://developers.cloudflare.com/workers/configuration/compatibility-dates/)
 - [Supabase CLI releases](https://github.com/supabase/cli/releases)
