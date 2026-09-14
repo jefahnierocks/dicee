@@ -18,9 +18,8 @@ shift
 
 dicee_require_op
 
-token="$(dicee_op_read "$DICEE_OP_ITEM_CLOUDFLARE" api-token)"
+export CLOUDFLARE_ACCOUNT_ID="$DICEE_CLOUDFLARE_ACCOUNT_ID"
+export CLOUDFLARE_API_TOKEN
+CLOUDFLARE_API_TOKEN="$(dicee_op_read "$DICEE_OP_ITEM_CLOUDFLARE" api-token)"
 
-exec env \
-	CLOUDFLARE_ACCOUNT_ID="$DICEE_CLOUDFLARE_ACCOUNT_ID" \
-	CLOUDFLARE_API_TOKEN="$token" \
-	"$@"
+exec "$@"
