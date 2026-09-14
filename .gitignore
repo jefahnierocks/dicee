@@ -82,6 +82,7 @@ Cargo.lock
 # Claude Code state (session-specific, not shared)
 .claude/state/
 .claude/debug/
+.claude/worktrees/
 .claude/AGENT-*.md
 
 # Development tools (local analysis)

@@ -4,15 +4,18 @@ Ordered next work. State, decisions and deadlines live in [status.md](status.md)
 
 ## 1. Safety now
 
-The backup, profile-role hardening/audit, two-script Worker URL restrictions and credential containment are recorded as complete in [status](status.md#latest-live-readbacks). Status action numbers are stable references; this is the execution order. Source preparation may proceed independently, but each production step retains its operator authority and stop points.
+The backup, profile-role hardening/audit, two-script Worker URL restrictions and credential containment are recorded as complete in [status](status.md#latest-live-readbacks). Status action numbers are stable references; this is the execution order. Preserve durable facts (Supabase data, migrations, backups), not obsolete runtime topology: fix forward, delete classified legacy surfaces, and make the next production release the architecture we keep. Each production step retains its operator authority and stop points.
 
-1. Read namespace ownership, SQLite flags, migration tags, Pages production/preview bindings and other ingress (actions 5 and 8). Keep `dicee-production` and unrelated shared-account resources intact. A Pages-only release also needs a verified backend and matching release configuration — classify the Worker result and stop on ambiguity before deployment.
-2. Establish the `main` ruleset, Production deployment protections and Dependabot controls (action 10) before the next production release. Require the exact check `Full repository validation`; inspect bypass behavior and the existing Wrangler/Miniflare ignore policy — authenticated control readbacks.
-3. Deploy the reviewed current `main` through the permitted path (action 3), from a clean checkout of the exact successful CI commit with the intended public Supabase build values — sign-in, room/lobby, headers, transcription and non-admin refusal smoke checks.
-4. Implement the profile visibility opt-in control, initially off for private profiles, writing `profiles.is_public`; explain that visibility is voluntary and cover it with tests. Merge through the new ruleset — successful full validation on the PR.
-5. Deploy the opt-in code, verify the control and a test bug report, then take a fresh complete encrypted backup. Recheck the production link and history (`000001` remote, `000002` local-only), apply only `000002`, and verify the schema and two-account privacy behavior (action 4). Invite opt-ins only after verification; the migration clears earlier opt-ins. Fix forward and retain a compatible Pages build — fresh backup evidence, migration readback and privacy tests.
+1. Read-only discovery (actions 5 and 8): `GameRoom` and `GlobalLobby` owners through the Durable Objects Deployments tab, SQLite and migration tags, production and preview `GAME_WORKER` targets, routes and domains on every Dicee Worker script and Pages project, last deployments of `dicee` and `dicee-production`, secret names on `dicee`, and whether `dicee.games` and `www` sit in a zone on this account and with which record types. Do not measure ephemeral Durable Object state — private readback, then a status decision naming the scripts and projects to delete.
+2. Stats correctness (action 7): rebuild `player_stats` as a projection of completed `games`, `game_players` and `domain_events`, so repeats and retries give the same row; store AI seats; remove the Edge Function caller, the ratings/badge flags and unused web stats writers; rebuild existing rows once. The migration must apply alone before or after `000002` — pgTAP for repeats, retries, solo, multiplayer, AI seats, incomplete games and missing events.
+3. Protocol version handshake: `GAME_PROTOCOL_VERSION` in `@dicee/shared` on every lobby and room socket; a mismatch closes with code 4426 and the client shows "Dicee was updated. Reloading…" behind a reload-loop guard; no compatibility shims — Worker and web tests.
+4. `dicee-web` prototype: SvelteKit on Workers Static Assets with `GAME_WORKER` to `dicee`, `workers_dev` and `preview_urls` off, no hosted preview, config audit and CI updated; then revise status decision 8 — build, dry run and config audit, no deploy.
+5. Establish the `main` ruleset, Production deployment protections and Dependabot controls (action 10) before the release. Require the exact check `Full repository validation`; inspect bypass behavior and the existing Wrangler/Miniflare ignore policy — authenticated control readbacks.
+6. First release (action 3) from a clean checkout of the exact successful CI commit, at a quiet time: apply the stats migration alone, deploy `dicee`, deploy `dicee-web`, detach `dicee.games` from Pages and attach it to `dicee-web` (short outage), run the smoke checks, then delete the Pages project, the deployed Edge Function and the classified scripts (action 8) — sign-in, room/lobby, headers, transcription, non-admin refusal and deletion readbacks.
+7. Implement the profile visibility opt-in control, initially off for private profiles, writing `profiles.is_public`; explain that visibility is voluntary and cover it with tests. Merge through the new ruleset — successful full validation on the PR.
+8. Deploy the opt-in code, verify the control and a test bug report, then take a fresh complete encrypted backup. Recheck the production link and history (`000001` remote, `000002` local-only), apply only `000002`, and verify the schema and two-account privacy behavior (action 4). Invite opt-ins only after verification; the migration clears earlier opt-ins. Fix forward — fresh backup evidence, migration readback and privacy tests.
 
-Retire the obsolete Edge Function/caller and classified legacy scripts only after the ownership and behavior reviews (actions 7-8). Do not reapply or reverse `000001`, run a broad database push, or treat a successful dry run as namespace proof.
+Do not reapply or reverse `000001`, run a broad database push, release current `main` as it stands, or treat a successful dry run as namespace proof. Hosted multiplayer testing waits for an isolated backend (section 8).
 
 ## 2. Supabase obligations
 
@@ -24,7 +27,7 @@ Date-driven and independent of the organization move. Agents write and test the 
 - Asymmetric JWT signing: decide how to clear audit warning B8 ([open decision](cloudflare.md#open-decisions); default: remove HS256), then pin the JWKS verification algorithms and remove the HS256 fallback, `SUPABASE_JWT_SECRET` and the trailing `packages/cloudflare-do/wrangler.jsonc` comment that asks for it — auth tests; operator confirms the signing-key state first.
 - Minimize Supabase after a row-count readback and a fresh dump: drop vestigial tables, RPCs and columns (gallery, `solo_leaderboard`, `rooms`, `analysis_events`, `feature_flags`, spectator policies, Glicko and badge columns) with their TypeScript; keep `log_admin_action` as the only admin audit writer; close the `bug_reports` delete-policy gap — pgTAP green; operator applies.
 - Residual policy fixes for whatever minimization keeps: the open read policies on `admin_permissions` and `feature_flags`, `SET search_path` on the gallery security-definer functions, and spectator policies that match a `playing` status the `games` check never allows — pgTAP green; operator applies.
-- Persistence pipeline, owner picks: repair (jsonb RPC parameters instead of hand-built array literals, a storage model for AI seats, scheduled abandonment, schema-validated outbox rows, surfaced permanent failures, and removal of the never-constructed `GamePersistenceService`) or freeze (the Worker drops the service-role key) — tests.
+- Persistence pipeline repair after the section 1 stats fix: jsonb RPC parameters instead of hand-built array literals, scheduled abandonment, schema-validated outbox rows and surfaced permanent failures — tests.
 
 ## 3. Worker correctness and security
 
@@ -89,9 +92,8 @@ The [selected Cloudflare strategy](cloudflare.md#governance-strategy) preserves 
 ## 8. Deferred with a trigger
 
 - Durable Object `exports` adoption — a concrete need recorded in status.
-- Workers Static Assets instead of Pages — a Pages limitation that matters.
 - D1 or R2 — a data need Supabase cannot meet.
-- Staging Worker environment in CI with its own Pages preview binding — a real multi-person test need.
+- An isolated hosted staging backend (its own Worker, data and credentials) — a real multi-person hosted test need.
 - Anonymous sign-in captcha, WebSocket re-authentication and a per-connection message-rate cap — players beyond the family.
 - TypeScript 7 — Svelte tooling supports its stable API. pnpm 12 and uv 0.12 — Dependabot supports them.
 - DiceBear 10 — `@dicebear/collection` supports it. Python 3.14 support (a CI job first, then the package claim) — an analysis dependency or feature needs 3.14.

@@ -118,9 +118,9 @@ Safe without deploy authority: `wrangler types`, `types:check`, `wrangler deploy
 2. `deploy-worker`: the Production environment, a `production-deploy` concurrency group that is never cancelled, builds `@dicee/shared`, then `wrangler deploy --env=""`.
 3. `deploy-pages`: reuses the validated WASM artifact, builds shared and web, then runs `pages deploy` to project `dicee`.
 
-`deploy-pages` needs `deploy-worker`, so CI cannot deploy Pages alone. Complete the credential and GitHub protection prerequisites in [roadmap section 1](roadmap.md#1-safety-now) first. Use CI only when live checks 1-2 show that `dicee` owns both SQLite classes at v2 without competing ownership and Pages targets that backend. Review the exact release configuration and migrations as well; ownership is a deployment prerequisite, not approval of every later artifact.
+`deploy-pages` needs `deploy-worker`, so CI cannot deploy Pages alone. The next release follows [roadmap section 1](roadmap.md#1-safety-now) (status action 3): live checks 1-2 first, then `dicee` becomes the one backend even when that resets live rooms held by another script (status decision 1). Review the exact release configuration and migrations as well; ownership is a deployment prerequisite, not approval of every later artifact.
 
-A Pages-only release uses the operator-local `pnpm pages:deploy` (status action 3). It is not automatically safe when Worker ownership is different or unknown: committed production and preview settings both target `dicee`, and this command does not preserve an arbitrary dashboard binding. Stop until the verified backend and release configuration agree. Use a clean checkout of the exact successful CI commit and read the local Pages build environment warning below.
+`pnpm pages:deploy` remains an operator escape hatch until `dicee-web` replaces Pages; the next release does not use it. It deploys the committed binding to `dicee` and does not preserve a different dashboard binding.
 
 **Operator escape hatches** skip the validation gate and need explicit authority:
 
@@ -135,7 +135,7 @@ A Pages-only release uses the operator-local `pnpm pages:deploy` (status action 
 **Known hazards:**
 
 - **Two Worker versions per dispatch.** The Cloudflare wrangler-action step uploads its `secrets` input with `wrangler secret bulk` before it runs `deploy`, and a secret upload creates and deploys a version. For a short window new secrets run on old code. `wrangler deploy --secrets-file` is the single-operation form.
-- **Empty namespaces on the wrong script.** A `migrations` deploy is a lifecycle no-op only when the target script already carries tag v2. Otherwise it provisions empty namespaces: if another script owns the namespaces, a deploy to `dicee` creates empty ones and live state stays on the old script, so stop. Deploy a Worker only after live check 1 shows `dicee` holds both namespaces at v2 (status action 5).
+- **Empty namespaces on the wrong script.** A `migrations` deploy is a lifecycle no-op only when the target script already carries tag v2. Otherwise it provisions empty namespaces and live state stays on the old script. Know which case applies from live check 1 before deploying; an intended cutover to `dicee` accepts that reset (status decision 1).
 - **First deploy to a new Worker name.** With `secrets.required` set, it needs `--secrets-file`.
 - **No rollback in CI.** Rollback is operator-run (`wrangler rollback`, Pages rollback in the dashboard) and cannot cross a Durable Object lifecycle change. Roll forward by default.
 - **No staging path.** Production is the first environment a change reaches.
@@ -152,12 +152,12 @@ A Pages-only release uses the operator-local `pnpm pages:deploy` (status action 
 
 Use read-only methods only: the dashboard or a read-scoped API `GET`. Record each result in the [status.md](status.md) readbacks as names, counts and HTTP status. Never record account, zone or namespace ids, subdomains, project refs or secret values.
 
-1. **Namespace owner.** Which Worker scripts hold the live `GameRoom` and `GlobalLobby` namespaces (class, script, SQLite), their migration tags where a read-only source shows them, and the deployed versions. Method: dashboard, or a read-scoped `GET` of the account's Durable Object namespace list. A Worker deploy proceeds only when `dicee` holds both SQLite namespaces at v2 without competing or ambiguous ownership, and check 2 establishes the expected Pages target.
+1. **Namespace owner.** Which Worker scripts hold the live `GameRoom` and `GlobalLobby` namespaces (class, script, SQLite), their migration tags where a read-only source shows them, and the deployed versions. Method: the namespace's Deployments tab in the dashboard, or a read-scoped `GET` of the account's Durable Object namespace list. The result decides between a no-op lifecycle deploy to `dicee` and a cutover to it (status decision 1); stop only on ambiguous ownership.
 2. **Pages binding.** What production and preview `GAME_WORKER` target, and whether live settings (compatibility date, flags, bindings) agree with `packages/web/wrangler.jsonc`. Method: dashboard, or `wrangler pages download config` into a private scratch directory outside the repository (never with `--force`). Inspect this before either deployment path; a different or unknown target requires reconciliation, not an unconditional Pages-only fallback.
 3. **Subdomains.** Done for `dicee` and `dicee-production` (status action 6); repeat for any other Dicee Worker script that check 4 finds. Method: each script's domains and routes settings in the dashboard.
-4. **Legacy scripts.** Routes, custom domains and last deployment on every Dicee Worker script other than the one check 1 identifies.
+4. **Obsolete surfaces.** Routes, custom domains and last deployment on every Dicee Worker script other than `dicee`, and on every Pages project, classified for deletion (status action 8).
 5. **Secret names.** Secret names on each script and on the Pages project; `wrangler secret list` and `wrangler pages secret list` return names only.
-6. **Zone and redirect.** Whether `dicee.games` is a zone on this account, whether Registrar is used, and where the www-to-apex redirect lives (`packages/web/_redirects` says the dashboard). This feeds the organization move.
+6. **Zone and redirect.** Whether `dicee.games` is an active zone on this account, the record types for the apex and `www` (a Worker custom domain cannot be created on a hostname with an existing CNAME record), whether Registrar is used, and where the www-to-apex redirect lives. This gates the `dicee-web` cutover and feeds the organization move.
 
 Method safety:
 
@@ -171,7 +171,7 @@ None of these is a readback. For reachability use the Worker's `/health`; do not
 
 Each open decision has a recommended default. The owner decides, and [status.md](status.md) records the decision.
 
-- **Preview shares the production Worker** (audit warning F7). `env.preview` binds `dicee`, so preview traffic reaches production Durable Object state. Default: accept at family scale and revisit when the roadmap's staging trigger fires.
+- **Preview shares the production Worker** (audit warning F7). Decided: no hosted preview backed by production (status decision 8). Do not run `pnpm pages:deploy:preview`; `dicee-web` ships with preview URLs off, and hosted multiplayer testing waits for an isolated backend (roadmap section 8).
 - **Room storage retention.** Nothing deletes Durable Object storage, so finished rooms keep theirs. Default: reclaim storage when a room is finished and empty, on the existing alarm path (roadmap, Worker correctness). Plan as though SQLite storage is billed; the account billing view is the evidence.
 - **`secrets.required` after the Supabase key migration.** Default: one secret key replaces the legacy anon and service-role names, and the Worker sends it only as `apikey`. Change the list, the code and the CI secrets together, and set the new secret on the Worker before the deploy that requires it.
 - **`SUPABASE_JWT_SECRET` read but undeclared** (audit warning B8). Default: resolve it by removing HS256, never by adding the name.
@@ -179,7 +179,7 @@ Each open decision has a recommended default. The owner decides, and [status.md]
 - **Named `development` and `staging` environments.** No CI job or binding uses them. Default: keep them until the staging trigger fires, then either wire one into CI or delete both.
 - **Infrastructure adoption details** (status decision 9). The [governance strategy](#governance-strategy) selects OpenTofu/Wrangler responsibilities and four credential consumers. The exact repository/root, backend/state controls, pinned provider field map and effective token reach remain open. Acceptance and the Pages import/release/plan checks precede infrastructure writes; a dedicated account remains a separate conditional migration decision.
 
-Settled: stay on Pages and the `dicee` Worker (status decision 8). If a move to Workers Static Assets is ever triggered, watch four things:
+Planned: a `dicee-web` Worker on Workers Static Assets replaces Pages, and `dicee` stays the separate game Worker (status decision 8). For the prototype and cutover, watch four things:
 
 - never use single-page-application not-found handling with SSR;
 - assets serve before the Worker unless `run_worker_first` is set;
