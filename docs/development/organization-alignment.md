@@ -1,10 +1,10 @@
 # Jefahnierocks organization alignment
 
-This guide prepares Dicee for the owner's intended move into Jefahnierocks. It explains the ownership, governance and Cloudflare design to preserve while current work continues. It is an intake proposal, not an adoption record, a deployment runbook or permission to transfer resources.
+This guide records Dicee's completed GitHub/local move into Jefahnierocks and describes the remaining governance and Cloudflare ownership boundaries. It is not a deployment runbook or permission to transfer provider resources.
 
 Dicee's selected [Cloudflare governance strategy](../cloudflare.md#governance-strategy) translates this proposal into project direction, recorded in [status decision 9](../status.md#decisions). Selection of that direction does not establish accepted organizational intake, infrastructure execution authority or live enforcement.
 
-The source basis was inspected on 2026-09-13. Dicee still declares `verlyn13` as its owner in [project.yaml](../../project.yaml), and its configured Git remote points to `verlyn13/dicee`. No live provider or GitHub controls were checked for this guide. [Status](../status.md) owns decisions and live readbacks; [roadmap section 7](../roadmap.md#7-organization-move-with-governance-and-iac) owns the move's sequence; [Cloudflare](../cloudflare.md) owns current topology and deployment details.
+The GitHub repository was transferred to `jefahnierocks/dicee` on 2026-09-14, the local checkout moved to `~/Organizations/jefahnierocks/dicee`, and [project.yaml](../../project.yaml) now declares `jefahnierocks` as owner. Provider ownership and infrastructure authority remain separate questions. [Status](../status.md) owns decisions and live readbacks; [roadmap section 7](../roadmap.md#7-organization-move-with-governance-and-iac) owns the move's sequence; [Cloudflare](../cloudflare.md) owns current topology and deployment details.
 
 ## What joining Jefahnierocks means
 
@@ -29,9 +29,9 @@ The local agent roles are **Builder**, **Maintainer**, **Reviewer** and **Operat
 | Name or surface | Intended treatment |
 |---|---|
 | Product and public URL | Keep **Dicee** and `https://dicee.games`; organization ownership does not require a new brand or hostname. |
-| GitHub repository | Intended destination: `jefahnierocks/dicee`. Transfer is a later operator action. |
-| Local checkout | Proposed home: `~/Organizations/jefahnierocks/dicee/`, as an independent Git repository. The workspace also permits apps/packages layouts; this existing monorepo needs no internal reshuffle. |
-| Project manifest | Keep project id `dicee`; change the owner declaration only with accepted intake. Preserve the manifest's existing schema and status home. |
+| GitHub repository | Current home: `jefahnierocks/dicee`; transfer completed 2026-09-14. |
+| Local checkout | Current home: `~/Organizations/jefahnierocks/dicee/`, as an independent Git repository. This existing monorepo needs no internal reshuffle. |
+| Project manifest | Keep project id `dicee`; owner is now `jefahnierocks`. Preserve the manifest's existing schema and status home. |
 | Web Worker | `dicee-web` serves the SvelteKit app (status decision 8); the Pages project `dicee` is deleted after the cutover. A Pages project name and a Worker script name identify different resources. |
 | Default production Worker | Source targets `dicee`; preserve that name pending the live namespace-owner check. |
 | Other existing Worker | `dicee-production` is unclassified. Its suffix proves neither its role nor that it is safe to remove. |
@@ -42,7 +42,7 @@ For new human-facing infrastructure labels, a useful proposed pattern is `jefahn
 
 Keep Dicee's existing package structure, `wrangler.jsonc` files, [toolchain pins](toolchain.md), generated types and lowercase documentation homes. Jefahnierocks' shell uses uppercase status entrypoints; that shell convention does not justify renaming this project's status or roadmap. Use kebab-case for new ordinary documents/directories and preserve language-specific names such as Python's snake_case.
 
-When the checkout eventually moves, the Jefahnierocks shell must exclude the child repository from its own Git tracking and record the accepted boundary. Dicee keeps its own history. Recheck project-local Git identity routing before the first commit from the new location; do not repair it through global identity changes.
+The checkout now lives under the Jefahnierocks workspace as an independent child repository. The parent workspace must exclude it from its own Git tracking. Dicee keeps its own history, remote and project-local Git identity; do not repair identity through global Git changes.
 
 ## Principles translated into project expectations
 

@@ -5,7 +5,7 @@ edition = "2024"
 rust-version = "1.97"
 description = "Probability engine for Dicee - Educational dice game platform"
 license = "MIT"
-repository = "https://github.com/verlyn13/dicee"
+repository = "https://github.com/jefahnierocks/dicee"
 keywords = ["dicee", "probability", "wasm", "game-theory"]
 categories = ["game-engines", "mathematics", "wasm"]
 
