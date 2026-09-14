@@ -18,6 +18,11 @@ import type {
 	ServerEvent,
 } from '$lib/types/multiplayer';
 import { createServiceLogger } from '$lib/utils/logger';
+import {
+	isUpgradeRequiredClose,
+	protocolUpgrade,
+	withProtocolVersion,
+} from './protocolUpgrade.svelte';
 
 const log = createServiceLogger('RoomService');
 
@@ -139,7 +144,9 @@ class RoomService {
 
 		// Use same-origin WebSocket proxy for zero-CORS connection
 		const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-		const wsUrl = `${protocol}//${location.host}/ws/room/${roomCode.toUpperCase()}`;
+		const wsUrl = withProtocolVersion(
+			`${protocol}//${location.host}/ws/room/${roomCode.toUpperCase()}`,
+		);
 
 		const socket = new ReconnectingWebSocket(wsUrl, [], {
 			maxRetries: 10,
@@ -512,11 +519,27 @@ class RoomService {
 		};
 	}
 
-	private handleClose(_event: CloseEvent): void {
+	private handleClose(event: CloseEvent): void {
+		if (isUpgradeRequiredClose(event.code)) {
+			this.stopForProtocolUpgrade();
+			return;
+		}
 		// ReconnectingWebSocket auto-reconnects
 		if (this._status === 'connected') {
 			this.setStatus('connecting'); // Reconnecting
 		}
+	}
+
+	/**
+	 * Outdated client (close 4426): stop reconnecting-websocket's retry loop,
+	 * then reload once or show the updating notice.
+	 */
+	private stopForProtocolUpgrade(): void {
+		const socket = this.socket;
+		this.socket = null;
+		this.setStatus('disconnected');
+		socket?.close();
+		protocolUpgrade.handleUpgradeRequired();
 	}
 
 	private handleError(): void {

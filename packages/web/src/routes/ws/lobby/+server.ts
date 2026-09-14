@@ -9,10 +9,11 @@
  * to the dicee Worker.
  */
 
+import { GAME_PROTOCOL_QUERY_PARAM } from '@dicee/shared';
 import { proxyServiceResponse } from '$lib/server/ws-proxy';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ request, platform, locals }) => {
+export const GET: RequestHandler = async ({ request, platform, url, locals }) => {
 	const gameWorker = platform?.env?.GAME_WORKER;
 
 	if (!gameWorker) {
@@ -59,7 +60,15 @@ export const GET: RequestHandler = async ({ request, platform, locals }) => {
 	}
 
 	// Proxy to the GlobalLobby DO via service binding
-	const proxyRequest = new Request(new URL('/lobby', 'https://internal').toString(), {
+	const proxyUrl = new URL('/lobby', 'https://internal');
+
+	// Forward the non-secret protocol version so the DO can refuse outdated clients
+	const protocol = url.searchParams.get(GAME_PROTOCOL_QUERY_PARAM);
+	if (protocol) {
+		proxyUrl.searchParams.set(GAME_PROTOCOL_QUERY_PARAM, protocol);
+	}
+
+	const proxyRequest = new Request(proxyUrl.toString(), {
 		method: request.method,
 		headers,
 		body: request.body,

@@ -54,6 +54,7 @@ import {
 	setEventSequence,
 	setSupabaseGameId,
 } from './lib/persistence';
+import { hasCurrentProtocol, rejectOutdatedProtocol } from './lib/protocol-gate';
 import type {
 	AlarmData,
 	ConnectionRole,
@@ -639,6 +640,11 @@ export class GameRoom extends DurableObject<Env> {
 		const url = new URL(request.url);
 
 		const upgradeHeader = request.headers.get('Upgrade');
+
+		// Close outdated clients with 4426 before any room, seat or presence work
+		if (upgradeHeader === 'websocket' && !hasCurrentProtocol(url)) {
+			return rejectOutdatedProtocol(url, 'GameRoom');
+		}
 
 		// Extract room code from URL path on first fetch (e.g., /room/FFDVNG or just /FFDVNG)
 		if (!this._roomCode) {

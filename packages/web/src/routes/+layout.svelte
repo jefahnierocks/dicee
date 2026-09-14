@@ -3,8 +3,10 @@ import favicon from '$lib/assets/favicon.svg';
 import '$lib/styles/global.css';
 import { onMount } from 'svelte';
 import { afterNavigate, invalidate } from '$app/navigation';
+import UpdateRequiredBanner from '$lib/components/ui/UpdateRequiredBanner.svelte';
 import { preloadEngine } from '$lib/services/engine';
 import { preferencesService } from '$lib/services/preferences.svelte';
+import { protocolUpgrade } from '$lib/services/protocolUpgrade.svelte';
 import { roomService } from '$lib/services/roomService.svelte';
 import {
 	initializeTelemetry,
@@ -116,6 +118,13 @@ afterNavigate(({ to }) => {
 		previousPage = to.url.pathname;
 	}
 });
+
+// Protocol handshake: a 4426 close from any game socket shows the update banner
+const upgradeStatus = $derived(protocolUpgrade.status);
+
+function handleRetryUpdate(): void {
+	protocolUpgrade.retry();
+}
 </script>
 
 <svelte:head>
@@ -127,5 +136,9 @@ afterNavigate(({ to }) => {
 		rel="stylesheet"
 	/>
 </svelte:head>
+
+{#if upgradeStatus !== 'current'}
+	<UpdateRequiredBanner status={upgradeStatus} onRetry={handleRetryUpdate} />
+{/if}
 
 {@render children()}
