@@ -63,6 +63,7 @@ cd packages/engine && env -u RUSTUP_TOOLCHAIN cargo test --all-features
 - [docs/status.md](docs/status.md): current status, decisions, and operator actions
 - [docs/roadmap.md](docs/roadmap.md): ordered next work
 - [docs/cloudflare.md](docs/cloudflare.md): Cloudflare topology, configuration, and deploy path
+- [Organization alignment](docs/development/organization-alignment.md): intended Jefahnierocks ownership, governance, naming and infrastructure boundaries
 - [docs/architecture/README.md](docs/architecture/README.md): system architecture
 - [SECURITY.md](SECURITY.md): private vulnerability reporting
 
