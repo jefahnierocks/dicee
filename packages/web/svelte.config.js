@@ -30,17 +30,10 @@ const config = {
 				'upgrade-insecure-requests': true,
 			},
 		},
-		// Using Cloudflare Pages adapter for deployment
+		// Builds for Cloudflare Workers Static Assets: wrangler.jsonc sets `main` and
+		// `assets`, so the adapter writes _worker.js and .assetsignore (no _routes.json).
 		// See https://svelte.dev/docs/kit/adapter-cloudflare
-		adapter: adapter({
-			// Routes are generated automatically based on +server.ts files
-			routes: {
-				// Include API routes and auth callback
-				include: ['/*'],
-				// Exclude static assets
-				exclude: ['<all>'],
-			},
-		}),
+		adapter: adapter(),
 	},
 };
 

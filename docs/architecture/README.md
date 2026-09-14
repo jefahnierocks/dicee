@@ -10,7 +10,7 @@ Dicee is a small multiplayer dice game that teaches probability while you play.
 
 | Package | Role |
 |---|---|
-| `packages/web` | SvelteKit 2 / Svelte 5 app on Cloudflare Pages: UI, auth, telemetry API, WebSocket proxy routes |
+| `packages/web` | SvelteKit 2 / Svelte 5 app, Worker `dicee-web` with Workers Static Assets: UI, auth, telemetry API, WebSocket proxy routes |
 | `packages/cloudflare-do` | Worker `dicee` with the `GameRoom` and `GlobalLobby` SQLite Durable Objects |
 | `packages/shared` | domain types, game constants and Zod schemas used by the web app and the Worker |
 | `packages/engine` | Rust probability engine, compiled to WebAssembly and run in the browser |
@@ -21,7 +21,7 @@ Dicee is a small multiplayer dice game that teaches probability while you play.
 Request path:
 
 ```text
-browser ── HTTPS ─────────────────────────────> SvelteKit on Pages
+browser ── HTTPS ─────────────────────────────> Worker "dicee-web" (SvelteKit, static assets)
 browser ── WebSocket /ws/lobby, /ws/room/CODE ─> SvelteKit route (adds the session bearer)
           └── GAME_WORKER service binding ────> Worker "dicee"
                 ├── /lobby, /lobby/*  ────────> GlobalLobby (one instance, named "singleton")

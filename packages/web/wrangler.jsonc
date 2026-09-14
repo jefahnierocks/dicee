@@ -1,21 +1,23 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "dicee",
-	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	// The web Worker: SvelteKit SSR plus Workers Static Assets. Game state stays in the
+	// separate `dicee` Worker so UI-only releases never restart its Durable Objects.
+	"name": "dicee-web",
+	// Both paths are written by @sveltejs/adapter-cloudflare during `vite build`.
+	"main": ".svelte-kit/cloudflare/_worker.js",
 	"compatibility_date": "2026-07-21",
 	"compatibility_flags": ["nodejs_compat"],
+	// No workers.dev subdomain and no per-version Preview URLs: there is no hosted
+	// preview, and `dicee.games` is attached as a custom domain by the operator.
+	"workers_dev": false,
+	"preview_urls": false,
+	"assets": { "directory": ".svelte-kit/cloudflare", "binding": "ASSETS" },
 	"services": [{ "binding": "GAME_WORKER", "service": "dicee" }],
-	// Note: `observability` is a Workers-only field and is not supported in a Pages
-	// wrangler config (see the DO Worker's wrangler.jsonc). Pages observability is
-	// configured in the Cloudflare dashboard, not here.
-	"vars": { "ENVIRONMENT": "production" },
-	"env": {
-		"preview": {
-			"services": [{ "binding": "GAME_WORKER", "service": "dicee" }],
-			"vars": { "ENVIRONMENT": "preview" }
-		}
+	"observability": {
+		"enabled": true,
+		"logs": { "enabled": true, "head_sampling_rate": 1 }
 	}
 }
 
-// PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY, and secret values belong in
-// the Cloudflare environment or encrypted deployment flow, never in this file.
+// PUBLIC_SUPABASE_URL and PUBLIC_SUPABASE_ANON_KEY are build-time inputs; secret values
+// belong in the Cloudflare environment or encrypted deployment flow, never in this file.

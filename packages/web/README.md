@@ -1,6 +1,6 @@
 # @dicee/web
 
-The Dicee SvelteKit 2 / Svelte 5 app, deployed to Cloudflare Pages. Read [AGENTS.md](AGENTS.md) before editing this package.
+The Dicee SvelteKit 2 / Svelte 5 app, deployed as the `dicee-web` Cloudflare Worker with Workers Static Assets. Read [AGENTS.md](AGENTS.md) before editing this package.
 
 ## Setup
 
@@ -20,6 +20,6 @@ Run these from the repository root as `pnpm --filter @dicee/web <script>`.
 | `test:e2e`, `test:mobile` | Playwright tests |
 | `biome:check`, `format` | Lint and format |
 | `types`, `types:check` | Generate or check `worker-configuration.d.ts` from `wrangler.jsonc` |
-| `pages:dev` | Serve the built Pages output locally with Wrangler |
+| `dev:worker` | Serve the built Worker and assets locally with `wrangler dev` (run `build` first) |
 
 The deploy scripts are operator-only; see [docs/cloudflare.md](../../docs/cloudflare.md). Testing details are in [docs/development/testing.md](../../docs/development/testing.md).

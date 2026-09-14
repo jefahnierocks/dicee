@@ -8,7 +8,7 @@ Family-friendly dice game for mobile browsers. No app install required.
 
 | Layer | Technology |
 |---|---|
-| Frontend | SvelteKit 2 (Svelte 5) on Cloudflare Pages |
+| Frontend | SvelteKit 2 (Svelte 5) on a Cloudflare Worker with Workers Static Assets |
 | Game engine | Rust compiled to WebAssembly |
 | Realtime | Cloudflare Worker with SQLite Durable Objects and WebSocket hibernation |
 | Auth and data | Supabase (Postgres, Row Level Security) |
