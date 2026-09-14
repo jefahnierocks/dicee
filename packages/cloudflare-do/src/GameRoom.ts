@@ -50,6 +50,7 @@ import {
 	getSupabaseGameId,
 	initPersistenceTables,
 	PersistenceQueue,
+	type QueuedRanking,
 	SupabaseRpcClient,
 	setEventSequence,
 	setSupabaseGameId,
@@ -331,23 +332,15 @@ export class GameRoom extends DurableObject<Env> {
 				});
 
 				// 3. Initialize persistence queue with RPC client
-				this.persistenceQueue = new PersistenceQueue(
-					this.ctx,
-					this.rpcClient,
-					(task, error) => {
-						this.logger.error('Persistence task failed permanently', {
-							operation: 'persistence_task_failed',
-							type: task.type,
-							retryCount: task.retryCount,
-						});
-						// Log as handler failure for observability
-						this.instr?.errorHandlerFailed(`persistence_${task.type}`, error);
-					},
-					{
-						supabaseUrl: this.env.SUPABASE_URL,
-						anonKey: this.env.SUPABASE_ANON_KEY,
-					},
-				);
+				this.persistenceQueue = new PersistenceQueue(this.ctx, this.rpcClient, (task, error) => {
+					this.logger.error('Persistence task failed permanently', {
+						operation: 'persistence_task_failed',
+						type: task.type,
+						retryCount: task.retryCount,
+					});
+					// Log as handler failure for observability
+					this.instr?.errorHandlerFailed(`persistence_${task.type}`, error);
+				});
 
 				// 4. Recover Supabase game ID after hibernation
 				this.supabaseGameId = getSupabaseGameId(this.ctx);
@@ -443,6 +436,7 @@ export class GameRoom extends DurableObject<Env> {
 			id: string;
 			displayName: string;
 			type?: 'human' | 'ai';
+			aiProfileId?: string;
 			isHost: boolean;
 		}>,
 	): Promise<string | null> {
@@ -466,19 +460,25 @@ export class GameRoom extends DurableObject<Env> {
 			humanCount,
 		});
 
-		// Create game and player records atomically via RPC
+		// Create game and seat records atomically via RPC. Seat numbers follow the
+		// order of `players`, which is also the key order of gameState.players;
+		// schedulePersistenceTasks relies on that to address AI seats.
 		const result = await this.rpcClient.createGame({
 			gameId,
 			roomCode,
 			hostId,
 			gameMode,
 			settings: {},
-			players: players.map((player, index) => ({
-				user_id: player.id,
-				seat_number: index,
-				turn_order: index,
-				is_ai: player.type === 'ai',
-			})),
+			players: players.map((player, index) => {
+				const isAi = player.type === 'ai';
+				return {
+					user_id: isAi ? null : player.id,
+					seat_number: index,
+					turn_order: index,
+					is_ai: isAi,
+					ai_profile: isAi ? (player.aiProfileId ?? null) : null,
+				};
+			}),
 		});
 
 		if (!result.success) {
@@ -548,37 +548,48 @@ export class GameRoom extends DurableObject<Env> {
 		// Get game state for player scorecard and type data
 		const gameState = await this.gameStateManager.getState();
 		const players = gameState?.players ?? {};
+		// Seat numbers match persistGameStart: the key order of gameState.players.
+		const seatNumbers = new Map(Object.keys(players).map((id, seat) => [id, seat]));
+		const isHuman = (playerId: string) => players[playerId]?.type === 'human';
 
 		// 1. Schedule game completion persistence
+		const queuedRankings: QueuedRanking[] = rankings.map((r) => {
+			const player = players[r.playerId];
+			const isAi = player?.type === 'ai';
+			// Convert Scorecard to Record<string, number> (null values become 0)
+			const scorecardRecord: Record<string, number> = {};
+			if (player?.scorecard) {
+				for (const [key, value] of Object.entries(player.scorecard)) {
+					scorecardRecord[key] = value ?? 0;
+				}
+			}
+			return {
+				playerId: isAi ? null : r.playerId,
+				seatNumber: seatNumbers.get(r.playerId) ?? -1,
+				rank: r.rank,
+				score: r.score,
+				scorecard: scorecardRecord,
+				isAi,
+			};
+		});
+		const winner = rankings[0];
+
 		await this.persistenceQueue.schedule({
 			type: 'PERSIST_GAME_COMPLETION',
 			gameId,
 			payload: {
-				winnerId: rankings[0]?.playerId ?? null,
-				rankings: rankings.map((r) => {
-					const player = players[r.playerId];
-					// Convert Scorecard to Record<string, number> (null values become 0)
-					const scorecardRecord: Record<string, number> = {};
-					if (player?.scorecard) {
-						for (const [key, value] of Object.entries(player.scorecard)) {
-							scorecardRecord[key] = value ?? 0;
-						}
-					}
-					return {
-						playerId: r.playerId,
-						rank: r.rank,
-						score: r.score,
-						scorecard: scorecardRecord,
-						isAi: player?.type === 'ai',
-					};
-				}),
+				// games.winner_id references a profile, so an AI winner is stored as null.
+				winnerId: winner && isHuman(winner.playerId) ? winner.playerId : null,
+				rankings: queuedRankings,
 				durationMs,
 			},
 		});
 
-		// 2. Schedule domain events persistence (if any)
-		if (pendingEvents.length > 0) {
-			const eventsForPersistence: DomainEvent[] = pendingEvents.map((e) => ({
+		// 2. Schedule domain events persistence. domain_events.player_id references a
+		// profile, so only events of human seats are persisted.
+		const humanEvents = pendingEvents.filter((e) => isHuman(e.player_id));
+		if (humanEvents.length > 0) {
+			const eventsForPersistence: DomainEvent[] = humanEvents.map((e) => ({
 				id: e.id,
 				game_id: e.game_id,
 				player_id: e.player_id,
@@ -598,21 +609,11 @@ export class GameRoom extends DurableObject<Env> {
 			});
 		}
 
-		// 3. Schedule aggregation (with delay to ensure completion persisted first)
-		// Only for multiplayer games with human players
-		const humanPlayers = Object.values(players).filter((p) => p.type !== 'ai');
-		const isMultiplayer = humanPlayers.length >= 2;
-
+		// 3. Refresh the player_stats projection after completion and events are
+		// persisted. The RPC recomputes absolute values, so retries are safe.
 		await this.persistenceQueue.schedule(
-			{
-				type: 'TRIGGER_AGGREGATION',
-				gameId,
-				payload: {
-					skipRatings: !isMultiplayer, // Only update ratings for multiplayer
-					skipBadges: false,
-				},
-			},
-			500, // 500ms delay to ensure completion is persisted
+			{ type: 'TRIGGER_AGGREGATION', gameId, payload: {} },
+			500, // 500ms delay so completion and events are persisted first
 		);
 
 		// 4. Clear pending events after scheduling

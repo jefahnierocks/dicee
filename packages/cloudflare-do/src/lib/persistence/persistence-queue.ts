@@ -3,8 +3,7 @@
  *
  * Reliable async persistence with retry using DO SQLite and alarms.
  * Tasks are durably stored and processed with exponential backoff.
- *
- * Phase 4: Uses SupabaseRpcClient for atomic database operations.
+ * Every task calls one idempotent RPC, so a retry never double-counts.
  */
 
 import type { DomainEvent, PersistenceResult } from './schemas';
@@ -32,6 +31,16 @@ export interface PersistenceTask {
 	scheduledFor: number;
 }
 
+/** Completion ranking as queued by GameRoom. AI seats have a null playerId. */
+export interface QueuedRanking {
+	playerId: string | null;
+	seatNumber: number;
+	rank: number;
+	score: number;
+	scorecard: Record<string, number>;
+	isAi: boolean;
+}
+
 // ============================================================================
 // Persistence Queue
 // ============================================================================
@@ -43,21 +52,15 @@ export class PersistenceQueue {
 	readonly #ctx: DurableObjectState;
 	readonly #rpc: SupabaseRpcClient;
 	readonly #onError: (task: PersistenceTask, error: string) => void;
-	readonly #supabaseUrl: string;
-	readonly #anonKey: string;
 
 	constructor(
 		ctx: DurableObjectState,
 		rpcClient: SupabaseRpcClient,
 		onError: (task: PersistenceTask, error: string) => void,
-		config?: { supabaseUrl: string; anonKey: string },
 	) {
 		this.#ctx = ctx;
 		this.#rpc = rpcClient;
 		this.#onError = onError;
-		// For edge function calls (aggregation)
-		this.#supabaseUrl = config?.supabaseUrl ?? '';
-		this.#anonKey = config?.anonKey ?? '';
 	}
 
 	/**
@@ -154,19 +157,14 @@ export class PersistenceQueue {
 	async #executeTask(task: PersistenceTask): Promise<PersistenceResult> {
 		switch (task.type) {
 			case 'PERSIST_GAME_COMPLETION': {
-				const rankings = task.payload.rankings as Array<{
-					playerId: string;
-					rank: number;
-					score: number;
-					scorecard: Record<string, number>;
-					isAi: boolean;
-				}>;
+				const rankings = task.payload.rankings as QueuedRanking[];
 
 				const result = await this.#rpc.completeGame({
 					gameId: task.gameId,
 					winnerId: task.payload.winnerId as string | null,
 					rankings: rankings.map((r) => ({
-						player_id: r.playerId,
+						player_id: r.isAi ? null : r.playerId,
+						seat_number: r.seatNumber,
 						rank: r.rank,
 						score: r.score,
 						scorecard: r.scorecard,
@@ -196,28 +194,9 @@ export class PersistenceQueue {
 			}
 
 			case 'TRIGGER_AGGREGATION': {
-				// Call aggregate_game_stats RPC first for core stats
-				const rpcResult = await this.#rpc.aggregateStats(task.gameId);
-
-				// If RPC failed, return the error
-				if (!rpcResult.success) {
-					return this.#rpcToResult(rpcResult, task.gameId);
-				}
-
-				// Optionally call edge function for Glicko-2 ratings and badges
-				// (if configured and not skipped)
-				const skipRatings = task.payload.skipRatings as boolean;
-				const skipBadges = task.payload.skipBadges as boolean;
-
-				if (!skipRatings || !skipBadges) {
-					// Edge function handles advanced aggregation
-					return this.#callAggregationEdgeFunction(task.gameId, {
-						skipRatings,
-						skipBadges,
-					});
-				}
-
-				return { success: true, gameId: task.gameId };
+				// Rebuilds the player_stats projection from persisted games; safe to retry.
+				const result = await this.#rpc.aggregateStats(task.gameId);
+				return this.#rpcToResult(result, task.gameId);
 			}
 
 			case 'ABANDON_GAME': {
@@ -249,51 +228,5 @@ export class PersistenceQueue {
 			error: result.error,
 			retriable: result.retriable,
 		};
-	}
-
-	/**
-	 * Call the aggregate-game-stats edge function for Glicko-2 and badges.
-	 */
-	async #callAggregationEdgeFunction(
-		gameId: string,
-		options: { skipRatings: boolean; skipBadges: boolean },
-	): Promise<PersistenceResult> {
-		if (!this.#supabaseUrl || !this.#anonKey) {
-			// Edge function not configured, RPC aggregation is sufficient
-			return { success: true, gameId };
-		}
-
-		try {
-			const response = await fetch(`${this.#supabaseUrl}/functions/v1/aggregate-game-stats`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${this.#anonKey}`,
-				},
-				body: JSON.stringify({
-					gameId,
-					skipRatings: options.skipRatings,
-					skipBadges: options.skipBadges,
-				}),
-			});
-
-			if (!response.ok) {
-				const text = await response.text();
-				return {
-					success: false,
-					error: `Edge function failed: ${response.status} ${text}`,
-					retriable: response.status >= 500,
-					statusCode: response.status,
-				};
-			}
-
-			return { success: true, gameId };
-		} catch (err) {
-			return {
-				success: false,
-				error: `Network error: ${err instanceof Error ? err.message : 'Unknown'}`,
-				retriable: true,
-			};
-		}
 	}
 }

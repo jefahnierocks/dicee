@@ -37,8 +37,8 @@ select is(
      'multiplayer',
      '{"test": true}'::jsonb,
      array[
-       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 0, 0, false)::public.game_player_input,
-       row('aaaaaaaa-0000-4000-8000-000000000002'::uuid, 1, 1, false)::public.game_player_input
+       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 0, 0, false, null)::public.game_player_input,
+       row('aaaaaaaa-0000-4000-8000-000000000002'::uuid, 1, 1, false, null)::public.game_player_input
      ]
    ) as r),
   '(t,3)',
@@ -69,7 +69,7 @@ select is(
      'multiplayer',
      '{}'::jsonb,
      array[
-       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 0, 0, false)::public.game_player_input
+       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 0, 0, false, null)::public.game_player_input
      ]
    ) as r),
   '(t,0)',
@@ -86,8 +86,8 @@ select is(
      'bbbbbbbb-0000-4000-8000-000000000001'::uuid,
      'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
      array[
-       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 1, 285, '{"ones": 3, "twos": 6}'::jsonb, false)::public.player_ranking,
-       row('aaaaaaaa-0000-4000-8000-000000000002'::uuid, 2, 220, '{"ones": 2, "twos": 4}'::jsonb, false)::public.player_ranking
+       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 1, 285, '{"ones": 3, "twos": 6}'::jsonb, false, 0)::public.player_ranking,
+       row('aaaaaaaa-0000-4000-8000-000000000002'::uuid, 2, 220, '{"ones": 2, "twos": 4}'::jsonb, false, 1)::public.player_ranking
      ]
    ) as r),
   '(t,3)',
@@ -123,7 +123,7 @@ select is(
      'bbbbbbbb-0000-4000-8000-000000000001'::uuid,
      'aaaaaaaa-0000-4000-8000-000000000001'::uuid,
      array[
-       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 1, 999, '{}'::jsonb, false)::public.player_ranking
+       row('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 1, 999, '{}'::jsonb, false, 0)::public.player_ranking
      ]
    ) as r),
   true,

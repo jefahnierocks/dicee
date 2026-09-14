@@ -4,8 +4,6 @@
  * DO→Supabase persistence bridge for game data.
  */
 
-// Services
-export { GamePersistenceService } from './game-persistence.service';
 // Migrations and helpers
 export {
 	clearGameMetadata,
@@ -23,13 +21,12 @@ export {
 	PersistenceQueue,
 	type PersistenceTask,
 	type PersistenceTaskType,
+	type QueuedRanking,
 } from './persistence-queue';
 // Schema validation (compile-time only, ensures no schema drift)
 export { SCHEMA_MAPPINGS } from './schema-validation';
 // Schemas and types
 export {
-	type AggregationRequest,
-	AggregationRequestSchema,
 	DOMAIN_EVENT_TYPES,
 	type DomainEvent,
 	DomainEventSchema,
