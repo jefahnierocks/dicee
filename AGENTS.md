@@ -8,7 +8,7 @@ Workstation integration follows the [system-config project contract](https://git
 
 Dicee is an educational multiplayer dice game for a few family players:
 
-- `packages/web`: SvelteKit 2 / Svelte 5 application deployed to Cloudflare Pages.
+- `packages/web`: SvelteKit 2 / Svelte 5 application, deployed as the `dicee-web` Cloudflare Worker with Workers Static Assets.
 - `packages/cloudflare-do`: Cloudflare Worker with SQLite-backed `GameRoom` and `GlobalLobby` Durable Objects.
 - `packages/shared`: shared TypeScript domain types and Zod schemas.
 - `packages/simulation`: deterministic AI simulation and experiment framework.
@@ -43,7 +43,7 @@ Before editing `packages/web` or `packages/cloudflare-do`, read that package's `
 3. Never expose or commit secrets, account identifiers, or project refs. Authorized Cloudflare operations run through `./scripts/with-dicee-cloudflare.sh -- <command>`; Supabase operations use the Supabase CLI under explicit operator authority. Run `./scripts/check-1password-setup.sh` only for an explicitly authorized task that needs operator credentials. Infisical is retired: add no new Infisical usage; the remaining scripts are removed per `docs/roadmap.md` section 4.
 4. Deployment, remote database writes, migrations, secret changes, destructive Git operations, and publication require explicit user authority. Dry runs and local validation are safe defaults.
 5. Do not regenerate Supabase types as part of an ordinary local gate; that is an authenticated, live-schema operation.
-6. Cloudflare work starts at `docs/cloudflare.md`. Current architecture is Cloudflare Pages plus the `dicee` Worker with SQLite Durable Objects plus Supabase. D1, R2, a Worker split, Workers Static Assets, and OpenTofu are not current architecture; organization governance and infrastructure as code arrive only through `docs/roadmap.md`.
+6. Cloudflare work starts at `docs/cloudflare.md`. Committed architecture is the `dicee-web` Worker (SvelteKit, Workers Static Assets) with a `GAME_WORKER` service binding to the `dicee` Worker with SQLite Durable Objects, plus Supabase; moving `dicee.games` off the Pages project is an operator cutover. D1, R2, KV, further Worker splits, and OpenTofu are not current architecture; organization governance and infrastructure as code arrive only through `docs/roadmap.md`.
 7. Keep the legacy Durable Object `migrations` (v1 `GameRoom`, v2 `GlobalLobby`, both `new_sqlite_classes`); never edit or reorder an applied tag. Adopting declarative `exports` is a one-way door: only for a concrete need recorded in `docs/status.md`, as a standalone operator deploy. `pnpm cf:audit` enforces migrations mode.
 8. Project MCP is minimal: `akg` (stdio) and unauthenticated `cloudflare-docs` are enabled; `cloudflare-api` and read-only `supabase` are opt-in OAuth servers. Never pass tokens through MCP config, command arguments, headers, credential-forwarding bridges, or bearer-token wrappers. An MCP session is not authority.
 9. Canonical public URL: `https://dicee.games`.

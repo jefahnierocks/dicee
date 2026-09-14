@@ -71,7 +71,7 @@ The lefthook pre-push hook and CI run `pnpm validate:ci`. `test:scripts` runs ev
 
 ## Cloudflare
 
-Worker and Pages configuration, the deploy path, and live checks live in [docs/cloudflare.md](../cloudflare.md). The toolchain rule is the Wrangler hold above.
+Configuration for both Workers (`dicee-web` and `dicee`), the deploy path, and live checks live in [docs/cloudflare.md](../cloudflare.md). The toolchain rule is the Wrangler hold above.
 
 ## Agent clients
 

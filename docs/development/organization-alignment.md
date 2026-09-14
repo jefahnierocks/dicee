@@ -32,7 +32,7 @@ The local agent roles are **Builder**, **Maintainer**, **Reviewer** and **Operat
 | GitHub repository | Intended destination: `jefahnierocks/dicee`. Transfer is a later operator action. |
 | Local checkout | Proposed home: `~/Organizations/jefahnierocks/dicee/`, as an independent Git repository. The workspace also permits apps/packages layouts; this existing monorepo needs no internal reshuffle. |
 | Project manifest | Keep project id `dicee`; change the owner declaration only with accepted intake. Preserve the manifest's existing schema and status home. |
-| Pages project | Keep `dicee`. A Pages project name and Worker script name identify different resources. |
+| Web Worker | `dicee-web` serves the SvelteKit app (status decision 8); the Pages project `dicee` is deleted after the cutover. A Pages project name and a Worker script name identify different resources. |
 | Default production Worker | Source targets `dicee`; preserve that name pending the live namespace-owner check. |
 | Other existing Worker | `dicee-production` is unclassified. Its suffix proves neither its role nor that it is safe to remove. |
 | Runtime interfaces | Keep `GAME_WORKER`, `GAME_ROOM`, `GLOBAL_LOBBY`, `AI`, `GameRoom` and `GlobalLobby`. These are application interfaces, not places to add organization prefixes. |
@@ -84,15 +84,14 @@ OpenTofu is the intended infrastructure engine; its adoption is still future wor
 
 | Surface | API scope / dependency | Proposed configuration writer |
 |---|---|---|
-| Zone, DNS, redirects and Pages domain attachment | Zone belongs to an account; DNS records are zone-scoped; Pages domains belong to a project | The designated Jefahnierocks infrastructure root, after discovery and import/no-op review. Registrar ownership is a separate intake question. |
-| Pages project identity and infrastructure-owned settings | Account-scoped but Dicee-specific | OpenTofu only for explicitly assigned fields that do not compete with the application deployment configuration. |
-| Pages application artifact, bindings, vars and compatibility settings | Pages project production/preview configuration | Dicee's web Wrangler configuration and application release workflow. Public Supabase values are also build inputs and must match the release environment. |
-| Worker code, bindings, compatibility settings and observability | Account-scoped Worker scripts | Dicee's Worker Wrangler configuration and release workflow. |
+| Zone, DNS, redirect rules and the web Worker's custom domain | Zone belongs to an account; DNS records and Worker custom domains are zone-scoped | The designated Jefahnierocks infrastructure root, after discovery and import/no-op review. Registrar ownership is a separate intake question. |
+| Web Worker artifact, service binding, compatibility and observability | `dicee-web` script settings | Dicee's web Wrangler configuration and application release workflow. Public Supabase values are also build inputs and must match the release environment. |
+| Game Worker code, bindings, compatibility settings and observability | Account-scoped Worker script `dicee` | Dicee's Worker Wrangler configuration and release workflow. |
 | Durable Object class lifecycle and bindings | Worker/class namespaces and existing data | Wrangler, preserving the chosen legacy migration history and verified state owner. |
 | Workers AI use | Worker `AI` binding and transcription code | Dicee; keep the current binding and model configuration in their existing source homes. |
 | Runtime secret values | Per authorized consumer/environment | Approved secret delivery at execution time; do not feed application secret values through infrastructure state. |
 
-**Resolve the Pages overlap before importing its project.** Pages treats a deployed Wrangler file as its configuration source of truth, while the provider's Pages-project resource also exposes deployment configuration fields. The implementation must document who writes production/preview service bindings, variables, compatibility settings and build settings; verify import/no-op behavior, an ordinary Wrangler release and the next infrastructure plan. If the pinned provider cannot preserve this separation, leave those fields/resource unmanaged by that root until the boundary is resolved. A broad drift-ignore rule is not evidence that another writer owns the field. See [Pages configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/) and the [provider resource schema](https://developers.cloudflare.com/api/terraform/resources/pages/subresources/projects/).
+**Keep one writer per Worker field.** Wrangler configuration is the source of truth for both Workers' script settings. Before OpenTofu manages a resource that touches them (a custom domain, a Worker setting), document the field map and verify import/no-op behavior, an ordinary Wrangler release and the next infrastructure plan. If the pinned provider cannot preserve this separation, leave those fields unmanaged by that root. A broad drift-ignore rule is not evidence that another writer owns the field.
 
 Keeping Worker and Durable Object lifecycle in Wrangler is a chosen responsibility boundary. It is not a claim that provider tooling is incapable of expressing that lifecycle. Do not manage the same Worker deployment with both tools.
 
@@ -100,23 +99,23 @@ The first infrastructure adoption should aim to describe existing resources with
 
 ## Runtime and environment boundaries to preserve
 
-The retained shape is browser → Pages → `GAME_WORKER` → Worker → SQLite Durable Objects, with Supabase for Auth/Postgres/Storage. The public application origin remains `dicee.games`; the Worker is intended to be reachable only through the service binding. Do not add a direct Worker hostname, Tunnel, Access application, D1, R2, KV, Queues or a frontend platform migration merely for organizational alignment. Such additions need their own product or security reason.
+The shape is browser → `dicee-web` Worker → `GAME_WORKER` → `dicee` Worker → SQLite Durable Objects, with Supabase for Auth/Postgres/Storage; status decision 8 moved the web app off Pages for platform reasons, not for alignment. The public application origin remains `dicee.games`; `dicee` is reachable only through the service binding. Do not add a direct game-Worker hostname, Tunnel, Access application, D1, R2, KV or Queues merely for organizational alignment. Such additions need their own product or security reason.
 
 Preserve the project's existing hard stops:
 
-- Before any Worker deployment, resolve which script owns the live `GameRoom` and `GlobalLobby` namespaces and what Pages actually targets. The default deployment remains held unless the required ownership/tag evidence supports it. Treat `dicee-production` as unresolved until then.
+- Before any `dicee` deployment, read back which script owns the live `GameRoom` and `GlobalLobby` namespaces. `dicee` is the one game backend (status decision 1): a cutover from another script accepts a live-state reset, and obsolete scripts such as `dicee-production` are deleted once classified.
 - Preserve applied v1/v2 `new_sqlite_classes` migrations. Do not rename a Worker/class, introduce a new namespace or switch to declarative `exports` as a naming cleanup. Lifecycle work remains a separate operator change with a state-preservation plan.
 - A new Worker script or account is not a transparent move of existing data. Cloudflare class-transfer migrations move namespaces between Worker scripts in the same account; do not create the destination class first and then expect a later transfer to preserve the old namespace. Account relocation requires a separate migration/recovery design and must not assume namespace or data continuity. See [legacy class transfers](https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/#transfer-migration).
-- Inventory all ingress: Worker subdomains, version Preview URLs, routes, custom domains, Pages domains/preview URLs and binding targets. The reported disabling of Worker subdomains does not prove the other paths absent. Keep sensitive admin authorization enforced in application code as well as the intended ingress design.
+- Inventory all ingress: Worker subdomains, version Preview URLs, routes, custom domains, Pages domains until the Pages project is deleted, and binding targets. The reported disabling of Worker subdomains does not prove the other paths absent. Keep sensitive admin authorization enforced in application code as well as the intended ingress design.
 
 | Environment | Current source shape | Adoption intention |
 |---|---|---|
 | Local development | Named Worker development configuration; local services subject to the documented auth limitations | Preserve isolated local testing and project-owned tooling. |
-| Production | Default Worker `dicee`, Pages `dicee`; manual deployment from `main`, Worker before Pages | Keep the release order and namespace precondition; establish actual review/deployment protections at intake. |
-| Pages preview | `GAME_WORKER` also targets production `dicee` | Keep this visible as an open owner decision. It is not an isolated test environment. |
+| Production | Workers `dicee` and `dicee-web`; manual deployment from `main` | Keep the namespace precondition; establish actual review/deployment protections at intake. |
+| Hosted preview | None (status decision 8) | Add one only with an isolated backend, data and credentials. |
 | Future staging | Named Worker configuration exists, but the current CI does not use it | Activate only when the roadmap trigger is met; choose an explicit backend, separate DO state and suitable non-production Supabase/OAuth/secret configuration together. |
 
-Cloudflare Worker environments normally use separate script names and Durable Object storage unless explicitly bound to another script. Pages' preview branch label alone does not isolate the backend. Verify bindings and data dependencies before advertising a safe testing environment. See [Durable Object environments](https://developers.cloudflare.com/durable-objects/reference/environments/) and [Pages service bindings](https://developers.cloudflare.com/pages/functions/bindings/#service-bindings).
+Cloudflare Worker environments normally use separate script names and Durable Object storage unless explicitly bound to another script. Verify bindings and data dependencies before advertising a safe testing environment. See [Durable Object environments](https://developers.cloudflare.com/durable-objects/reference/environments/).
 
 ## Credentials, releases and operational evidence
 
@@ -128,7 +127,7 @@ The proposed credential split is:
 |---|---|
 | Inventory / plan reader | Only the reads required for discovery/planning; no deploy or infrastructure mutation. |
 | Infrastructure apply | Only the approved root's resources; admitted after plan review. |
-| Application release | Only the Worker/Pages release capabilities actually needed; no unrelated DNS/account administration. |
+| Application release | Only the Worker release capabilities actually needed; no unrelated DNS/account administration. |
 | Local operator | A distinct, scoped interactive path, not an unrestricted credential copied into every consumer. |
 
 Separate credentials by consumer and environment where supported. Verify effective Cloudflare permissions: some operations are account-scoped, so a friendly token name or workspace directory cannot restrict access to one script. Document remaining reach and choose a dedicated account or equivalent enforceable credential boundary when the service footprint and risk justify it. Account separation needs its own migration plan.
@@ -145,9 +144,9 @@ This guide is **advisory design documentation**. It refuses no action. Its readb
 |---|---|---|
 | Worker subdomains stay disabled in source | `pnpm cf:audit` errors on enabled/missing `workers_dev` or `preview_urls`. | Actual settings on every Dicee script; routes/custom domains are separate. |
 | Existing DO migration mode is preserved | The audit checks legacy mode, tags/classes, bindings and class exports. | Live namespace owner and lifecycle state; source checks cannot see them. |
-| Pages uses a declared backend | The audit checks service-binding shape and agreement with configured Worker names. | Deployed Pages target. Matching edits to two files do not prove safe namespace continuity. |
-| Preview is isolated | Currently advisory warning F7; ordinary audit success permits the shared production target. | An accepted decision and, if isolation is implemented, separate backend/data evidence. |
-| Worker has no other ingress | Declared project rule. The audit's explicit route/custom-domain-key check currently applies to Pages, not the backend. | Full ingress inventory; any additional blocking source check is future implementation. |
+| The web Worker uses a declared backend | The audit checks service-binding shape, agreement with configured Worker names and a web name distinct from the game Worker. | Deployed `dicee-web` binding. Matching edits to two files do not prove safe namespace continuity. |
+| No hosted preview | The audit errors on web `workers_dev` or `preview_urls` and warns (F7) on a named environment bound to production. | Actual settings on `dicee-web`. |
+| Worker has no other ingress | Declared project rule. The audit's explicit route/custom-domain-key check applies to the web config, not the backend. | Full ingress inventory; any additional blocking source check is future implementation. |
 | Protected merges and deployments | YAML and written policy are insufficient evidence. | Separate current GitHub control readbacks, including bypass behavior. |
 | Infrastructure has one writer | Proposed field-ownership boundary only. | Import/no-op plan, release readback and subsequent plan with no unintended reset. |
 
@@ -160,10 +159,10 @@ Use the existing roadmap, not a second phase system. Its credential prerequisite
 For the organization-move item, prepare one reviewable intake that answers:
 
 1. **Ownership and names:** intended GitHub/local home, accepted Jefahnierocks project contract, service owner, infrastructure root, shared-account steward, credential consumers and the disposition of both existing scripts.
-2. **Fresh inventory:** Pages bindings/domains, Worker routes/subdomains, namespace owners, secret names and token reach; zone/registrar/redirect ownership; GitHub Apps, Actions configuration and each protection surface. Record unknowns explicitly and keep private identifiers out of the repository.
+2. **Fresh inventory:** Pages domains until deletion, Worker routes/subdomains and bindings, namespace owners, secret names and token reach; zone/registrar/redirect ownership; GitHub Apps, Actions configuration and each protection surface. Record unknowns explicitly and keep private identifiers out of the repository.
 3. **Transfer continuity:** repository protections and integrations before/after transfer; updates to the remote, manifest and repository references already named by the roadmap; preservation of public URLs and application identity. Do not recreate the old GitHub repository path after transfer.
 4. **Infrastructure boundary:** accepted resource/field ownership, protected state location, pinned toolchain, credential split, source validation, import/no-op plan, first-write authority and readback. Infrastructure adoption and any later account move have separate acceptance evidence.
-5. **State and recovery:** no accidental namespace creation or Worker rename; a resource-appropriate recovery/cutover plan before account moves or destructive cleanup; legacy scripts retained until their bindings, data and consumers are resolved.
+5. **State and recovery:** no accidental namespace creation or Worker rename; a resource-appropriate recovery/cutover plan before account moves or destructive cleanup; legacy scripts deleted once their ingress and consumers are classified.
 6. **Completion evidence:** accepted local declarations and successful source checks, fresh provider/control readbacks, application smoke checks, and explicit remaining gaps. Cleanup of old credentials/scripts/memberships follows those dependencies and its own authorization.
 
 The result should be a Jefahnierocks-owned Dicee with an explicit, testable management boundary and preserved application state. Transfer completion, infrastructure management and live governance enforcement must each be demonstrated separately.

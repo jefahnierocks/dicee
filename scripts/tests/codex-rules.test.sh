@@ -170,20 +170,17 @@ expect forbidden git push --force origin main
 expect forbidden git push -f origin main
 expect forbidden git clean -fdx
 expect prompt pnpm do:deploy
-expect prompt pnpm pages:deploy
+expect prompt pnpm web:deploy
 expect prompt pnpm run deploy
 expect prompt pnpm run do:deploy
 expect prompt pnpm run do:tail
-expect prompt pnpm run pages:deploy
-expect prompt pnpm run pages:deploy:preview
+expect prompt pnpm run web:deploy
 expect prompt pnpm --dir packages/cloudflare-do deploy
 expect prompt pnpm --dir packages/cloudflare-do tail
-expect prompt pnpm --dir packages/web pages:deploy
-expect prompt pnpm --dir packages/web pages:deploy:preview
+expect prompt pnpm --dir packages/web deploy
 expect prompt pnpm --filter @dicee/cloudflare-do deploy
 expect prompt pnpm --filter @dicee/cloudflare-do tail
-expect prompt pnpm --filter @dicee/web pages:deploy
-expect prompt pnpm --filter @dicee/web pages:deploy:preview
+expect prompt pnpm --filter @dicee/web deploy
 expect prompt wrangler secret put X
 expect prompt wrangler deploy
 expect prompt wrangler tail

@@ -22,15 +22,19 @@
  *     B10 every declared Durable Object class is named in an export of src/worker.ts
  *     B11 every `vars` key is read as `env.NAME` somewhere in src            (advisory)
  *
- *   packages/web/wrangler.jsonc  (the `dicee` Pages project)
+ *   packages/web/wrangler.jsonc  (the `dicee-web` Worker: SvelteKit plus Workers Static Assets)
  *     F1  declares none of: durable_objects, d1_databases, r2_buckets, kv_namespaces,
- *         ai, exports, queues  — the frontend's only backend reach is its service binding
+ *         ai, exports, queues, migrations  — the frontend's only backend reach is its service binding
  *     F2  every services[].service value names a Worker the backend config declares
  *         (top-level binding: strict equality with the backend's top-level `name`)
  *     F3  exactly one service binding, at the top level and in each named environment
- *     F4  no route / routes / custom_domain key — ingress stays explicit
+ *     F4  no route / routes / custom_domain key — the custom domain is an operator release step
  *     F5  every non-inherited key present at top level is repeated in each named environment
- *     F7  the `preview` environment is not bound to the production service     (advisory)
+ *     F7  no named environment shares the production service target            (advisory)
+ *     F8  workers_dev and preview_urls are explicitly false, and no named environment overrides them
+ *     F9  `name` is set and names no Worker the backend config resolves to
+ *     F10 Workers Static Assets shape: `main`, `assets.directory` and `assets.binding` set; no
+ *         Pages `pages_build_output_dir`; no single-page-application not-found handling
  *
  *   both files
  *     X1  no hardcoded Cloudflare account id or API token literal
@@ -191,19 +195,18 @@ const INHERITED_KEYS = [
 	'placement',
 	'limits',
 	'logpush',
-	'pages_build_output_dir',
 ];
 
 /**
  * Ingress keys that must not appear in the frontend config.
  *
- * The Pages project's hostnames are attached out-of-band; declaring a route here would
- * make ingress implicit and split-brained across two places. Adding any of these is an
- * ingress decision, not a config tweak.
+ * The web Worker's custom domain is attached by the operator as a release step; declaring
+ * a route here would make every `wrangler deploy` an ingress change. Adding any of these
+ * is an ingress decision, not a config tweak.
  */
 const FRONTEND_INGRESS_KEYS = ['route', 'routes', 'custom_domain'];
 
-/** Bindings that must never appear in the frontend config. */
+/** Bindings and lifecycle keys that must never appear in the frontend config. */
 const FRONTEND_FORBIDDEN = [
 	'durable_objects',
 	'd1_databases',
@@ -212,6 +215,7 @@ const FRONTEND_FORBIDDEN = [
 	'ai',
 	'exports',
 	'queues',
+	'migrations',
 ];
 
 /** Config paths whose string leaves are NAMES, not credential values. */
@@ -742,6 +746,32 @@ export function subdomainExposure(config, key) {
 			({ path, block }) =>
 				`${path === '(top level)' ? key : `${path}.${key}`}=${JSON.stringify(block[key]) ?? 'unset'}`,
 		);
+}
+
+/**
+ * Ways the web config departs from the Workers Static Assets shape the SvelteKit adapter needs.
+ *
+ * @sveltejs/adapter-cloudflare builds for Pages whenever `pages_build_output_dir` is set, or
+ * when neither `main` nor `assets` is set, so a stray Pages key silently changes the build
+ * output. `single-page-application` not-found handling serves index.html for unmatched
+ * navigations before the Worker runs, which shadows SSR routes.
+ *
+ * @param {any} config parsed frontend config
+ * @returns {string[]}
+ */
+export function webWorkerShapeProblems(config) {
+	/** @type {string[]} */
+	const problems = [];
+	const text = (v) => typeof v === 'string' && v !== '';
+	const assets = isPlainObject(config.assets) ? config.assets : {};
+	if ('pages_build_output_dir' in config)
+		problems.push('`pages_build_output_dir` is a Pages key; the adapter would build for Pages');
+	if (!text(config.main)) problems.push('`main` is not set');
+	if (!text(assets.directory)) problems.push('`assets.directory` is not set');
+	if (!text(assets.binding)) problems.push('`assets.binding` is not set');
+	if (assets.not_found_handling === 'single-page-application')
+		problems.push('`assets.not_found_handling` is "single-page-application", which shadows SSR');
+	return problems;
 }
 
 /**
@@ -1276,6 +1306,49 @@ function auditFrontend(backendNames) {
 	auditServiceBinding(cfg, backendNames, file);
 	auditFrontendIngress(cfg, file);
 
+	// F8 — no workers.dev subdomain and no per-version Preview URLs: there is no hosted
+	// preview, and the only public origin is the operator-attached custom domain.
+	const exposure = [
+		...subdomainExposure(cfg, 'workers_dev'),
+		...subdomainExposure(cfg, 'preview_urls'),
+	];
+	assert(
+		'F8',
+		exposure.length === 0,
+		'error',
+		file,
+		'workers_dev and preview_urls are explicitly false and no named environment overrides them',
+		`web Worker subdomain exposure must be off: ${exposure.join(', ')}. A workers.dev or Preview URL would be a second, production-backed public origin.`,
+	);
+
+	// F9 — the web Worker must never deploy over the game Worker. A shared script name would
+	// replace the Durable Object Worker's code and bindings on the next `wrangler deploy`.
+	if (backendNames === null || backendNames.top === null) {
+		record('F9', 'warn', file, 'backend name unavailable; web/backend name collision check skipped');
+	} else {
+		const webName = typeof cfg.name === 'string' && cfg.name !== '' ? cfg.name : null;
+		assert(
+			'F9',
+			webName !== null && !backendNames.all.has(webName),
+			'error',
+			file,
+			`name "${webName}" is distinct from every backend Worker name`,
+			webName === null
+				? 'no `name` declared'
+				: `name "${webName}" is a backend Worker name; deploying the web Worker would overwrite it`,
+		);
+	}
+
+	const shape = webWorkerShapeProblems(cfg);
+	assert(
+		'F10',
+		shape.length === 0,
+		'error',
+		file,
+		'Workers Static Assets shape: main, assets.directory and assets.binding set; no Pages key',
+		`web config is not the Workers Static Assets shape: ${shape.join('; ')}`,
+	);
+
 	checkEnvInheritance('F', cfg, file);
 	checkNoCredentials(cfg, loaded.raw, file);
 }
@@ -1366,10 +1439,9 @@ function auditServiceBinding(cfg, backendNames, file) {
 		.filter((b) => b.blockPath !== '(top level)' && topTargets.has(b.service))
 		.map((b) => `${b.path} -> ${JSON.stringify(b.service)}`);
 
-	// WARN, NOT ERROR — DELIBERATE. This fires today: env.preview binds
-	// service "dicee", the same Worker the top-level (production) block binds. That
-	// is an open finding listed in docs/cloudflare.md (Open decisions); promote to
-	// 'error' once preview has its own backend Worker.
+	// WARN, NOT ERROR. There is no hosted preview (docs/cloudflare.md), so the web config
+	// declares no named environment and this passes. It stays as a guard: a named web
+	// environment bound to the production backend would reach production Durable Object state.
 	assert(
 		'F7',
 		sharedWithProduction.length === 0,
@@ -1379,7 +1451,7 @@ function auditServiceBinding(cfg, backendNames, file) {
 		`named environment(s) bound to the same backend Worker as production: ${sharedWithProduction.join(
 			', ',
 		)} — preview traffic reaches production Durable Object state`,
-		'see docs/cloudflare.md (preview shares the production Worker)',
+		'see docs/cloudflare.md (no hosted preview)',
 	);
 }
 
@@ -1760,6 +1832,56 @@ function selfTest() {
 		const lifecycle = lifecycleMode(be.data);
 		return (
 			lifecycle.mode !== 'migrations' || appliedHistoryMismatch(lifecycle.migrations).length === 0
+		);
+	});
+
+	// F8 / F9 / F10 — web Worker shape
+	const WEB = {
+		name: 'dicee-web',
+		main: '.svelte-kit/cloudflare/_worker.js',
+		workers_dev: false,
+		preview_urls: false,
+		assets: { directory: '.svelte-kit/cloudflare', binding: 'ASSETS' },
+		services: [{ binding: 'GAME_WORKER', service: 'dicee' }],
+	};
+	expect('webWorkerShapeProblems accepts the adapter Worker shape', () => {
+		return webWorkerShapeProblems(WEB).length === 0;
+	});
+	expect('webWorkerShapeProblems flags a Pages config', () => {
+		const problems = webWorkerShapeProblems({
+			name: 'dicee',
+			pages_build_output_dir: '.svelte-kit/cloudflare',
+		});
+		return problems.length === 4 && problems[0].includes('pages_build_output_dir');
+	});
+	expect('webWorkerShapeProblems flags a missing assets binding', () => {
+		const problems = webWorkerShapeProblems({ ...WEB, assets: { directory: 'x' } });
+		return problems.length === 1 && problems[0].includes('assets.binding');
+	});
+	expect('webWorkerShapeProblems flags single-page-application not-found handling', () => {
+		const problems = webWorkerShapeProblems({
+			...WEB,
+			assets: { ...WEB.assets, not_found_handling: 'single-page-application' },
+		});
+		return problems.length === 1 && problems[0].includes('single-page-application');
+	});
+	expect('subdomainExposure flags web preview_urls left unset', () => {
+		const { preview_urls: _unset, ...noPreviewKey } = WEB;
+		return subdomainExposure(noPreviewKey, 'preview_urls')[0] === 'preview_urls=unset';
+	});
+	expect('resolvableWorkerNames catches a web name that collides with the backend', () => {
+		const names = resolvableWorkerNames({ name: 'dicee', env: { staging: {} } });
+		return names.all.has('dicee') && !names.all.has(WEB.name);
+	});
+	expect(`real configs: ${FRONTEND_CONFIG} is a Worker named apart from ${BACKEND_CONFIG}`, () => {
+		const be = loadConfig(BACKEND_CONFIG);
+		const fe = loadConfig(FRONTEND_CONFIG);
+		if (!be.ok || !fe.ok) return false;
+		return (
+			webWorkerShapeProblems(fe.data).length === 0 &&
+			subdomainExposure(fe.data, 'workers_dev').length === 0 &&
+			subdomainExposure(fe.data, 'preview_urls').length === 0 &&
+			!resolvableWorkerNames(be.data).all.has(fe.data.name)
 		);
 	});
 

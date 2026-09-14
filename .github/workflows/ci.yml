@@ -148,8 +148,8 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-  deploy-pages:
-    name: Deploy Cloudflare Pages
+  deploy-web:
+    name: Deploy web Worker
     runs-on: ubuntu-latest
     needs: [validate, deploy-worker]
     if: github.event_name == 'workflow_dispatch' && inputs.deploy && github.ref == 'refs/heads/main'
@@ -194,10 +194,10 @@ jobs:
       - name: Build web application
         run: pnpm --filter @dicee/web build
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy web Worker to Cloudflare
         uses: cloudflare/wrangler-action@ebbaa1584979971c8614a24965b4405ff95890e0 # v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: packages/web
-          command: pages deploy .svelte-kit/cloudflare --project-name=dicee --commit-dirty=true
+          command: deploy

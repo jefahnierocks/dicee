@@ -40,8 +40,9 @@ declare global {
 		// interface PageState {}
 
 		/**
-		 * Cloudflare Pages Platform environment
-		 * Available in server routes via `platform.env`
+		 * Bindings of the `dicee-web` Worker (packages/web/wrangler.jsonc), available in
+		 * server routes via `platform.env`. `ctx`, `caches` and `cf` are declared by the
+		 * @sveltejs/adapter-cloudflare ambient types.
 		 *
 		 * @example
 		 * export const GET: RequestHandler = async ({ platform }) => {
@@ -56,13 +57,6 @@ declare global {
 				/** Service Binding to dicee Worker (Durable Objects) */
 				GAME_WORKER: GameWorkerBinding;
 			};
-			/** Cloudflare context for waitUntil, passThroughOnException */
-			context: {
-				waitUntil(promise: Promise<unknown>): void;
-				passThroughOnException(): void;
-			};
-			/** Cloudflare caches API */
-			caches: CacheStorage & { default: Cache };
 		}
 	}
 }
