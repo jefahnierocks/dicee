@@ -6,7 +6,7 @@ Ordered next work. State, decisions and deadlines live in [status.md](status.md)
 
 The backup, profile-role hardening/audit and two-script Worker URL restrictions are recorded as complete in [status](status.md#latest-live-readbacks). Continue from Phase 11 of the security runbook. Status action numbers are stable references; this is the execution order. Source preparation may proceed independently, but each production step retains its operator authority and stop points.
 
-1. Complete credential containment (status action 9), including the wrapper argument-exposure fix, replacement delivery and verification, and old-token revocation. Resolve 1Password credentials only when needed; no separate sign-in preflight — private verification and redacted status readback.
+1. Complete credential containment (status action 9): replacement delivery and verification, duplicate-consumer resolution, and old-token revocation. The wrapper argument-exposure prerequisite is landed in PR #18. Resolve 1Password credentials only when needed; no separate sign-in preflight — private verification and redacted status readback.
 2. Read namespace ownership, SQLite flags, migration tags, Pages production/preview bindings and other ingress (actions 5 and 8). Keep `dicee-production` and unrelated shared-account resources intact. A Pages-only release also needs a verified backend and matching release configuration — classify the Worker result and stop on ambiguity before deployment.
 3. Establish the `main` ruleset, Production deployment protections and Dependabot controls (action 10) before the next production release. Require the exact check `Full repository validation`; inspect bypass behavior and the existing Wrangler/Miniflare ignore policy — authenticated control readbacks.
 4. Deploy the reviewed current `main` through the permitted path (action 3), from a clean checkout of the exact successful CI commit with the intended public Supabase build values — sign-in, room/lobby, headers, transcription and non-admin refusal smoke checks.
@@ -43,7 +43,6 @@ Agent-safe to build. Worker deploys wait for status action 5.
 Agent-safe unless noted.
 
 - Retire the Infisical scripts, metadata names and .infisical.json handling — `rg -i infisical scripts .gitignore` is empty; operator revoked the identities (status action 13).
-- Remove the Cloudflare wrapper's intermediate `env` credential arguments using shell exports and direct `exec`; retain per-command secret resolution and test with fake credentials — script tests, before the next credential-backed Cloudflare operation.
 - History secret scan (pinned Gitleaks; the publication scan checks only candidate files) and a workflow policy check — both run in CI.
 - AKG graph drift gate: `pnpm akg:check` fails when discovery differs from the committed graph — `git diff --exit-code` on the graph after discovery.
 - Remove or restore the dangling `web:analyze-logs` scripts, whose CLI entry file is missing — the script runs or is gone.
