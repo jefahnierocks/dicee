@@ -18,8 +18,13 @@ shift
 
 dicee_require_op
 
+CLOUDFLARE_API_TOKEN="$(dicee_op_read "$DICEE_OP_ITEM_CLOUDFLARE" api-token)"
+if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
+	printf 'Missing required credential: CLOUDFLARE_API_TOKEN\n' >&2
+	exit 1
+fi
+
 export CLOUDFLARE_ACCOUNT_ID="$DICEE_CLOUDFLARE_ACCOUNT_ID"
 export CLOUDFLARE_API_TOKEN
-CLOUDFLARE_API_TOKEN="$(dicee_op_read "$DICEE_OP_ITEM_CLOUDFLARE" api-token)"
 
 exec "$@"

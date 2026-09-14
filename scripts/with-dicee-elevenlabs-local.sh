@@ -18,6 +18,11 @@ shift
 
 dicee_require_op
 
-exec env \
-	ELEVENLABS_API_KEY="$(dicee_op_read "$DICEE_OP_ITEM_ELEVENLABS_LOCAL" api-key)" \
-	"$@"
+ELEVENLABS_API_KEY="$(dicee_op_read "$DICEE_OP_ITEM_ELEVENLABS_LOCAL" api-key)"
+if [[ -z "$ELEVENLABS_API_KEY" ]]; then
+	printf 'Missing required credential: ELEVENLABS_API_KEY\n' >&2
+	exit 1
+fi
+
+export ELEVENLABS_API_KEY
+exec "$@"

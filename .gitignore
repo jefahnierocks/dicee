@@ -26,9 +26,12 @@ docs/architecture/akg/graph/history/
 
 # IDE
 .idea/
-.vscode/
+.vscode/*
 !.vscode/settings.json
 !.vscode/README.md
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/mcp.json
 .windsurf/
 .codex/*
 !.codex/config.toml

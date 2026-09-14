@@ -1,0 +1,51 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Dicee: toolchain versions",
+			"type": "process",
+			"command": "mise",
+			"args": [
+				"exec",
+				"--",
+				"pnpm",
+				"toolchain:versions"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Dicee: check",
+			"type": "process",
+			"command": "mise",
+			"args": [
+				"exec",
+				"--",
+				"pnpm",
+				"check"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Dicee: validate CI",
+			"type": "process",
+			"command": "mise",
+			"args": [
+				"exec",
+				"--",
+				"pnpm",
+				"validate:ci"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [],
+			"group": "test"
+		}
+	]
+}
