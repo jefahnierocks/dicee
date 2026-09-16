@@ -1,0 +1,41 @@
+{
+	"$comment": [
+		"Policy for scripts/agent-doctor.mjs. Kept here, not in the script and not in prose, so",
+		"every change to it is a visible one-line diff and no document has to restate a version.",
+		"",
+		"`minimum` is a floor, not a mirror of what is installed. Raise it only when the project",
+		"actually needs something a newer build provides; a client shipping a patch release is not",
+		"a reason to edit this file. The doctor reports the installed build and compares it here,",
+		"so docs/development/agent-clients.md carries no version numbers at all.",
+		"",
+		"`prerelease` says what to do when the installed build carries a -alpha/-beta/-rc suffix:",
+		"  allow — the operator tracks that channel deliberately; report it, do not warn",
+		"  warn  — a prerelease is not the intended target for this project"
+	],
+	"clients": [
+		{
+			"id": "claude-code",
+			"label": "Claude Code",
+			"bin": "claude",
+			"minimum": "2.1.272",
+			"prerelease": "allow",
+			"note": "public stable as of 2026-09-15; local builds often run ahead of it"
+		},
+		{
+			"id": "codex",
+			"label": "Codex CLI",
+			"bin": "codex",
+			"minimum": "0.154.0",
+			"prerelease": "allow",
+			"note": "the operator tracks the alpha channel deliberately; `codex doctor` is the richer local check"
+		},
+		{
+			"id": "vscode",
+			"label": "VS Code",
+			"bin": "code",
+			"minimum": "1.137.0",
+			"prerelease": "warn",
+			"note": "stable only; never require an Insiders-only feature"
+		}
+	]
+}

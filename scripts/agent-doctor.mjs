@@ -32,7 +32,8 @@
  *   RETIRED   no retired agent surface is tracked
  *
  * LOCAL RULES
- *   CLIENT    report the installed build of each agent client found on PATH
+ *   CLIENT    each installed agent client meets the minimum in agent-doctor.config.json
+ *   CODEX     the installed Codex accepts this repository's .codex/config.toml
  *   PERSONAL  the ignored personal Claude settings file keeps the agreed shape
  *   IDENTITY  Git identity routing covers this repository
  *   STRAY     no retired agent surface sits untracked in the working tree
@@ -86,7 +87,7 @@ const COMMITTED_RULES = [
 	'SECRET',
 	'RETIRED',
 ];
-const LOCAL_RULES = ['CLIENT', 'PERSONAL', 'IDENTITY', 'STRAY'];
+const LOCAL_RULES = ['CLIENT', 'CODEX', 'PERSONAL', 'IDENTITY', 'STRAY'];
 const RULES = [...COMMITTED_RULES, ...LOCAL_RULES];
 
 /* ── Repository surface under inspection ─────────────────────────────────── */
@@ -253,12 +254,33 @@ const SUPABASE_READ_ONLY_TOOLS = new Set([
 	'search_docs',
 ]);
 
-/** Agent clients whose installed build is worth reporting. */
-const CLIENT_BINARIES = [
-	{ bin: 'claude', label: 'Claude Code' },
-	{ bin: 'codex', label: 'Codex CLI' },
-	{ bin: 'code', label: 'VS Code' },
-];
+/** Client baselines live in the config file so no document has to restate a version. */
+const DOCTOR_CONFIG = join(SCRIPT_DIR, 'agent-doctor.config.json');
+
+/**
+ * The first dotted-numeric run in a `--version` line, with any prerelease suffix.
+ *
+ * Clients spell this differently — `2.1.273 (Claude Code)`, `codex-cli 0.155.0-alpha.2.5`,
+ * a bare `1.137.0` — so the shape is found rather than assumed, and an unparseable line is
+ * reported as-is instead of being guessed at.
+ */
+function parseVersion(line) {
+	const match = /(\d+(?:\.\d+)+)(-[0-9A-Za-z.-]+)?/.exec(line);
+	if (!match) return null;
+	return {
+		release: match[1].split('.').map(Number),
+		prerelease: match[2] ? match[2].slice(1) : null,
+	};
+}
+
+/** Compare two dotted-numeric releases. Missing components count as zero. */
+function compareRelease(a, b) {
+	for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+		const diff = (a[i] ?? 0) - (b[i] ?? 0);
+		if (diff !== 0) return diff < 0 ? -1 : 1;
+	}
+	return 0;
+}
 
 /* ── Credential shapes ───────────────────────────────────────────────────── */
 
@@ -998,7 +1020,15 @@ function ruleRetired({ repo, add }) {
 /* ── Local rules ─────────────────────────────────────────────────────────── */
 
 function ruleClient({ add }) {
-	for (const client of CLIENT_BINARIES) {
+	let clients;
+	try {
+		clients = JSON.parse(readFileSync(DOCTOR_CONFIG, 'utf8')).clients;
+	} catch (error) {
+		add(CLIENTS_SCOPE, 1, 'CLIENT', 'warn', `no client baseline: ${error.message}`);
+		return;
+	}
+
+	for (const client of clients) {
 		let output;
 		try {
 			output = execFileSync(client.bin, ['--version'], {
@@ -1010,15 +1040,97 @@ function ruleClient({ add }) {
 			add(CLIENTS_SCOPE, 1, 'CLIENT', 'info', `${client.label}: ${client.bin} is not on PATH`);
 			continue;
 		}
-		const version = output.split('\n').find((line) => line.trim() !== '')?.trim() ?? '(no output)';
+
+		// Some builds greet on the first line; the version is whichever line carries one.
+		const lines = output.split('\n').filter((line) => line.trim() !== '');
+		const line = lines.find((candidate) => parseVersion(candidate))?.trim() ?? lines[0]?.trim();
+		const installed = line ? parseVersion(line) : null;
+		if (!installed) {
+			add(
+				CLIENTS_SCOPE,
+				1,
+				'CLIENT',
+				'warn',
+				`${client.label}: could not read a version out of "${line ?? '(no output)'}"`,
+			);
+			continue;
+		}
+
+		const minimum = parseVersion(client.minimum);
+		const order = minimum ? compareRelease(installed.release, minimum.release) : 0;
+		const shown = installed.release.join('.') + (installed.prerelease ? `-${installed.prerelease}` : '');
+
+		if (order < 0) {
+			add(
+				CLIENTS_SCOPE,
+				1,
+				'CLIENT',
+				'warn',
+				`${client.label} ${shown} is below the ${client.minimum} minimum in ${tilde(DOCTOR_CONFIG)}; upgrade the client, or lower the minimum if the project no longer needs that build`,
+			);
+			continue;
+		}
+		if (installed.prerelease && client.prerelease === 'warn') {
+			add(
+				CLIENTS_SCOPE,
+				1,
+				'CLIENT',
+				'warn',
+				`${client.label} ${shown} is a prerelease and this client is set to stable-only in ${tilde(DOCTOR_CONFIG)}`,
+			);
+			continue;
+		}
+		const channel = installed.prerelease ? ' (prerelease channel, allowed for this client)' : '';
 		add(
 			CLIENTS_SCOPE,
 			1,
 			'CLIENT',
 			'info',
-			`${client.label} installed build: ${version} — the build on this machine, not a claim about the vendor's public stable channel`,
+			`${client.label} ${shown} meets the ${client.minimum} minimum${channel} — an installed build, not a claim about the vendor's channel`,
 		);
 	}
+}
+
+/**
+ * Ask the installed Codex whether it accepts this repository's configuration.
+ *
+ * The binary is the only accurate schema for the build in front of you, and it moves faster
+ * than any table we could keep here: 0.155 rejects an unknown key outright, and keys the
+ * public reference omits — `agents.max_depth` — are still accepted. So this asks instead of
+ * asserting. Codex reads `.codex/` only for a trusted project, so an untrusted checkout
+ * makes this a no-op rather than a false pass; that limitation is reported, not hidden.
+ */
+function ruleCodex({ repo, add }) {
+	const config = join(repo.root, '.codex', 'config.toml');
+	if (!existsSync(config)) return;
+	try {
+		execFileSync('codex', ['mcp', 'list'], {
+			cwd: repo.root,
+			encoding: 'utf8',
+			timeout: 60_000,
+			stdio: ['ignore', 'ignore', 'pipe'],
+		});
+	} catch (error) {
+		if (error.code === 'ENOENT') {
+			add(CLIENTS_SCOPE, 1, 'CODEX', 'info', 'codex is not on PATH, so .codex/config.toml was not validated');
+			return;
+		}
+		add(
+			'.codex/config.toml',
+			1,
+			'CODEX',
+			'warn',
+			`the installed Codex refused to load this repository's configuration: ${String(error.stderr ?? '').trim().split('\n').pop() ?? error.message}`,
+		);
+		return;
+	}
+	add(
+		'.codex/config.toml',
+		1,
+		'CODEX',
+		'info',
+		'the installed Codex loads this repository\'s configuration (only meaningful once the project is trusted)',
+	);
 }
 
 /**
@@ -1339,6 +1451,7 @@ const RULE_IMPLEMENTATIONS = {
 	SECRET: ruleSecret,
 	RETIRED: ruleRetired,
 	CLIENT: ruleClient,
+	CODEX: ruleCodex,
 	PERSONAL: rulePersonal,
 	IDENTITY: ruleIdentity,
 	STRAY: ruleStray,
@@ -1364,6 +1477,47 @@ function selfTest() {
 
 	console.log('\nagent-doctor self-test\n');
 
+	expect('version reader handles each client spelling', () => {
+		const claude = parseVersion('2.1.273 (Claude Code)');
+		const codex = parseVersion('codex-cli 0.155.0-alpha.2.5');
+		const vscode = parseVersion('1.137.0');
+		return (
+			claude.release.join('.') === '2.1.273' &&
+			claude.prerelease === null &&
+			codex.release.join('.') === '0.155.0' &&
+			codex.prerelease === 'alpha.2.5' &&
+			vscode.release.join('.') === '1.137.0'
+		);
+	});
+	expect('version reader returns null when there is no version', () => {
+		return parseVersion('command not found') === null;
+	});
+	expect('release comparison orders by component, not lexically', () => {
+		// 0.155 > 0.154 decimally but "0.154" sorts after "0.155" as text, and 2.1.9 < 2.1.10.
+		return (
+			compareRelease([0, 155, 0], [0, 154, 0]) === 1 &&
+			compareRelease([2, 1, 9], [2, 1, 10]) === -1 &&
+			compareRelease([1, 137], [1, 137, 0]) === 0
+		);
+	});
+	expect('a prerelease of the minimum still meets the minimum', () => {
+		const installed = parseVersion('codex-cli 0.155.0-alpha.2.5');
+		const minimum = parseVersion('0.154.0');
+		return compareRelease(installed.release, minimum.release) >= 0;
+	});
+	expect('every client baseline declares the fields the CLIENT rule reads', () => {
+		const { clients } = JSON.parse(readFileSync(DOCTOR_CONFIG, 'utf8'));
+		return (
+			clients.length > 0 &&
+			clients.every(
+				(client) =>
+					typeof client.bin === 'string' &&
+					typeof client.label === 'string' &&
+					parseVersion(client.minimum) !== null &&
+					['allow', 'warn'].includes(client.prerelease),
+			)
+		);
+	});
 	expect('TOML reader finds a dotted table and its string value', () => {
 		const { tables, errors } = parseMiniToml('[mcp_servers.akg]\ncommand = "mise"\n');
 		return errors.length === 0 && tables.get('mcp_servers.akg').get('command').value === 'mise';

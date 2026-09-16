@@ -9,13 +9,9 @@
 
 ## Supported clients
 
-Minimums, not pins. A client patch release moves faster than this document, so the installed build is a runtime fact rather than a recorded one: `pnpm agent:doctor` reports it, and reports it as an installed build rather than a claim about the vendor's channel. An installed build ahead of, or behind, public stable is a local fact and never a repository requirement.
+Claude Code, Codex CLI and VS Code. Their supported minimums live in `scripts/agent-doctor.config.json` and deliberately appear in no document, including this one: a version written into prose is stale within days and has to be hand-corrected everywhere it was copied. `pnpm agent:doctor --local` reads that file, reports the installed build, and warns when a client falls below its minimum or runs a prerelease the project has not opted into.
 
-| Client | Supported minimum |
-|---|---|
-| VS Code | 1.137 stable; never require an Insiders-only feature |
-| Claude Code | 2.1.272 public stable |
-| Codex CLI | 0.154.0 stable; the 0.155 series is prerelease and is not a target |
+A minimum is a floor, not a mirror. Raise one when the project actually needs something a newer build provides — not because a client shipped a patch release. An installed build ahead of or behind public stable is a local fact and never a repository requirement.
 
 ## Client matrix
 
@@ -62,8 +58,8 @@ The following are retired and must not be reintroduced: Windsurf and Cascade fil
 ## Codex
 
 - **Trust.** Project `.codex/config.toml`, `.codex/rules/`, and custom agents load only after the project is trusted. Personal model, auth, approval, and sandbox choices stay in user config.
-- **Config.** `[agents]` sets `max_concurrent_threads_per_session = 4` and `max_depth = 1`. The read-only `reviewer` and `researcher` agents in `.codex/agents/` are discovered automatically.
-- **Launch.** Start Codex from the repository root: the `akg` entry uses repo-relative paths and sets no `cwd`.
+- **Config.** `[agents]` sets `max_concurrent_threads_per_session = 4` and `max_depth = 1`; `akg` sets `startup_timeout_sec` because `mise exec` may resolve the pinned Bun on a cold checkout. The read-only `reviewer` and `researcher` agents in `.codex/agents/` are discovered automatically. Codex rejects an unknown key rather than ignoring it, so the installed binary is the schema for the build in front of you: `pnpm agent:doctor --local` asks it whether this repository's configuration loads instead of keeping a copy of the schema here. The published reference does not list every accepted key, so check behavior before removing one as obsolete.
+- **Launch.** Start Codex from the repository root: the `akg` entry uses repo-relative paths and sets no `cwd`. Project servers are added to the user-level set rather than replacing it, so `codex mcp list` shows more than this repository declares.
 - **Rules.** `.codex/rules/dicee.rules` allows read-only inspection — `supabase --version`, `status`, `start`, `migration list --linked`, project and function inventory, `op whoami`. Anything that writes to a linked project or reaches a live credential is `prompt`: `db push`, `db pull`, `db dump`, `db reset`, `migration repair/up/apply`, `link`, `login`, `secrets`, `functions deploy/delete`, `gen types`, `pnpm db:types`, `op read`/`op item`, credential wrappers, deploys, live logs, Wrangler account commands, `git push`, and workflow/release commands. The listed `git reset --hard`, `git clean`, and force-push prefixes are `forbidden`. These are prefix rules matched by token position, so a global flag placed before a subcommand escapes them; never change command form to evade a stop.
 - **Permission and authority.** An `allow` decision removes a rule-level prompt; it does not expand the user's task authorization, bypass operator stop points in `docs/roadmap.md` section 1, or make live Supabase type generation part of ordinary validation. Resolve secrets only when the authorized operation needs them. Other active policy layers and the session's approval mode still apply. If execution is rejected, report the exact barrier; do not change command form or access policy to evade it.
 - **Checking a command.** `codex execpolicy check --rules .codex/rules/dicee.rules -- git push -f origin main` evaluates the supplied file without executing the example. It prints JSON with `matchedRules` and a top-level `decision`; the most restrictive match wins (`forbidden` > `prompt` > `allow`). An unmatched command prints empty `matchedRules` and no `decision`. This file-only check does not prove what the running session permits. `bash scripts/tests/codex-rules.test.sh` validates literal declarations and requires explicit decisions, justifications, and nonempty `match` examples; `not_match` is optional. It also checks decisions where `codex` is installed (CI has none). See the [official OpenAI rules documentation](https://learn.chatgpt.com/docs/agent-configuration/rules).
@@ -120,7 +116,7 @@ bash scripts/tests/codex-rules.test.sh
 Operator checks in interactive sessions after a client-surface change:
 
 - Claude Code: `/context` and `/skills` show `CLAUDE.md`, `AGENTS.md` and the two skills; `claude mcp list` shows `akg` and `cloudflare-docs` enabled.
-- Codex: trust the project, then `codex mcp list` from the repository root lists `akg` and `cloudflare-docs`.
+- Codex: trust the project, then `codex mcp list` from the repository root includes `akg` and `cloudflare-docs`, and `codex doctor` reports `config.toml parse ok`. A non-zero exit from either means the project configuration was refused, which `pnpm agent:doctor --local` also reports.
 - VS Code: trust the workspace, then the chat context shows `AGENTS.md` and the two MCP servers start.
 - Gemini CLI: `/memory show` includes `AGENTS.md`.
 - Cursor: the skills list shows `dicee-verify` and `akg-boundaries` (twice).
