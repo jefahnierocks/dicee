@@ -10,8 +10,8 @@ role: canonical
 peers: []
 status:
   posture: deployed-system
-  local_phase: "2026-09 operator safety rollout; GitHub governance complete, first production release next (no deployment yet)"
-  as_of: "2026-09-14T19:16:31Z"
+  local_phase: "2026-09 first production release complete on dicee-web; Pages deleted, legacy Worker cleanup and 20260913000002 remain"
+  as_of: "2026-09-15"
 authority:
   status_of_record: docs/status.md
 presentation:

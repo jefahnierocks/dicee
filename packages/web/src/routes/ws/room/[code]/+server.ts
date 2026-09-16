@@ -1,7 +1,7 @@
 /**
  * WebSocket Proxy: /ws/room/[code] → GameRoom Durable Object
  *
- * Proxies WebSocket connections from the Pages frontend to the
+ * Proxies WebSocket connections from the dicee-web Worker to the
  * GameRoom DO via Service Binding. This enables same-origin
  * WebSocket connections without CORS.
  *

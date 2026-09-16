@@ -137,38 +137,55 @@ expect() {
 }
 
 # These are arguments to the policy checker, never commands to execute.
+
+# Allowed: named read-only inspection and local-stack operation only.
 expect allow supabase --version
 expect allow supabase status
 expect allow supabase start
-expect allow supabase db query --help
-expect allow supabase db dump --linked -f backup.sql
-expect allow supabase db push --linked --dry-run
-expect allow supabase db push --linked
+expect allow supabase db diff --help
 expect allow supabase migration list --linked
-expect allow supabase migration repair --status applied 20260913000001 --linked
-expect allow supabase link --project-ref example
-expect allow supabase storage cp --help
 expect allow supabase projects list
-expect allow supabase login
-expect allow supabase secrets list
 expect allow supabase functions list --project-ref example
-expect allow supabase gen types typescript
-expect allow pnpm db:types
-expect allow pnpm run db:types
-expect allow pnpm exec supabase migration list --linked
-expect allow npx supabase migration list --linked
-expect allow mise exec -- supabase migration list --linked
-expect allow pnpm --filter @dicee/shared exec supabase db push
-expect allow pnpm -F @dicee/simulation exec supabase gen types typescript
-expect allow pnpm --dir packages/web exec supabase db push
-expect allow pnpm -C packages/analysis exec supabase migration up
-expect allow op read CREDENTIAL_REFERENCE_PLACEHOLDER
 expect allow op whoami
 
 expect forbidden git reset --hard
 expect forbidden git push --force origin main
 expect forbidden git push -f origin main
 expect forbidden git clean -fdx
+
+# Supabase operations that can reach the linked project, an account, or a
+# credential stay explicit decisions.
+expect prompt supabase db push --linked
+expect prompt supabase db push --linked --dry-run
+expect prompt supabase db query --help
+expect prompt supabase db pull --linked
+expect prompt supabase db dump --linked -f backup.sql
+expect prompt supabase db reset --linked
+expect prompt supabase db reset --local
+expect prompt supabase migration repair --status applied 20260913000001 --linked
+expect prompt supabase migration up --linked
+expect prompt supabase migration apply
+expect prompt supabase link --project-ref example
+expect prompt supabase login
+expect prompt supabase secrets list
+expect prompt supabase storage cp --help
+expect prompt supabase functions deploy example-function
+expect prompt supabase functions delete example-function
+expect prompt supabase projects api-keys --project-ref example
+expect prompt supabase gen types typescript
+expect prompt pnpm db:types
+expect prompt pnpm run db:types
+expect prompt pnpm exec supabase migration list --linked
+expect prompt npx supabase migration list --linked
+expect prompt mise exec -- supabase migration list --linked
+expect prompt pnpm --filter @dicee/shared exec supabase db push
+expect prompt pnpm -F @dicee/simulation exec supabase gen types typescript
+expect prompt pnpm --dir packages/web exec supabase db push
+expect prompt pnpm -C packages/analysis exec supabase migration up
+expect prompt op read CREDENTIAL_REFERENCE_PLACEHOLDER
+expect prompt op item get your-cloudflare-item --fields api-token
+expect prompt op document get your-document
+
 expect prompt pnpm do:deploy
 expect prompt pnpm web:deploy
 expect prompt pnpm run deploy
@@ -181,10 +198,12 @@ expect prompt pnpm --dir packages/web deploy
 expect prompt pnpm --filter @dicee/cloudflare-do deploy
 expect prompt pnpm --filter @dicee/cloudflare-do tail
 expect prompt pnpm --filter @dicee/web deploy
-expect prompt wrangler secret put X
+expect prompt wrangler secret put EXAMPLE_SECRET_NAME
 expect prompt wrangler deploy
 expect prompt wrangler tail
-expect prompt wrangler pages deployment list
+expect prompt wrangler r2 bucket create example-bucket
+expect prompt wrangler kv namespace list
+expect prompt wrangler pages deploy
 expect prompt pnpm exec wrangler deploy
 expect prompt npx wrangler whoami
 expect prompt git push origin main
@@ -193,22 +212,20 @@ expect prompt gh release create v1
 expect prompt op run -- pnpm build
 expect prompt pnpm --filter @dicee/cloudflare-do exec wrangler deploy
 expect prompt pnpm --filter @dicee/cloudflare-do exec wrangler deploy --dry-run
-expect prompt pnpm -F @dicee/web exec wrangler pages deploy
+expect prompt pnpm -F @dicee/web exec wrangler deploy
 expect prompt pnpm --dir packages/cloudflare-do exec wrangler deploy
-expect prompt pnpm -C packages/web exec wrangler secret put X
+expect prompt pnpm -C packages/web exec wrangler secret put EXAMPLE_SECRET_NAME
 expect prompt scripts/with-dicee-cloudflare.sh -- wrangler deploy
 expect prompt scripts/with-dicee-elevenlabs-local.sh -- pnpm audio:gen
-expect prompt scripts/with-dicee-infisical-auth.sh dev -- true
 expect prompt ./scripts/with-dicee-cloudflare.sh -- wrangler deploy
 expect prompt ./scripts/with-dicee-cloudflare.sh -- true
 expect prompt ./scripts/with-dicee-elevenlabs-local.sh -- pnpm audio:gen
-expect prompt ./scripts/with-dicee-infisical-auth.sh dev -- true
 expect prompt bash scripts/with-dicee-cloudflare.sh -- wrangler deploy
 expect prompt bash ./scripts/with-dicee-cloudflare.sh -- wrangler deploy
 expect prompt bash scripts/with-dicee-elevenlabs-local.sh -- pnpm audio:gen
 expect prompt bash ./scripts/with-dicee-elevenlabs-local.sh -- pnpm audio:gen
-expect prompt bash scripts/with-dicee-infisical-auth.sh dev -- true
-expect prompt bash ./scripts/with-dicee-infisical-auth.sh dev -- true
+
+# Unmatched: ordinary local work, left to the session's approval policy.
 expect none pnpm lint
 expect none git status
 expect none pnpm test:agent
@@ -219,5 +236,10 @@ expect none pnpm --filter @dicee/cloudflare-do exec vitest run
 expect none pnpm --dir packages/web exec biome check
 expect none bash scripts/public-safety-scan.sh
 expect none scripts/public-safety-scan.sh
+expect none supabase migration new example_change
+expect none supabase storage ls
+expect none supabase test db
+expect none wrangler types
+expect none wrangler dev
 
 finish

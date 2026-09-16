@@ -1,8 +1,11 @@
 {
   "mcpServers": {
     "akg": {
-      "command": "bun",
+      "command": "mise",
       "args": [
+        "exec",
+        "--",
+        "bun",
         "run",
         "packages/web/src/tools/akg/mcp/server.ts"
       ],

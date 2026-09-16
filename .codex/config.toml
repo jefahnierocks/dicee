@@ -1,15 +1,28 @@
 # Repository-scoped Codex configuration; it loads only after the project is trusted.
-# Personal model, authentication, approval, and sandbox choices belong in the user
-# configuration. Custom agents in .codex/agents/*.toml are discovered automatically.
+#
+# Personal model, authentication, approval, sandbox and feature-flag choices belong in the
+# user configuration, and Codex enforces part of that split itself: a project file cannot
+# override provider, auth, notification, profile-selection or telemetry keys.
+#
+# Codex rejects an unknown key outright rather than ignoring it, so the installed binary is
+# the accurate schema for the build in front of you and `pnpm agent:doctor` asks it instead
+# of carrying a copy of the schema here. `codex doctor` is the fuller local report.
+#
+# Custom agents in .codex/agents/*.toml are discovered automatically.
+# Command policy lives in .codex/rules/dicee.rules; `bash scripts/tests/codex-rules.test.sh`
+# is its test.
 
 [agents]
 max_concurrent_threads_per_session = 4
 max_depth = 1
 
 [mcp_servers.akg]
-command = "bun"
-args = ["run", "packages/web/src/tools/akg/mcp/server.ts"]
+command = "mise"
+args = ["exec", "--", "bun", "run", "packages/web/src/tools/akg/mcp/server.ts"]
 env = { AKG_GRAPH_PATH = "docs/architecture/akg/graph/current.json", AKG_DIAGRAMS_PATH = "docs/architecture/akg/diagrams", AKG_PROJECT_ROOT = "." }
+# `mise exec` may resolve or install the pinned Bun on a cold checkout, which can exceed the
+# default startup allowance.
+startup_timeout_sec = 30
 
 [mcp_servers.cloudflare-docs]
 url = "https://docs.mcp.cloudflare.com/mcp"

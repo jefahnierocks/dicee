@@ -1,7 +1,7 @@
 /**
  * WebSocket Proxy: /ws/lobby → GlobalLobby Durable Object
  *
- * Proxies WebSocket connections from the Pages frontend to the
+ * Proxies WebSocket connections from the dicee-web Worker to the
  * GlobalLobby DO via Service Binding. This enables same-origin
  * WebSocket connections without CORS.
  *

@@ -13,6 +13,8 @@ How Dicee runs on Cloudflare, what the committed configuration enforces, and how
 
 ```text
 browser
+  ├─ www.dicee.games, dicee.jefahnierocks.com, gamelobby.jefahnierocks.com
+  │    └─ zone Single Redirect         301 to https://dicee.games, same path, query preserved
   └─ https://dicee.games               custom domain on the web Worker, the only public origin
        └─ Worker "dicee-web"           packages/web: SvelteKit, adapter-cloudflare, Workers Static Assets
             ├─ Supabase                Auth, Postgres, Storage (browser and SSR, direct)
@@ -25,7 +27,9 @@ browser
 ```
 
 - Two Workers on purpose: a deploy that changes Durable Object code disconnects every WebSocket and restarts the objects, so a UI-only release deploys `dicee-web` alone.
-- The committed web configuration replaces the Pages project `dicee`. Which of the two serves `dicee.games` is live state; the [cutover](#cutover) moves the domain.
+- `dicee-web` is the only web origin. The Pages project that used to serve `dicee.games` is deleted, so there is no Pages fallback and every web release targets `dicee-web` directly.
+- A public hostname attaches to exactly one target at a time, so moving one is detach, then attach. A Worker custom domain needs an active zone on the account and cannot be created on a hostname that already carries a CNAME record.
+- Three hostnames redirect at the zone rather than through a Worker: `www.dicee.games` inside the `dicee.games` zone, and `dicee.jefahnierocks.com` and `gamelobby.jefahnierocks.com` from the separate `jefahnierocks.com` zone, so the public surface spans two zones. Each is a proxied `A` record to an RFC 5737 documentation address, which is how a hostname gets proxied with no real origin behind it, and a Single Redirect rule sends it to `https://dicee.games` with the same path and the query preserved, status 301. They belong to neither Worker: never attach one as a `dicee-web` custom domain, and never restore the retired rule that prepended a `/games/dicee` prefix.
 - The browser only talks to the web origin. Every WebSocket URL builder uses `location.host`.
 - Requests that match a built asset are served by Workers Static Assets without running the Worker; every other request reaches SvelteKit.
 - Ten SvelteKit server routes proxy through `GAME_WORKER`: the WebSocket upgrades, the lobby APIs, transcription and the admin diagnostics routes. Their response helpers are in `packages/web/src/lib/server/ws-proxy.ts`.
@@ -50,15 +54,15 @@ browser
 
 Wrangler configuration is the source of truth for both Workers' script settings. Before OpenTofu manages a resource that touches them (a custom domain, a Worker setting), require an agreed field map and prove import/no-op behavior, an authorized ordinary Wrangler release, and a subsequent infrastructure plan without unintended resets. Leave overlapping fields unmanaged by OpenTofu if the pinned provider cannot preserve this boundary. Do not use broad drift-ignore rules as proof of ownership.
 
-**Credentials and immediate recovery.** The exposed Cloudflare token was replaced through the existing 1Password wrapper and GitHub Production secret path, and the old token verified dead ([status readbacks](status.md#latest-live-readbacks)). Today one account-owned deploy token (Pages Write, Workers Scripts Write and Account Settings Read across the whole account) serves both CI and the local wrapper; MCP uses OAuth instead. Both Workers release with Workers Scripts Write; Pages Write is needed only until the Pages project is deleted. The target design separates inventory/plan readers, infrastructure apply, application release and local operator consumers, with distinct environments where supported. Verify effective permissions and record residual account-wide reach: token names and directories do not enforce per-script isolation. The permissions for [Workers Scripts](https://developers.cloudflare.com/fundamentals/api/reference/permissions/) are account-scoped; issuing separate tokens improves attribution and revocation without proving resource isolation. Token ownership/type and exact capabilities must be established before choosing each replacement.
+**Credentials and immediate recovery.** The exposed Cloudflare token was replaced through the existing 1Password wrapper and GitHub Production secret path, and the old token verified dead ([status readbacks](status.md#latest-live-readbacks)). Today one account-owned deploy token (Pages Write, Workers Scripts Write and Account Settings Read across the whole account) serves both CI and the local wrapper; MCP uses OAuth instead. Both Workers release with Workers Scripts Write. With the Pages project deleted, Pages Write has no consumer left, so until [status action 16](status.md#open-operator-actions) removes it the token's reach is wider than anything this repository uses. The target design separates inventory/plan readers, infrastructure apply, application release and local operator consumers, with distinct environments where supported. Verify effective permissions and record residual account-wide reach: token names and directories do not enforce per-script isolation. The permissions for [Workers Scripts](https://developers.cloudflare.com/fundamentals/api/reference/permissions/) are account-scoped; issuing separate tokens improves attribution and revocation without proving resource isolation. Token ownership/type and exact capabilities must be established before choosing each replacement.
 
-**State and environments.** Keep `dicee.games`, the `dicee` Worker name, class names and binding interfaces; the web release target is `dicee-web`. `dicee-production` remains unclassified. Before any `dicee` release, verify both namespace owners; account relocation cannot assume namespace/data continuity. Keep the default production deployment rather than introducing a named production environment. There is no hosted preview; staging waits for its roadmap trigger and a complete backend/data/credential boundary.
+**State and environments.** Keep `dicee.games`, the `dicee` Worker name, class names and binding interfaces; the web release target is `dicee-web`. `dicee` and `dicee-web` are the only Workers this repository deploys; `dicee-production`, `gamelobby` and `gamelobby-production` are classified legacy scripts awaiting deletion (see Hard stops). Before any `dicee` release, verify both namespace owners; account relocation cannot assume namespace/data continuity. Keep the default production deployment rather than introducing a named production environment. There is no hosted preview; staging waits for its roadmap trigger and a complete backend/data/credential boundary.
 
 ## Configuration
 
 **Game Worker** (`packages/cloudflare-do/wrangler.jsonc`):
 
-- Name `dicee`, entry `packages/cloudflare-do/src/worker.ts`, `compatibility_date` 2026-07-21, flag `nodejs_compat`.
+- Name `dicee`, entry `packages/cloudflare-do/src/worker.ts`, `compatibility_date` 2026-07-21, flag `nodejs_compat`. A bump is a deliberate change under status decision 5.
 - `workers_dev: false` and `preview_urls: false`, set at the top level and never overridden.
 - Durable Object lifecycle: the legacy `migrations` array, v1 `GameRoom` and v2 `GlobalLobby`, both `new_sqlite_classes`. It is declared once at the top level and inherited (status decision 1).
 - Bindings `GAME_ROOM`, `GLOBAL_LOBBY` and `AI`; var `ENVIRONMENT`, which nothing reads (see Open decisions).
@@ -73,7 +77,7 @@ Wrangler configuration is the source of truth for both Workers' script settings.
 - Exactly one service binding, `GAME_WORKER` to `dicee`. No vars, secrets, storage, AI or Durable Object bindings.
 - Observability: logs at head sampling 1.
 - No `run_worker_first`: assets serve first. The adapter's generated `_headers` gives `/_app/immutable/*` long-lived caching. `_headers` and `_redirects` rules never apply to Worker-generated responses, so security headers come from `packages/web/src/hooks.server.ts` and CSP from `kit.csp` in `packages/web/svelte.config.js`.
-- The web build needs `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` at build time (`$env/static/public`). The CI `deploy-web` job reads them from the Production environment. `packages/web` holds no service-role material.
+- The web build needs `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` at build time (`$env/static/public`). The CI `deploy-web` job reads the first from a Production environment variable and the second from a repository secret, then fails the job if either is empty. They come from different stores, so a change to one does not move the other. `packages/web` holds no service-role material.
 
 **Generated types.** Each package commits a generated `worker-configuration.d.ts`:
 
@@ -102,13 +106,14 @@ Wrangler configuration is the source of truth for both Workers' script settings.
 - **Web Worker:** no `durable_objects`, `d1_databases`, `r2_buckets`, `kv_namespaces`, `ai`, `exports`, `queues` or `migrations`.
   - Exactly one service binding per block, targeting a Worker name the backend declares, and a `name` that is none of the backend's Worker names.
   - `workers_dev` and `preview_urls` explicitly false; no `route`, `routes` or `custom_domain`.
-  - Workers Static Assets shape: `main`, `assets.directory` and `assets.binding` set, no `pages_build_output_dir`, no single-page-application not-found handling. A named environment bound to the production backend warns.
+  - Workers Static Assets shape: `main`, `assets.directory` and `assets.binding` set, no `pages_build_output_dir`, no single-page-application not-found handling (it would serve the shell in place of SSR). A named environment bound to the production backend warns.
 - **Both:** no account id or API token literal, and no legacy TOML config beside `wrangler.jsonc`.
 
 Hard stops. These are owner decisions, never config tweaks:
 
 - **No `exports` key.** Never edit, reorder or remove the applied v1/v2 tags. `exports` is one-way: no return to `migrations`, no rollback across the change, no gradual deploy. It is adopted only for a concrete need recorded in status, as a standalone operator deploy.
 - **No Worker or Durable Object class rename.** Namespaces are keyed to the script name, so a renamed Worker starts with empty namespaces. A class rename needs its own lifecycle step.
+- **Deleting a Worker deletes its Durable Object namespaces.** The classified legacy scripts ([status action 8](status.md#open-operator-actions)) are `gamelobby`, which owns none and is the lowest-risk deletion, and `dicee-production` and `gamelobby-production`, which each own a SQLite `GameRoom`/`GlobalLobby` pair; `gamelobby-production` also still exposes `workers.dev` and Preview URLs. Delete one at a time, after the dashboard route read under [Live checks](#live-checks), verify the public app after each, and never force-delete a namespace-owning script without an explicit decision to destroy that state.
 - **No ingress on `dicee`.** No `route`, `routes`, `custom_domain` or `workers_dev: true` on the game Worker.
 - **The web Worker never uses a game Worker name.** Deploying the web config as `dicee` would replace the game Worker's code and bindings.
 - **No backend bindings on the web Worker.** No Durable Object, storage, D1, R2, KV, AI or queue bindings in `packages/web/wrangler.jsonc`.
@@ -126,9 +131,9 @@ Safe without deploy authority: `wrangler types`, `types:check`, `wrangler deploy
 2. `deploy-worker`: the Production environment, a `production-deploy` concurrency group that is never cancelled, builds `@dicee/shared`, then `wrangler deploy --env=""`.
 3. `deploy-web` ("Deploy web Worker"): reuses the validated WASM artifact, builds shared and web, then runs `wrangler deploy` for `dicee-web`.
 
-`deploy-web` needs `deploy-worker`, so a CI dispatch always redeploys `dicee` as well, which restarts its Durable Objects. The next release follows [roadmap section 1](roadmap.md#1-safety-now) (status action 3): live checks 1-2 first, then `dicee` becomes the one backend even when that resets live rooms held by another script (status decision 1). Review the exact release configuration and migrations as well; ownership is a deployment prerequisite, not approval of every later artifact.
+`deploy-web` needs `deploy-worker`, so a CI dispatch always redeploys `dicee` as well, which restarts its Durable Objects and drops every live socket; dispatch at a quiet time, or take the web-only path below when nothing under `packages/cloudflare-do` changed. The Production reviewer approves the artifact in front of them, not every later one: review the release commit, the Wrangler configuration and any pending database migration before approving.
 
-A web-only release uses the operator-local `pnpm web:deploy` and leaves `dicee` untouched. `GAME_WORKER` resolves `dicee` by name, so it is safe only when live check 1 shows `dicee` is the live backend. Use a clean checkout of the exact successful CI commit and read the local web build environment warning below.
+A web-only release uses the operator-local `pnpm web:deploy`, leaves `dicee` untouched and is the default for a UI-only change: `GAME_WORKER` resolves the live `dicee` Worker by name and that binding does not change. Use a clean checkout of the exact commit that passed CI and read the local web build environment warning below.
 
 **Operator escape hatches** skip the validation gate and need explicit authority:
 
@@ -143,56 +148,29 @@ A web-only release uses the operator-local `pnpm web:deploy` and leaves `dicee` 
 **Known hazards:**
 
 - **Two Worker versions per dispatch.** The Cloudflare wrangler-action step uploads its `secrets` input with `wrangler secret bulk` before it runs `deploy`, and a secret upload creates and deploys a version. For a short window new secrets run on old code. `wrangler deploy --secrets-file` is the single-operation form.
-- **Empty namespaces on the wrong script.** A `migrations` deploy is a lifecycle no-op only when the target script already carries tag v2. Otherwise it provisions empty namespaces and live state stays on the old script. Know which case applies from live check 1 before deploying; an intended cutover to `dicee` accepts that reset (status decision 1).
+- **Empty namespaces on the wrong script.** A `migrations` deploy is a lifecycle no-op only when the target script already carries tag v2. `dicee` does; any other script name provisions empty namespaces and leaves live state behind, so never deploy this config under a different Worker name.
 - **First deploy to a new game Worker name.** With `secrets.required` set, it needs `--secrets-file`. `dicee-web` declares no secrets.
-- **Two resources named `dicee`.** The Pages project and the game Worker share a name in separate namespaces. Cutover cleanup deletes the Pages project, never the Worker.
-- **No rollback in CI.** Rollback is operator-run (`wrangler rollback` per Worker) and cannot cross a Durable Object lifecycle change. Roll forward by default.
+- **No rollback in CI, and no Pages fallback.** Rollback is operator-run, `wrangler rollback` per Worker, and cannot cross a Durable Object lifecycle change; it replaces the Worker's code, never the custom domain, which stays on `dicee-web` either way. The Pages project that once served the domain is deleted, so recovery is a Worker version rollback or, by default, rolling forward.
 - **No staging path.** Production is the first environment a change reaches.
 
 **Post-deploy smoke** (operator):
 
 - sign-in, which reaches the production Supabase project (a locally built deploy can inline local values);
 - lobby and room WebSocket upgrades;
+- the unauthenticated lobby APIs `/api/lobby/rooms` and `/api/lobby/online` return JSON, which proves `dicee-web` -> `GAME_WORKER` -> `dicee` -> `GlobalLobby`;
 - security headers and CSP, with the WASM engine loading in a Chromium browser;
 - `/_app/immutable/` assets load, and an unknown path returns the SvelteKit 404 page;
 - transcription;
 - admin pages refuse a non-admin session.
 
-### Cutover
+## Live checks
 
-Moving `dicee.games` from the Pages project to `dicee-web` is a one-time operator release step with a short outage. Platform constraints:
+Use read-only methods only: the dashboard or a read-scoped API `GET`. Record each result in the [status.md](status.md) readbacks as names, counts and HTTP status. Public product hostnames may be named; account, zone and namespace ids, the account `workers.dev` subdomain, project refs and secret values never may be.
 
-- A Worker custom domain needs an active Cloudflare zone the account owns, and cannot be created on a hostname with an existing CNAME record.
-- A hostname is attached to one target at a time: detach it from the Pages project, then attach it to `dicee-web`.
-- `www` to apex stays a zone redirect rule; it belongs to neither project.
-- `_redirects` is not applied to Worker-served requests; the repository ships none.
+- **Zone-level Worker routes** are the one surface the scoped Cloudflare credential cannot read: those reads return HTTP 403. Read them in the dashboard, under each script's Domains & Routes, before deleting any legacy script; do not broaden the credential to close the gap.
+- **Immediately before a deletion or a release**, re-read the target's routes, custom domains, direct Worker URLs and secret names. `wrangler secret list` returns names only. An inventory older than the change is not evidence for it.
 
-Steps, each with explicit authority:
-
-1. Live checks 1, 2 and 6 show `dicee` as the live backend, the current web origin and an active zone.
-2. From the exact validated commit with production public values, run the web dry run, then `pnpm web:deploy`. The new Worker has no public hostname yet.
-3. Detach `dicee.games` from the Pages project, confirm no CNAME remains on the apex, and attach it to `dicee-web` as a Custom Domain. Deploy `dicee` only after this step, with `pnpm do:deploy` rather than a CI dispatch (which deploys `dicee` first): its protocol gate closes the old Pages client's sockets with code 4426.
-4. Run the post-deploy smoke against `https://dicee.games` and confirm the `www` redirect. Until step 5, rollback is detach from the Worker and reattach to Pages.
-5. Delete the Pages project `dicee`, then remove Pages Write from the deploy token.
-
-## Live checks still needed
-
-Use read-only methods only: the dashboard or a read-scoped API `GET`. Record each result in the [status.md](status.md) readbacks as names, counts and HTTP status. Never record account, zone or namespace ids, subdomains, project refs or secret values.
-
-1. **Namespace owner.** Which Worker scripts hold the live `GameRoom` and `GlobalLobby` namespaces (class, script, SQLite), their migration tags where a read-only source shows them, and the deployed versions. Method: the namespace's Deployments tab in the dashboard, or a read-scoped `GET` of the account's Durable Object namespace list. The result decides between a no-op lifecycle deploy to `dicee` and a cutover to it (status decision 1); stop only on ambiguous ownership.
-2. **Current web origin.** Whether `dicee.games` is attached to the Pages project or to `dicee-web`, whether `dicee-web` exists, and, while Pages serves, what its production `GAME_WORKER` targets. Method: dashboard domain settings, or `wrangler pages download config` into a private scratch directory outside the repository (never with `--force`). A different or unknown backend target requires reconciliation before any release.
-3. **Subdomains.** Done for `dicee` and `dicee-production` (status action 6); repeat for `dicee-web` and any other Dicee Worker script that check 4 finds. Method: each script's domains and routes settings in the dashboard.
-4. **Obsolete surfaces.** Routes, custom domains and last deployment on every Dicee Worker script other than `dicee`, and on every Pages project, classified for deletion (status action 8).
-5. **Secret names.** Secret names on each script, and on the Pages project until it is deleted; `wrangler secret list` and `wrangler pages secret list` return names only.
-6. **Zone and redirect.** Whether `dicee.games` is an active zone on this account, the record types for the apex and `www` (a Worker custom domain cannot be created on a hostname with an existing CNAME record), whether Registrar is used, and where the www-to-apex redirect rule lives. This gates the cutover and feeds the organization move.
-
-Method safety:
-
-- `wrangler secret put`, `bulk` and `delete` create and deploy a version.
-- `wrangler triggers deploy` changes routes.
-- `pages download config` writes a file.
-
-None of these is a readback. For reachability use the Worker's `/health`; do not probe admin diagnostics paths.
+Method safety: `wrangler secret put`, `bulk` and `delete` each create and deploy a version, and `wrangler triggers deploy` changes routes. None of these is a readback. For reachability use the public site and the lobby APIs; `dicee` has no public ingress, and admin diagnostics paths are never a probe.
 
 ## Open decisions
 
@@ -200,18 +178,11 @@ Each open decision has a recommended default. The owner decides, and [status.md]
 
 - **Preview shares the production Worker** (audit warning F7). Decided: no hosted preview backed by production (status decision 8). The web Worker has no named environment, `workers.dev` subdomain or Preview URLs; local `pnpm dev:full` is the test path, and hosted multiplayer testing waits for an isolated backend (roadmap section 8).
 - **Room storage retention.** Nothing deletes Durable Object storage, so finished rooms keep theirs. Default: reclaim storage when a room is finished and empty, on the existing alarm path (roadmap, Worker correctness). Plan as though SQLite storage is billed; the account billing view is the evidence.
-- **`secrets.required` after the Supabase key migration.** Default: one secret key replaces the legacy anon and service-role names, and the Worker sends it only as `apikey`. Change the list, the code and the CI secrets together, and set the new secret on the Worker before the deploy that requires it.
+- **`secrets.required` after the Supabase key migration.** Default: one secret key replaces the legacy anon and service-role names, and the Worker sends it only as `apikey`. Change the list, the code and the CI secrets together, and set the new secret on the Worker before the deploy that requires it. Until then the Worker secrets and the web build's `PUBLIC_SUPABASE_ANON_KEY` stay on the legacy anon key: never swap a stored secret to the newer publishable format on its own.
 - **`SUPABASE_JWT_SECRET` read but undeclared** (audit warning B8). Default: resolve it by removing HS256, never by adding the name.
 - **Unused `ENVIRONMENT` var** (audit warning B11). Removed from the web config. Default: delete it from the game Worker config unless code starts reading it.
 - **Named `development` and `staging` environments.** No CI job or binding uses them. Default: keep them until the staging trigger fires, then either wire one into CI or delete both.
 - **Infrastructure adoption details** (status decision 9). The [governance strategy](#governance-strategy) selects OpenTofu/Wrangler responsibilities and four credential consumers. The exact repository/root, backend/state controls, pinned provider field map and effective token reach remain open. Acceptance and the import/release/plan checks precede infrastructure writes; a dedicated account remains a separate conditional migration decision.
-
-Direction (status decision 8): serve the web app from `dicee-web` on Workers Static Assets and keep `dicee` unchanged. Pitfalls to keep in view:
-
-- never use single-page-application not-found handling with SSR (the audit rejects it);
-- assets serve before the Worker unless `run_worker_first` is set, so hooks never see asset requests;
-- `_headers` and `_redirects` never apply to Worker-generated responses;
-- a domain cutover is detach, then attach.
 
 ## Local commands
 

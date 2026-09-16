@@ -32,9 +32,9 @@ The local agent roles are **Builder**, **Maintainer**, **Reviewer** and **Operat
 | GitHub repository | Current home: `jefahnierocks/dicee`; transfer completed 2026-09-14. |
 | Local checkout | Current home: `~/Organizations/jefahnierocks/dicee/`, as an independent Git repository. This existing monorepo needs no internal reshuffle. |
 | Project manifest | Keep project id `dicee`; owner is now `jefahnierocks`. Preserve the manifest's existing schema and status home. |
-| Web Worker | `dicee-web` serves the SvelteKit app (status decision 8); the Pages project `dicee` is deleted after the cutover. A Pages project name and a Worker script name identify different resources. |
-| Default production Worker | Source targets `dicee`; preserve that name pending the live namespace-owner check. |
-| Other existing Worker | `dicee-production` is unclassified. Its suffix proves neither its role nor that it is safe to remove. |
+| Web Worker | `dicee-web` serves the SvelteKit app (status decision 8) and holds the `dicee.games` custom domain; the Pages project `dicee` is deleted. A Pages project name and a Worker script name identify different resources. |
+| Default production Worker | `dicee` is the confirmed owner of the live `GameRoom` and `GlobalLobby` namespaces (status action 5); preserve the name. |
+| Other existing Worker | `dicee-production` is a classified legacy deletion candidate (status action 8), alongside `gamelobby` and `gamelobby-production`. Its suffix proves neither its role nor that it is safe to remove. |
 | Runtime interfaces | Keep `GAME_WORKER`, `GAME_ROOM`, `GLOBAL_LOBBY`, `AI`, `GameRoom` and `GlobalLobby`. These are application interfaces, not places to add organization prefixes. |
 | Future environments | Use explicit, consistent environment labels. A candidate staging script is `dicee-staging`; check the name against live inventory before choosing it. Do not introduce a named production environment merely to standardize spelling. |
 
@@ -99,14 +99,14 @@ The first infrastructure adoption should aim to describe existing resources with
 
 ## Runtime and environment boundaries to preserve
 
-The shape is browser → `dicee-web` Worker → `GAME_WORKER` → `dicee` Worker → SQLite Durable Objects, with Supabase for Auth/Postgres/Storage; status decision 8 moved the web app off Pages for platform reasons, not for alignment. The public application origin remains `dicee.games`; `dicee` is reachable only through the service binding. Do not add a direct game-Worker hostname, Tunnel, Access application, D1, R2, KV or Queues merely for organizational alignment. Such additions need their own product or security reason.
+The shape is browser → `dicee-web` Worker → `GAME_WORKER` → `dicee` Worker → SQLite Durable Objects, with Supabase for Auth/Postgres/Storage; status decision 8 moved the web app off Pages for platform reasons, not for alignment, and that move is complete. The public application origin remains `dicee.games`; `dicee` is reachable only through the service binding. Do not add a direct game-Worker hostname, Tunnel, Access application, D1, R2, KV or Queues merely for organizational alignment. Such additions need their own product or security reason.
 
 Preserve the project's existing hard stops:
 
-- Before any `dicee` deployment, read back which script owns the live `GameRoom` and `GlobalLobby` namespaces. `dicee` is the one game backend (status decision 1): a cutover from another script accepts a live-state reset, and obsolete scripts such as `dicee-production` are deleted once classified.
+- Before any `dicee` deployment, read back which script owns the live `GameRoom` and `GlobalLobby` namespaces. `dicee` is the one game backend (status decision 1) and the confirmed owner; obsolete scripts such as `dicee-production` are deleted once classified, one at a time.
 - Preserve applied v1/v2 `new_sqlite_classes` migrations. Do not rename a Worker/class, introduce a new namespace or switch to declarative `exports` as a naming cleanup. Lifecycle work remains a separate operator change with a state-preservation plan.
 - A new Worker script or account is not a transparent move of existing data. Cloudflare class-transfer migrations move namespaces between Worker scripts in the same account; do not create the destination class first and then expect a later transfer to preserve the old namespace. Account relocation requires a separate migration/recovery design and must not assume namespace or data continuity. See [legacy class transfers](https://developers.cloudflare.com/durable-objects/reference/durable-object-class-migrations-legacy/#transfer-migration).
-- Inventory all ingress: Worker subdomains, version Preview URLs, routes, custom domains, Pages domains until the Pages project is deleted, and binding targets. The reported disabling of Worker subdomains does not prove the other paths absent. Keep sensitive admin authorization enforced in application code as well as the intended ingress design.
+- Inventory all ingress: Worker subdomains, version Preview URLs, routes, custom domains, the zone redirect rules in both the `dicee.games` and `jefahnierocks.com` zones, and binding targets. The reported disabling of Worker subdomains does not prove the other paths absent. Keep sensitive admin authorization enforced in application code as well as the intended ingress design.
 
 | Environment | Current source shape | Adoption intention |
 |---|---|---|
@@ -154,12 +154,12 @@ The relevant local control is [cloudflare-config-audit.mjs](../../scripts/cloudf
 
 ## Adoption deliverable and order
 
-Use the existing roadmap, not a second phase system. Its credential prerequisites remain: Supabase key migration, HS256 removal and Infisical retirement before ownership changes. Current application/privacy safety work keeps its existing priority. Documentation and source design can proceed while those operations remain pending.
+Use the existing roadmap, not a second phase system. Its credential prerequisites remain: Supabase key migration and HS256 removal before ownership changes. Current application/privacy safety work keeps its existing priority. Documentation and source design can proceed while those operations remain pending.
 
 For the organization-move item, prepare one reviewable intake that answers:
 
 1. **Ownership and names:** intended GitHub/local home, accepted Jefahnierocks project contract, service owner, infrastructure root, shared-account steward, credential consumers and the disposition of both existing scripts.
-2. **Fresh inventory:** Pages domains until deletion, Worker routes/subdomains and bindings, namespace owners, secret names and token reach; zone/registrar/redirect ownership; GitHub Apps, Actions configuration and each protection surface. Record unknowns explicitly and keep private identifiers out of the repository.
+2. **Fresh inventory:** Worker routes/subdomains, custom domains and bindings, namespace owners, secret names and token reach; zone/registrar/redirect ownership across both zones; GitHub Apps, Actions configuration and each protection surface. Record unknowns explicitly and keep private identifiers out of the repository.
 3. **Transfer continuity:** repository protections and integrations before/after transfer; updates to the remote, manifest and repository references already named by the roadmap; preservation of public URLs and application identity. Do not recreate the old GitHub repository path after transfer.
 4. **Infrastructure boundary:** accepted resource/field ownership, protected state location, pinned toolchain, credential split, source validation, import/no-op plan, first-write authority and readback. Infrastructure adoption and any later account move have separate acceptance evidence.
 5. **State and recovery:** no accidental namespace creation or Worker rename; a resource-appropriate recovery/cutover plan before account moves or destructive cleanup; legacy scripts deleted once their ingress and consumers are classified.
