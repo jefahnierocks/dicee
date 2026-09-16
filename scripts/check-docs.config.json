@@ -99,6 +99,19 @@
 			"allow": [".gitignore"]
 		},
 		{
+			"id": "infisical",
+			"re": "[Ii]nfisical|INFISICAL",
+			"allow": [
+				".gitignore",
+				"AGENTS.md",
+				"docs/status.md",
+				"docs/roadmap.md",
+				"scripts/public-safety-scan.sh",
+				"scripts/tests/public-safety-scan.test.sh",
+				"scripts/tests/public-safety-scan-hook.test.sh"
+			]
+		},
+		{
 			"id": "wrangler-toml",
 			"re": "wrangler\\.toml",
 			"allow": ["scripts/cloudflare-config-audit.mjs", "packages/cloudflare-do/wrangler.jsonc"]

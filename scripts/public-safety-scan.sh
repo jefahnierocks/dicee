@@ -93,6 +93,8 @@ scan_pattern 'workstation-specific home path' '(/Users/|/home/|[A-Za-z]:\\Users\
 scan_pattern 'credential-manager item URI' 'op://'
 scan_pattern 'hosted database project hostname' '\b[a-z]{20}\.supabase\.(co|com)\b'
 scan_pattern 'hosted database project reference' "project[_-]ref\b[\"']?[[:space:]]*[=:]?[[:space:]]*[\"']?[a-z]{20}\b"
+# Residual guard for a retired secret manager: a self-hosted instance hostname is
+# private infrastructure and must never reach the publication candidate.
 scan_pattern 'private infrastructure hostname' 'https?://infisical\.(?!com(?:[/[:space:]]|$)|example\.)[A-Za-z0-9.-]+'
 scan_pattern 'access token transported in a URL' '[?&](access_)?token='
 scan_pattern 'write-enabled hosted MCP configuration' 'read_only=false' is_config_file
@@ -115,6 +117,7 @@ while IFS= read -r -d '' file; do
   [[ -f "$file" ]] || continue
   [[ "$file" == "scripts/public-safety-scan.sh" ]] && continue
   # Apply private-name rules at every depth, including package-local env files.
+  # The .infisical.json entry is a residual guard for a retired secret manager.
   case "${file##*/}" in
     .env.example|.infisical.example.json) ;;
     .env|.env.*|*.pem|*.key|*.p12|*.pfx|.infisical.json)

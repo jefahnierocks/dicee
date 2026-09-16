@@ -18,33 +18,17 @@ fi
 # shellcheck source=/dev/null
 source "$DICEE_OPERATOR_METADATA_FILE"
 
+# Validated when this file is sourced: the identifiers a credential launcher
+# needs before it can start a process that carries a secret. A name belongs here
+# only when a tracked launcher reads it. Anything a single consumer needs is
+# declared by that consumer through dicee_require_metadata, so retiring one
+# provider can never fail an unrelated launcher closed.
 _dicee_required_metadata=(
 	DICEE_OP_ACCOUNT
 	DICEE_OP_VAULT
-	DICEE_OP_ITEM_INFISICAL_DEV
-	DICEE_OP_ITEM_INFISICAL_STAGING
-	DICEE_OP_ITEM_INFISICAL_PROD
 	DICEE_OP_ITEM_CLOUDFLARE
-	DICEE_OP_ITEM_VERCEL
-	DICEE_OP_ITEM_PARTYKIT
 	DICEE_OP_ITEM_ELEVENLABS_LOCAL
-	DICEE_INFISICAL_INSTANCE_URL
-	DICEE_INFISICAL_PROJECT_ID
-	DICEE_INFISICAL_PROJECT_SLUG
-	DICEE_INFISICAL_ORG_NAME
-	DICEE_INFISICAL_DEV_IDENTITY_NAME
-	DICEE_INFISICAL_DEV_IDENTITY_ID
-	DICEE_INFISICAL_STAGING_IDENTITY_NAME
-	DICEE_INFISICAL_STAGING_IDENTITY_ID
-	DICEE_INFISICAL_PROD_IDENTITY_NAME
-	DICEE_INFISICAL_PROD_IDENTITY_ID
 	DICEE_CLOUDFLARE_ACCOUNT_ID
-	DICEE_CLOUDFLARE_DOMAIN
-	DICEE_SUPABASE_PROJECT_NAME
-	DICEE_SUPABASE_PROJECT_REF
-	DICEE_VERCEL_PROJECT_NAME
-	DICEE_PARTYKIT_PROJECT_NAME
-	DICEE_AUDIO_PROJECT_NAME
 )
 
 for _dicee_metadata_name in "${_dicee_required_metadata[@]}"; do
@@ -55,6 +39,19 @@ for _dicee_metadata_name in "${_dicee_required_metadata[@]}"; do
 	readonly "$_dicee_metadata_name"
 done
 unset _dicee_metadata_name _dicee_required_metadata
+
+# Declare metadata one consumer needs beyond the launcher set. The caller fails
+# closed on a missing name without imposing that name on any other script.
+dicee_require_metadata() {
+	local name
+	for name in "$@"; do
+		if [[ -z "${!name:-}" ]]; then
+			echo "Missing required operator metadata: $name" >&2
+			return 1
+		fi
+		readonly "$name"
+	done
+}
 
 dicee_require_command() {
 	local command_name="$1"

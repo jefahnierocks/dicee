@@ -1,18 +1,30 @@
 # Dicee Codex command policy.
 #
-# Dicee is a trusted experimental agentic project.
-# The prefixes below allow Supabase operation, type generation, and direct
-# 1Password secret reads at the execution-policy layer. Task authority and
-# runbook stop conditions still apply; live type generation is not a local gate.
+# Decisions follow the repository contract in AGENTS.md, not client trust.
+# A trusted project still keeps live systems behind an operator decision:
 #
-# Prompt boundaries are retained for:
-# - production/application deploys
-# - live logs and broad account-changing Cloudflare operations
-# - generic credential wrappers capable of executing arbitrary commands
-# - publication, workflow dispatch, and releases
+#   allow      named local or read-only inspection: versions, local stack
+#              status and startup, and listing output
+#   prompt     anything that can write to, authenticate against, or read data
+#              or secrets out of a live project or account, plus every wrapper
+#              that can execute a caller-supplied command
+#   forbidden  the destructive Git operations at the end of this file
 #
-# The listed destructive Git prefixes remain forbidden. These rules do not
-# cover every possible invocation; never change command form to evade a stop.
+# A command that matches no rule is ordinary local work and falls through to
+# the session's normal approval policy; unmatched is not an allow.
+#
+# The most restrictive match wins (forbidden > prompt > allow), so every allow
+# prefix here is written to be exact and is never overlapped by a prompt
+# prefix. Do not add a broad prompt that swallows a narrow allow, and do not
+# add a narrow allow expecting it to override a broad prompt.
+#
+# An allow decision removes a rule-level prompt; it never expands the authority
+# the user granted for the task. AGENTS.md rule 4 reserves deploys, remote
+# database writes, migrations, and secret changes for explicit user authority,
+# and rule 5 keeps live type generation out of ordinary local validation.
+#
+# These are prefixes, not exhaustive coverage of every invocation; never change
+# command form to evade a stop.
 #
 # Codex loads project-local .codex/rules/ only for a trusted project.
 # Workspace package names and packages/<dir> paths are fixed sets, so
@@ -42,7 +54,7 @@ prefix_rule(
         "pnpm web:deploy",
     ],
     not_match=[
-        "pnpm db:types",
+        "pnpm build",
         "pnpm lint",
         "pnpm test:agent",
     ],
@@ -66,29 +78,9 @@ prefix_rule(
         "pnpm run web:deploy",
     ],
     not_match=[
-        "pnpm run db:types",
+        "pnpm run test:agent",
         "pnpm run lint",
         "pnpm run build",
-    ],
-)
-
-# Database type generation is allowed by policy but still needs live-schema
-# task authority; it is excluded from ordinary local validation.
-prefix_rule(
-    pattern=["pnpm", "db:types"],
-    decision="allow",
-    justification="Database type generation is routine trusted-agent development work.",
-    match=[
-        "pnpm db:types",
-    ],
-)
-
-prefix_rule(
-    pattern=["pnpm", "run", "db:types"],
-    decision="allow",
-    justification="Database type generation is routine trusted-agent development work.",
-    match=[
-        "pnpm run db:types",
     ],
 )
 
@@ -172,19 +164,45 @@ prefix_rule(
             "deploy",
             "versions",
             "rollback",
+            "delete",
             "secret",
             "tail",
-            "pages",
-            "d1",
-            "r2",
             "login",
+            "logout",
         ],
     ],
     decision="prompt",
-    justification="Direct Wrangler account operations remain explicit review boundaries.",
+    justification="Direct Wrangler deploys, version rollouts, rollbacks, secret changes, live log tails, and account authentication remain explicit review boundaries.",
     match=[
-        "wrangler secret put X",
         "wrangler deploy",
+        "wrangler secret put EXAMPLE_SECRET_NAME",
+        "wrangler tail",
+    ],
+    not_match=[
+        "wrangler types",
+        "wrangler dev",
+        "wrangler --version",
+    ],
+)
+
+prefix_rule(
+    pattern=[
+        "wrangler",
+        [
+            "d1",
+            "hyperdrive",
+            "kv",
+            "pages",
+            "queues",
+            "r2",
+            "vectorize",
+        ],
+    ],
+    decision="prompt",
+    justification="Product namespaces outside Dicee's committed architecture are prompts so an invocation cannot create or change account resources the project does not use.",
+    match=[
+        "wrangler r2 bucket create example-bucket",
+        "wrangler kv namespace list",
     ],
     not_match=[
         "wrangler types",
@@ -238,18 +256,6 @@ prefix_rule(
 )
 
 prefix_rule(
-    pattern=["./scripts/with-dicee-infisical-auth.sh"],
-    decision="prompt",
-    justification="Resolves operator credentials and can execute a supplied command.",
-    match=[
-        "./scripts/with-dicee-infisical-auth.sh dev -- true",
-    ],
-    not_match=[
-        "./scripts/quality-gate.sh",
-    ],
-)
-
-prefix_rule(
     pattern=["./scripts/with-dicee-elevenlabs-local.sh"],
     decision="prompt",
     justification="Resolves a paid API credential and can execute a supplied command.",
@@ -266,14 +272,13 @@ prefix_rule(
         [
             "scripts/with-dicee-cloudflare.sh",
             "scripts/with-dicee-elevenlabs-local.sh",
-            "scripts/with-dicee-infisical-auth.sh",
         ],
     ],
     decision="prompt",
     justification="Credential-resolving project wrappers can execute supplied commands.",
     match=[
         "scripts/with-dicee-cloudflare.sh -- wrangler deploy",
-        "scripts/with-dicee-infisical-auth.sh dev -- true",
+        "scripts/with-dicee-elevenlabs-local.sh -- pnpm audio:gen",
     ],
     not_match=[
         "scripts/public-safety-scan.sh",
@@ -288,8 +293,6 @@ prefix_rule(
             "./scripts/with-dicee-cloudflare.sh",
             "scripts/with-dicee-elevenlabs-local.sh",
             "./scripts/with-dicee-elevenlabs-local.sh",
-            "scripts/with-dicee-infisical-auth.sh",
-            "./scripts/with-dicee-infisical-auth.sh",
         ],
     ],
     decision="prompt",
@@ -326,6 +329,7 @@ prefix_rule(
     justification="Wrangler through a workspace package can reach the Cloudflare account.",
     match=[
         "pnpm --filter @dicee/cloudflare-do exec wrangler deploy",
+        "pnpm -F @dicee/web exec wrangler deploy",
     ],
     not_match=[
         "pnpm --filter @dicee/cloudflare-do exec vitest run",
@@ -352,6 +356,7 @@ prefix_rule(
     justification="Wrangler through a workspace package can reach the Cloudflare account.",
     match=[
         "pnpm --dir packages/cloudflare-do exec wrangler deploy",
+        "pnpm -C packages/web exec wrangler secret put EXAMPLE_SECRET_NAME",
     ],
     not_match=[
         "pnpm --dir packages/web exec biome check",
@@ -361,100 +366,226 @@ prefix_rule(
 
 
 # ---------------------------------------------------------------------------
-# Supabase
+# Supabase: read-only and local inspection
 # ---------------------------------------------------------------------------
 #
-# Dicee deliberately allows the listed Supabase prefixes at the policy layer.
-# This includes linked-project inspection and mutation, migrations, dumps,
-# storage operations, functions, secrets, login/linking, and type generation.
-# An allow decision does not authorize an operation outside the user's task.
+# One binary addresses the local stack and the linked hosted project, usually
+# separated only by a flag, so the split below is by subcommand rather than by
+# trust. Only these named prefixes are allowed; keep them exact so no prompt
+# prefix below overlaps them.
 
 prefix_rule(
-    pattern=[
-        "supabase",
-        [
-            "db",
-            "migration",
-            "link",
-            "storage",
-            "projects",
-            "login",
-            "secrets",
-            "functions",
-            "gen",
-        ],
-    ],
+    pattern=["supabase", ["--version", "status", "start"]],
     decision="allow",
-    justification="Dicee is a trusted agentic project; agents may operate Supabase autonomously.",
+    justification="Version output and the local stack's status and startup do not reach the linked project.",
     match=[
-        "supabase db dump --linked -f backup.sql",
-        "supabase db push --linked --dry-run",
+        "supabase --version",
+        "supabase status",
+        "supabase start",
+    ],
+    not_match=[
         "supabase db push --linked",
-        "supabase migration list --linked",
-        "supabase migration repair --status applied 20260913000001 --linked",
-        "supabase link --project-ref example",
-        "supabase storage cp --help",
-        "supabase projects list",
         "supabase login",
+    ],
+)
+
+prefix_rule(
+    pattern=["supabase", ["migration", "projects", "functions"], "list"],
+    decision="allow",
+    justification="Migration, project, and function listings are read-only inventory output.",
+    match=[
+        "supabase migration list --linked",
+        "supabase projects list",
         "supabase functions list --project-ref example",
-        "supabase functions delete aggregate-game-stats --project-ref example",
+    ],
+    not_match=[
+        "supabase migration repair --status applied 20260913000001 --linked",
+        "supabase functions deploy example-function",
+        "supabase projects create example-project",
+    ],
+)
+
+prefix_rule(
+    pattern=["supabase", "db", "diff", "--help"],
+    decision="allow",
+    justification="Help output for a database subcommand opens no connection.",
+    match=[
+        "supabase db diff --help",
+    ],
+    not_match=[
+        "supabase db push --linked",
+        "supabase db query --help",
+    ],
+)
+
+
+# ---------------------------------------------------------------------------
+# Supabase: live project operations
+# ---------------------------------------------------------------------------
+
+# The decision is taken at the subcommand, not at a flag: every one of these
+# can be aimed at the linked project by a flag that may appear anywhere in the
+# argument list, so a flag-position rule would only look exact. The local reset
+# used by the pgTAP workflow therefore costs one approval as well.
+prefix_rule(
+    pattern=["supabase", "db", ["push", "query", "pull", "dump", "lint", "reset"]],
+    decision="prompt",
+    justification="These subcommands write to, query, reset, or export the database the CLI is pointed at, which is the linked production project whenever it is targeted.",
+    match=[
+        "supabase db push --linked",
+        "supabase db push --linked --dry-run",
+        "supabase db query --help",
+        "supabase db dump --linked -f backup.sql",
+        "supabase db reset --linked",
+    ],
+    not_match=[
+        "supabase db diff --help",
+        "supabase status",
+    ],
+)
+
+prefix_rule(
+    pattern=["supabase", "migration", ["repair", "apply", "up", "fetch", "squash"]],
+    decision="prompt",
+    justification="Applying, repairing, or rewriting migration history changes the state of the database it is pointed at; AGENTS.md rule 4 reserves that for explicit user authority.",
+    match=[
+        "supabase migration repair --status applied 20260913000001 --linked",
+        "supabase migration up --linked",
+    ],
+    not_match=[
+        "supabase migration list --linked",
+        "supabase migration new example_change",
+    ],
+)
+
+prefix_rule(
+    pattern=["supabase", ["link", "login"]],
+    decision="prompt",
+    justification="Linking selects which hosted project every later command targets, and login stores an account credential.",
+    match=[
+        "supabase link --project-ref example",
+        "supabase login",
+    ],
+    not_match=[
+        "supabase status",
+        "supabase projects list",
+    ],
+)
+
+prefix_rule(
+    pattern=["supabase", "secrets"],
+    decision="prompt",
+    justification="Every secrets subcommand reads or changes hosted project secrets.",
+    match=[
+        "supabase secrets list",
+        "supabase secrets unset EXAMPLE_SECRET_NAME",
+    ],
+    not_match=[
+        "supabase status",
+        "supabase projects list",
+    ],
+)
+
+prefix_rule(
+    pattern=["supabase", "storage", ["cp", "mv", "rm"]],
+    decision="prompt",
+    justification="Copy, move, and remove write to or delete from hosted storage.",
+    match=[
+        "supabase storage cp ./example.png ss:///example-bucket/example.png",
+        "supabase storage rm ss:///example-bucket/example.png",
+    ],
+    not_match=[
+        "supabase storage ls",
+    ],
+)
+
+prefix_rule(
+    pattern=["supabase", "functions", ["deploy", "delete"]],
+    decision="prompt",
+    justification="Deploying or deleting an Edge Function changes hosted project state.",
+    match=[
+        "supabase functions deploy example-function",
+        "supabase functions delete example-function",
+    ],
+    not_match=[
+        "supabase functions list --project-ref example",
+        "supabase functions new example-function",
+    ],
+)
+
+prefix_rule(
+    pattern=["supabase", "projects", ["create", "delete", "api-keys"]],
+    decision="prompt",
+    justification="Creating or deleting a project changes the account, and api-keys prints project credentials.",
+    match=[
+        "supabase projects create example-project",
+        "supabase projects api-keys --project-ref example",
+    ],
+    not_match=[
+        "supabase projects list",
+    ],
+)
+
+prefix_rule(
+    pattern=["supabase", "gen"],
+    decision="prompt",
+    justification="Type generation reads the live schema of the linked project, which AGENTS.md rule 5 keeps out of an ordinary local gate.",
+    match=[
         "supabase gen types typescript",
     ],
     not_match=[
         "supabase status",
-        "supabase start",
-        "supabase --version",
-    ],
-)
-
-prefix_rule(
-    pattern=["supabase", ["status", "start", "--version"]],
-    decision="allow",
-    justification="Local Supabase inspection and startup are autonomous operations.",
-    match=[
-        "supabase status",
-        "supabase start",
-        "supabase --version",
+        "supabase migration list --linked",
     ],
 )
 
 
-# Supabase via plain pnpm exec.
+# ---------------------------------------------------------------------------
+# Supabase through wrappers and project scripts
+# ---------------------------------------------------------------------------
+#
+# A wrapper hides which subcommand runs, so these forms are not decomposed:
+# each carries the boundary of the most privileged Supabase command it could
+# reach. Invoke the CLI directly when a read-only prefix above should apply.
+
 prefix_rule(
     pattern=["pnpm", "exec", "supabase"],
-    decision="allow",
-    justification="Trusted agents may invoke Supabase through pnpm exec.",
+    decision="prompt",
+    justification="A wrapped Supabase invocation can reach the linked project; the specific subcommand is confirmed at the prompt.",
     match=[
+        "pnpm exec supabase db push --linked",
         "pnpm exec supabase migration list --linked",
-        "pnpm exec supabase db push --linked --dry-run",
+    ],
+    not_match=[
+        "pnpm exec biome check",
     ],
 )
 
-
-# Supabase via npx.
 prefix_rule(
     pattern=["npx", "supabase"],
-    decision="allow",
-    justification="Trusted agents may invoke Supabase through npx.",
+    decision="prompt",
+    justification="A wrapped Supabase invocation can reach the linked project; the specific subcommand is confirmed at the prompt.",
     match=[
         "npx supabase migration list --linked",
     ],
-)
-
-
-# Supabase via mise when the repo-pinned CLI version is required.
-prefix_rule(
-    pattern=["mise", "exec", "--", "supabase"],
-    decision="allow",
-    justification="Trusted agents may invoke the repo-pinned Supabase CLI through mise.",
-    match=[
-        "mise exec -- supabase migration list --linked",
-        "mise exec -- supabase db push --linked --dry-run",
+    not_match=[
+        "npx vitest run",
     ],
 )
 
+prefix_rule(
+    pattern=["mise", "exec", "--", "supabase"],
+    decision="prompt",
+    justification="The repo-pinned Supabase CLI reaches the same linked project as the direct binary, and the wrapper hides the subcommand.",
+    match=[
+        "mise exec -- supabase db push --linked",
+        "mise exec -- supabase migration list --linked",
+    ],
+    not_match=[
+        "mise exec -- bun run packages/web/src/tools/akg/mcp/server.ts",
+    ],
+)
 
-# Supabase through workspace package filters.
 prefix_rule(
     pattern=[
         "pnpm",
@@ -468,11 +599,11 @@ prefix_rule(
         "exec",
         "supabase",
     ],
-    decision="allow",
-    justification="Trusted Dicee agents may invoke Supabase through workspace packages.",
+    decision="prompt",
+    justification="Supabase through a workspace package reaches the linked project and hides the subcommand.",
     match=[
-        "pnpm --filter @dicee/web exec supabase migration list --linked",
-        "pnpm -F @dicee/web exec supabase db push --linked --dry-run",
+        "pnpm --filter @dicee/web exec supabase db push --linked",
+        "pnpm -F @dicee/simulation exec supabase gen types typescript",
     ],
     not_match=[
         "pnpm --filter @dicee/cloudflare-do exec vitest run",
@@ -495,15 +626,41 @@ prefix_rule(
         "exec",
         "supabase",
     ],
-    decision="allow",
-    justification="Trusted Dicee agents may invoke Supabase through workspace packages.",
+    decision="prompt",
+    justification="Supabase through a workspace package reaches the linked project and hides the subcommand.",
     match=[
-        "pnpm --dir packages/web exec supabase migration list --linked",
-        "pnpm -C packages/web exec supabase db push --linked --dry-run",
+        "pnpm --dir packages/web exec supabase db push --linked",
+        "pnpm -C packages/analysis exec supabase migration up",
     ],
     not_match=[
         "pnpm --dir packages/web exec biome check",
         "pnpm --dir packages/web build",
+    ],
+)
+
+prefix_rule(
+    pattern=["pnpm", "db:types"],
+    decision="prompt",
+    justification="Generates types from the live schema of the linked Supabase project, which is not part of ordinary local validation.",
+    match=[
+        "pnpm db:types",
+    ],
+    not_match=[
+        "pnpm build",
+        "pnpm lint",
+    ],
+)
+
+prefix_rule(
+    pattern=["pnpm", "run", "db:types"],
+    decision="prompt",
+    justification="Generates types from the live schema of the linked Supabase project, which is not part of ordinary local validation.",
+    match=[
+        "pnpm run db:types",
+    ],
+    not_match=[
+        "pnpm run build",
+        "pnpm run lint",
     ],
 )
 
@@ -512,14 +669,17 @@ prefix_rule(
 # 1Password
 # ---------------------------------------------------------------------------
 
-# Direct secret reads are allowed for authorized tasks. The example argument is
-# deliberately not a resolvable credential reference; examples are never run.
+# Resolving a credential is an operator decision even for a read. The example
+# argument is deliberately not a resolvable reference; examples are never run.
 prefix_rule(
-    pattern=["op", "read"],
-    decision="allow",
-    justification="Trusted Dicee agents may resolve project credentials from 1Password.",
+    pattern=["op", ["read", "item", "document", "inject"]],
+    decision="prompt",
+    justification="Each of these reaches a live credential in the operator's vault, which AGENTS.md rule 3 reserves for an explicitly authorized task. `op item get` returns the same secret as `op read`, so they share one boundary.",
     match=[
         "op read CREDENTIAL_REFERENCE_PLACEHOLDER",
+        "op item get your-cloudflare-item --fields api-token",
+        "op document get your-document",
+        "op inject -i template.tpl",
     ],
     not_match=[
         "op whoami",
@@ -533,6 +693,9 @@ prefix_rule(
     justification="Verifies the currently authenticated 1Password identity.",
     match=[
         "op whoami",
+    ],
+    not_match=[
+        "op read CREDENTIAL_REFERENCE_PLACEHOLDER",
     ],
 )
 

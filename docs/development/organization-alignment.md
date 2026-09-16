@@ -154,7 +154,7 @@ The relevant local control is [cloudflare-config-audit.mjs](../../scripts/cloudf
 
 ## Adoption deliverable and order
 
-Use the existing roadmap, not a second phase system. Its credential prerequisites remain: Supabase key migration, HS256 removal and Infisical retirement before ownership changes. Current application/privacy safety work keeps its existing priority. Documentation and source design can proceed while those operations remain pending.
+Use the existing roadmap, not a second phase system. Its credential prerequisites remain: Supabase key migration and HS256 removal before ownership changes. Current application/privacy safety work keeps its existing priority. Documentation and source design can proceed while those operations remain pending.
 
 For the organization-move item, prepare one reviewable intake that answers:
 

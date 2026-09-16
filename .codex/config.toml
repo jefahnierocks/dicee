@@ -7,8 +7,8 @@ max_concurrent_threads_per_session = 4
 max_depth = 1
 
 [mcp_servers.akg]
-command = "bun"
-args = ["run", "packages/web/src/tools/akg/mcp/server.ts"]
+command = "mise"
+args = ["exec", "--", "bun", "run", "packages/web/src/tools/akg/mcp/server.ts"]
 env = { AKG_GRAPH_PATH = "docs/architecture/akg/graph/current.json", AKG_DIAGRAMS_PATH = "docs/architecture/akg/diagrams", AKG_PROJECT_ROOT = "." }
 
 [mcp_servers.cloudflare-docs]

@@ -2,8 +2,11 @@
   "mcpServers": {
     "akg": {
       "type": "stdio",
-      "command": "bun",
+      "command": "mise",
       "args": [
+        "exec",
+        "--",
+        "bun",
         "run",
         "${workspaceFolder}/packages/web/src/tools/akg/mcp/server.ts"
       ],

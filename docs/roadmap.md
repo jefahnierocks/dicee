@@ -44,7 +44,6 @@ Agent-safe to build. Shipping any of it is an ordinary authorized release, not a
 
 Agent-safe unless noted.
 
-- Retire the Infisical scripts, metadata names and .infisical.json handling — `scripts/with-dicee-infisical-auth.sh`, the `DICEE_*INFISICAL*` names in `scripts/lib/dicee-operator-metadata.sh` and its template, the `scripts/check-1password-setup.sh` checks and the wrapper and Codex-rule test cases are gone; the publication scan keeps its .infisical.json and private-hostname patterns as residual guards. Operator revokes the identities (status action 13).
 - History secret scan (pinned Gitleaks; the publication scan checks only candidate files) and a workflow policy check — both run in CI.
 - AKG graph drift gate: `pnpm akg:check` fails when discovery differs from the committed graph — `git diff --exit-code` on the graph after discovery.
 - Remove or restore the dangling `web:analyze-logs` scripts: the log-analyzer tool directory under packages/web is gitignored, so a clean clone has no CLI entry file — the script runs from a clean clone or is gone.
@@ -76,7 +75,7 @@ Agent-safe, in order. Gate for each: `pnpm validate` and `pnpm akg:check`.
 
 ## 7. Organization move with governance and IaC
 
-Near-term direction (status decision 9). The GitHub repository transfer and local checkout move are complete, and the application now runs on the committed two-Worker architecture, so discovery describes live resources rather than a planned shape. Remaining provider/infrastructure ownership changes and infrastructure adoption still wait for the Supabase key migration, HS256 removal and Infisical retirement. Section 1 keeps its operator stop points; this section does not advance them.
+Near-term direction (status decision 9). The GitHub repository transfer and local checkout move are complete, and the application now runs on the committed two-Worker architecture, so discovery describes live resources rather than a planned shape. Remaining provider/infrastructure ownership changes and infrastructure adoption still wait for the Supabase key migration and the HS256 removal. Section 1 keeps its operator stop points; this section does not advance them.
 
 The [selected Cloudflare strategy](cloudflare.md#governance-strategy) preserves the running application shape and separates Jefahnierocks service governance from shared-account stewardship. The [organization alignment guide](development/organization-alignment.md) records the completed GitHub/local move and remains the proposal for the remaining provider and infrastructure boundaries. The repository transfer does not establish Cloudflare, Supabase, Google or infrastructure execution authority.
 
