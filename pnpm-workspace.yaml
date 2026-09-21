@@ -17,7 +17,7 @@ enablePrePostScripts: true
 # One version authority for direct JavaScript/TypeScript dependencies across
 # the monorepo. Exact versions plus the lockfile make automated edits reviewable.
 catalog:
-  '@biomejs/biome': 2.5.13
+  '@biomejs/biome': 2.5.14
   '@dicebear/collection': 9.4.3
   '@dicebear/core': 9.4.3
   '@modelcontextprotocol/sdk': 1.30.0
@@ -30,10 +30,10 @@ catalog:
   '@testing-library/jest-dom': 7.0.1
   '@testing-library/svelte': 5.4.2
   '@testing-library/user-event': 14.6.7
-  '@types/node': 24.13.4
-  jsdom: 30.0.1
+  '@types/node': 24.13.5
+  jsdom: 30.1.0
   jose: 6.2.12
-  lefthook: 2.1.12
+  lefthook: 2.1.14
   # Must equal the exact miniflare version wrangler depends on, so workerd
   # runtime tests exercise the same local runtime as `wrangler dev`.
   miniflare: 4.20260721.0
@@ -47,14 +47,14 @@ catalog:
   typescript: 6.0.3
   vite: 8.3.0
   vite-plugin-wasm: 3.6.0
-  vitest: 5.0.0
+  vitest: 5.0.1
   vitest-axe: 0.1.0
   wasm-pack: 0.15.0
   # Held on the miniflare 4 line: wrangler 4.117.0 and later depend on a
   # miniflare 5 alpha. Bump miniflare above in lockstep with wrangler.
   wrangler: 4.113.0
   ws: 8.21.3
-  zod: 4.6.2
+  zod: 4.6.5
 
 # pnpm 11 blocks dependency lifecycle scripts unless they are reviewed here.
 # These packages install platform-specific binaries used by this repository.
