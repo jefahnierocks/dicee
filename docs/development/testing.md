@@ -13,7 +13,8 @@ The commands are listed in [AGENTS.md](../../AGENTS.md#commands). This page says
 | `pnpm --filter @dicee/cloudflare-do test:agent` | Worker tests matching `src/**/*.test.ts`, integration files included | yes |
 | `pnpm --filter @dicee/simulation test:agent` | simulation framework | yes |
 | `pnpm test:analysis` | analysis package (pytest through uv) | yes |
-| `pnpm test:scripts` | shell tests in `scripts/tests/` | yes, in `lint` |
+| `pnpm test:scripts` | shell tests and manifest-adapter Python fixtures in `scripts/tests/` | yes, in `lint` |
+| `pnpm lint:docs` | approved Specification 1 declaration, checked status mirror and agent/docs rules | yes, in `lint` |
 | `pnpm cf:audit` | Cloudflare config invariants | yes, in `lint` |
 | `pnpm --filter @dicee/cloudflare-do test:integration` | Worker `*.integration.test.ts` files only, in a single fork | yes, through `test:agent` |
 | `pnpm --filter @dicee/web test:e2e` | Playwright end-to-end tests | no |

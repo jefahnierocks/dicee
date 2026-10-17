@@ -50,7 +50,7 @@ Before editing `packages/web` or `packages/cloudflare-do`, read that package's `
 
 ## Status and docs
 
-- `docs/status.md` is the only status home. When status changes, update `project.yaml` `status.local_phase` and `status.as_of` in the same change; `pnpm lint:docs` checks that they match.
+- `docs/status.md` is the only status home. Dicee adopts [Specification 1 release 1](vendor/project-manifest/README.md) for `project.yaml`, enforced by the [repo-owned binding adapter](scripts/check-project-manifest.py); update its phase/date with status changes. `pnpm lint:docs` validates the declaration and checks the reference record against this status home.
 - `docs/roadmap.md` is the only sequence of work.
 - Verification logs belong in PR descriptions and CI output, never in tracked docs.
 - Keep one current document per concern; update the map when a home moves. Delete superseded documents; git history is the archive.
@@ -89,7 +89,8 @@ Before editing `packages/web` or `packages/cloudflare-do`, read that package's `
 pnpm install --frozen-lockfile  # reproducible install
 pnpm check                      # Rust, TypeScript, Python, Worker types
 pnpm lint                       # Rust, Python, Biome, AKG, Cloudflare config audit, script tests, docs gate
-pnpm lint:docs                  # docs and agent-surface gate
+pnpm lint:docs                  # declaration, docs and agent-surface gate
+pnpm check:manifest             # offline Specification 1 declaration only
 pnpm cf:audit                   # offline Cloudflare config audit
 pnpm test:agent                 # complete concise test suite
 pnpm build                      # WASM and production packages

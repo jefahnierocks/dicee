@@ -24,7 +24,8 @@
  * The file set is `git ls-files`, limited to paths still present in the working tree.
  * config.generated globs stay resolvable as link targets but are never scanned.
  * Policy (budgets, allowlists, retired tokens) lives only in the config file, so every
- * change to it is a visible diff. The scanner has no dependencies beyond Node built-ins.
+ * change to it is a visible diff. SYNC uses the pinned Python/native Git manifest
+ * adapter; other rules use Node built-ins.
  */
 
 import { execFileSync } from 'node:child_process';
@@ -792,14 +793,28 @@ function ruleSync({ repo, add }) {
 	for (const path of missing) add(path, 1, 'SYNC', 'file is missing');
 	if (missing.length > 0) return;
 
-	const yaml = readText(repo, PROJECT).split('\n');
-	const phase = findLine(yaml, /^\s*local_phase:\s*"(.*)"\s*$/);
-	const asOf = findLine(yaml, /^\s*as_of:\s*"(.*)"\s*$/);
-	const record = findLine(yaml, /^\s*status_of_record:\s*(.*?)\s*$/);
-	if (!phase) add(PROJECT, 1, 'SYNC', 'no quoted status.local_phase line');
-	if (!asOf) add(PROJECT, 1, 'SYNC', 'no quoted status.as_of line');
-	if (!record || record.value.replace(/^(["'])(.*)\1$/, '$2') !== STATUS) {
-		add(PROJECT, record?.line ?? 1, 'SYNC', `authority.status_of_record must be ${STATUS}`);
+	// Consume the reference validator's checked record; never parse YAML here.
+	let checked = null;
+	try {
+		const output = execFileSync(
+			process.env.DICEE_MANIFEST_PYTHON || 'python3',
+			['-I', '-S', '-B', join(ROOT, 'scripts/check-project-manifest.py'), '--status-json'],
+			{
+				cwd: ROOT, encoding: 'utf8', timeout: 60000, maxBuffer: 1048576,
+				stdio: ['ignore', 'pipe', 'pipe'],
+			},
+		);
+		const result = JSON.parse(output);
+		if (result.scope !== 'dicee-project-manifest-1' || result.exit_code !== 0 ||
+			result.complete_v1_validity !== 'valid' || !result.status_record) throw new Error();
+		checked = result.status_record;
+	} catch {
+		add(PROJECT, 1, 'SYNC', 'approved Specification 1 declaration evidence is invalid or unavailable; run pnpm check:manifest');
+	}
+	const phase = checked ? { value: checked.local_phase } : null;
+	const asOf = checked ? { value: checked.as_of } : null;
+	if (checked && checked.status_of_record !== STATUS) {
+		add(PROJECT, 1, 'SYNC', `authority.status_of_record must be ${STATUS}`);
 	}
 
 	const model = markdownModel(repo, STATUS);

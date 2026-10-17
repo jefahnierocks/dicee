@@ -31,7 +31,7 @@ The local agent roles are **Builder**, **Maintainer**, **Reviewer** and **Operat
 | Product and public URL | Keep **Dicee** and `https://dicee.games`; organization ownership does not require a new brand or hostname. |
 | GitHub repository | Current home: `jefahnierocks/dicee`; transfer completed 2026-09-14. |
 | Local checkout | Current home: `~/Organizations/jefahnierocks/dicee/`, as an independent Git repository. This existing monorepo needs no internal reshuffle. |
-| Project manifest | Keep project id `dicee`; owner is now `jefahnierocks`. Preserve the manifest's existing schema and status home. |
+| Project manifest | Keep project id `dicee`; owner is now `jefahnierocks`. Adopt [Specification 1 release 1](../../vendor/project-manifest/README.md), with the repo-owned offline gate; preserve `docs/status.md` as status home. |
 | Web Worker | `dicee-web` serves the SvelteKit app (status decision 8) and holds the `dicee.games` custom domain; the Pages project `dicee` is deleted. A Pages project name and a Worker script name identify different resources. |
 | Default production Worker | `dicee` is the confirmed owner of the live `GameRoom` and `GlobalLobby` namespaces (status action 5); preserve the name. |
 | Other existing Worker | `dicee-production` is a classified legacy deletion candidate (status action 8), alongside `gamelobby` and `gamelobby-production`. Its suffix proves neither its role nor that it is safe to remove. |

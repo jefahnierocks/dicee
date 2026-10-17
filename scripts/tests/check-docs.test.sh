@@ -53,9 +53,11 @@ new_repo() {
 	git -c init.defaultBranch=main init --quiet "$repo"
 	mkdir -p "$repo/scripts"
 	cp "$GATE" "$repo/scripts/check-docs.mjs"
+	cp "$PROJECT_ROOT/scripts/check-project-manifest.py" "$repo/scripts/"
+	cp -R "$PROJECT_ROOT/vendor" "$repo/vendor"
 	put scripts/check-docs.config.json <<'EOF'
 {
-	"generated": ["gen/**"],
+	"generated": ["gen/**", "vendor/project-manifest/release-1/**", "vendor/project-manifest/bootstrap.py"],
 	"pathScope": ["AGENTS.md", "docs/**"],
 	"pathAllow": [],
 	"rootAllowlist": [".gitignore", "AGENTS.md", "project.yaml"],
@@ -74,13 +76,7 @@ EOF
 
 Status lives in [the status file](docs/status.md); read `docs/guide.md` first.
 EOF
-	put project.yaml <<'EOF'
-status:
-  local_phase: "fixture phase"
-  as_of: "2026-01-02"
-authority:
-  status_of_record: docs/status.md
-EOF
+	cp "$PROJECT_ROOT/scripts/tests/fixtures/project-manifest.yaml" "$repo/project.yaml"
 	put docs/status.md <<'EOF'
 # Status
 
@@ -132,7 +128,10 @@ commit_fixture() {
 run_gate() {
 	commit_fixture
 	gate_status=0
-	(cd "$repo" && node scripts/check-docs.mjs "$@") >"$gate_output" 2>&1 || gate_status=$?
+	# Remove only this fixture harness's global-config override and source CI/linked
+	# context at the synthetic-repository boundary. The real adapter clears none.
+	(unset GIT_CONFIG_GLOBAL GITHUB_ACTIONS GITHUB_SHA DICEE_MANIFEST_COMMON_DIR
+	 cd "$repo" && node scripts/check-docs.mjs "$@") >"$gate_output" 2>&1 || gate_status=$?
 }
 
 show_output() {
@@ -364,11 +363,11 @@ expect_fail 'HOME: status marker outside docs/status.md fails' HOME --only HOME
 
 # ── SYNC ─────────────────────────────────────────────────────────────────────
 new_repo
-printf 'status:\n  local_phase: "other phase"\n  as_of: "2026-01-02"\nauthority:\n  status_of_record: docs/status.md\n' | put project.yaml
+node -e 'const fs = require("node:fs"); const p = process.argv[1]; fs.writeFileSync(p, fs.readFileSync(p, "utf8").replace("fixture phase", "other phase"));' "$repo/project.yaml"
 expect_fail 'SYNC: phase mismatch fails' SYNC --only SYNC
 
 new_repo
-printf 'status:\n  local_phase: "fixture phase"\n  as_of: "2026-01-03"\nauthority:\n  status_of_record: docs/status.md\n' | put project.yaml
+node -e 'const fs = require("node:fs"); const p = process.argv[1]; fs.writeFileSync(p, fs.readFileSync(p, "utf8").replace("2026-01-02", "2026-01-03"));' "$repo/project.yaml"
 expect_fail 'SYNC: as-of mismatch fails' SYNC --only SYNC
 
 new_repo
@@ -385,6 +384,20 @@ put docs/status.md <<'EOF'
 4. Fourth.
 EOF
 expect_fail 'SYNC: decision gap fails' SYNC --only SYNC
+
+# An explicit prepared interpreter must win over an ambient python3 trap.
+new_repo
+selected_python="${DICEE_MANIFEST_PYTHON:-$(command -v python3)}"
+mkdir -p "$repo/runtime-trap"
+printf '#!/bin/sh\nexit 97\n' >"$repo/runtime-trap/python3"
+chmod +x "$repo/runtime-trap/python3"
+PATH="$repo/runtime-trap:$PATH" DICEE_MANIFEST_PYTHON="$selected_python" \
+    expect_pass 'SYNC: prepared interpreter wins over ambient python3' --only SYNC
+
+# A nested lookalike cannot satisfy the required root status schema.
+new_repo
+printf '\nshadow:\n  local_phase: "fixture phase"\n  as_of: "2026-01-02"\n' >>"$repo/project.yaml"
+expect_fail 'SYNC: unknown nested status lookalike fails declaration checks' SYNC --only SYNC
 
 # ── SURFACE ──────────────────────────────────────────────────────────────────
 new_repo

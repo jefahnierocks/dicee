@@ -1,5 +1,7 @@
 {
 	"generated": [
+		"vendor/project-manifest/release-1/**",
+		"vendor/project-manifest/bootstrap.py",
 		"docs/architecture/akg/graph/**",
 		"docs/architecture/akg/diagrams/**",
 		"pnpm-lock.yaml",
@@ -20,6 +22,7 @@
 	],
 	"pathAllow": [],
 	"rootAllowlist": [
+		".gitattributes",
 		".editorconfig",
 		".envrc",
 		".gitignore",

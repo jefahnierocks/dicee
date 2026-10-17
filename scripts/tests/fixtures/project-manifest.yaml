@@ -1,0 +1,37 @@
+spec_version: "1"
+project:
+  id: fixture
+  display_name: "Fixture"
+  owner_entity: example
+role: canonical
+canonical: null
+peers: []
+status:
+  posture: deployed-system
+  operational_state: unverified
+  local_phase: "fixture phase"
+  as_of: "2026-01-02"
+authority:
+  status_of_record: "docs/status.md"
+presentation:
+  visibility: public-promoted
+  public_alias: null
+  link_policy: link-ok
+development:
+  platforms: []
+  commands:
+    setup: null
+    check:
+      runner: script
+      target: "scripts/check-project-manifest.py"
+    test: null
+    build: null
+    dev: null
+    format_check: null
+    format_write: null
+  environment:
+    owner: none
+    template: null
+    secret_launcher: null
+  stacks: {}
+  host_requirements: []

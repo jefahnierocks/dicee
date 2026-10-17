@@ -39,13 +39,14 @@ When a newest package is less than 24 hours old, keep the newest version that sa
 
 ### Security overrides
 
-`pnpm audit --audit-level high` must pass. Prefer a catalog bump or a targeted `pnpm update <pkg> -r`. If an upstream semver range or exact pin excludes the patched line, use the narrowest vulnerable-range override, run the full gate, and document it here. Current overrides:
+`pnpm audit --audit-level high` must pass. Prefer a catalog bump or a targeted `pnpm update <pkg> -r`. If an upstream range excludes the patched line or targeted pnpm updates retain a vulnerable transitive lock entry, use the narrowest patched floor, run the full gate, and document the removal condition here. Current overrides:
 
 | Override | Reason | Remove when |
 |---|---|---|
 | `cookie@<0.7.0` -> `^0.7.0` | `@sveltejs/kit` depends on `cookie ^0.6.0` | Kit widens its `cookie` range |
 | `postcss@<8.5.23` -> `8.5.28` | vite 8.1.5 had resolved postcss 8.5.20, which pins `nanoid` 3.3.16 (GHSA-2v37-7h3g-55p8); `pnpm update` does not move this transitive entry | A vite bump resolves postcss 8.5.23 or later on its own |
-| `sharp@<0.35.4` -> `0.35.4` | miniflare 4.x pins `sharp` 0.34.5 (GHSA-rgj7-g3m4-5g8c) | The pinned miniflare depends on sharp 0.35.4 or later |
+| `sharp@<0.35.5` -> `0.35.5` | miniflare 4.x pins `sharp` 0.34.5; 0.35.5 also fixes GHSA-wq5f-xc86-pv6w in librsvg | The pinned miniflare depends on sharp 0.35.5 or later |
+| `source-map-js@<1.2.2` -> `1.2.2` | Named pnpm 11.15.1 updates, including an explicit 1.2.2 selector, retained vulnerable 1.2.1 despite parent ranges allowing the GHSA-68fv-2mgg-jv7q fix | The parent resolution supplies source-map-js 1.2.2 or later without this override |
 | `undici@<7.29.0` -> `7.29.1` | miniflare 4.x pins `undici` 7.28.0 (GHSA-4cwx-7wf7-3272) | The pinned miniflare depends on undici 7.29.0 or later |
 
 ### Wrangler and miniflare hold
@@ -66,6 +67,8 @@ The hold is [docs/status.md](../status.md) decision 5. Wrangler stays on the min
 |---|---|
 | `pnpm validate` | `check` (Rust, TypeScript with `@dicee/shared` built first, Python, Worker types), `lint` (Rust, Python, Biome, AKG, Cloudflare config audit, `test:scripts`, docs gate), `test:agent`, `build` |
 | `pnpm validate:ci` | `validate`, then `audit:dependencies` (`pnpm audit --audit-level high`) and `security:public` |
+
+The [public manifest release](../../vendor/project-manifest/README.md) is byte-pinned and checked offline through `lint:docs`; CI uses its exact checkout revision and a dedicated Git 2.56 prefix. The declared mise setup/format-check tasks reuse native commands; `format_check` also runs Biome lint. The manifest preserves the dated phase and uses `maintained` as a source-maintenance declaration, not a fresh live readback.
 
 The lefthook pre-push hook and CI run `pnpm validate:ci`. `test:scripts` runs every shell test in `scripts/tests/` and fails if none exist. What each test lane covers is in [testing.md](testing.md).
 
