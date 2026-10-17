@@ -27,6 +27,7 @@
     "lint:analysis": "uv run --project packages/analysis --group dev ruff check packages/analysis",
     "lint": "pnpm run lint:rust && pnpm run lint:analysis && pnpm run biome:check && pnpm run akg:verify && pnpm run cf:audit && pnpm run test:scripts && pnpm run lint:docs && pnpm run agent:doctor:ci",
     "lint:docs": "node scripts/check-docs.mjs",
+    "check:manifest": "python3 -I -S -B scripts/check-project-manifest.py",
     "lint:rust": "cd packages/engine && env -u RUSTUP_TOOLCHAIN cargo clippy --all-targets --all-features -- -D warnings",
     "biome:check": "pnpm --filter @dicee/web biome:check && pnpm --filter @dicee/cloudflare-do lint && pnpm --filter @dicee/simulation lint",
     "format": "pnpm run format:rust && pnpm run format:typescript",

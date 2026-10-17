@@ -14,6 +14,7 @@ bun = "1.3.14"
 
 [tasks]
 # Core development tasks
+setup = "pnpm install --frozen-lockfile"
 dev = "pnpm dev"
 build = "pnpm build"
 test = "pnpm test"
@@ -22,6 +23,8 @@ check = "pnpm check"
 # Linting and formatting (Biome)
 lint = "pnpm lint"
 format = "pnpm format"
+# Non-writing formatting and Biome checks.
+format_check = "cd packages/engine && env -u RUSTUP_TOOLCHAIN cargo fmt --check && cd ../.. && pnpm biome:check"
 
 # Web-specific
 "web:dev" = "pnpm --filter @dicee/web dev"

@@ -2,7 +2,6 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
     # Validate stacked PRs against their predecessor branches as well as main.
   workflow_dispatch:
@@ -74,6 +73,10 @@ jobs:
           python-version: 3.13.14
           enable-cache: true
 
+      - name: Prepare manifest Git
+        id: manifest-git
+        run: python3 -I -S -B scripts/prepare-manifest-git.py
+
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.15.0 --locked
 
@@ -82,6 +85,8 @@ jobs:
 
       # validate, then production dependency audit, then public-release boundary scan.
       - name: Validate repository
+        env:
+          DICEE_MANIFEST_GIT: ${{ steps.manifest-git.outputs.git }}
         run: pnpm validate:ci
 
       - name: Check generated and formatted diff

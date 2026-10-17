@@ -1,20 +1,49 @@
-# Meta-inventory interop header; contract:
-# Conforms to the project-intelligence manifest contract.
-# (enum registry: meta-inventory:docs/ontology/dimensions.yaml)
-spec_version: 0.1
+spec_version: "1"
 project:
   id: dicee
-  display_name: Dicee
+  display_name: "Dicee"
   owner_entity: jefahnierocks
 role: canonical
+canonical: null
 peers: []
 status:
   posture: deployed-system
+  operational_state: maintained
   local_phase: "2026-09 first production release complete on dicee-web; Pages deleted, legacy Worker cleanup and 20260913000002 remain"
   as_of: "2026-09-15"
 authority:
-  status_of_record: docs/status.md
+  status_of_record: "docs/status.md"
 presentation:
   visibility: public-promoted
   public_alias: null
   link_policy: link-ok
+development:
+  platforms: []
+  commands:
+    setup:
+      runner: mise
+      target: "setup"
+    check:
+      runner: script
+      target: "scripts/quality-gate.sh"
+    test:
+      runner: mise
+      target: "test"
+    build:
+      runner: mise
+      target: "build"
+    dev:
+      runner: mise
+      target: "dev"
+    format_check:
+      runner: mise
+      target: "format_check"
+    format_write:
+      runner: mise
+      target: "format"
+  environment:
+    owner: direnv
+    template: "packages/web/.env.example"
+    secret_launcher: null
+  stacks: {}
+  host_requirements: []

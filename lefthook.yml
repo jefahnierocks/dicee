@@ -23,11 +23,11 @@ pre-commit:
 
     docs:
       glob: "*.{md,mdc,json,jsonc,toml,yaml,yml,rules}"
-      run: mise exec -- node scripts/check-docs.mjs
+      run: mise exec -- python3 -I -S -B scripts/manifest-hook.py docs
 
 pre-push:
   commands:
     # validate:ci = validate, then the high-severity dependency audit and the
     # public-safety scan (the same gate CI runs).
     validate-ci:
-      run: mise exec -- pnpm validate:ci
+      run: mise exec -- python3 -I -S -B scripts/manifest-hook.py validate-ci
