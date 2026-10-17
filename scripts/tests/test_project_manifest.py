@@ -59,6 +59,33 @@ class ManifestGate(unittest.TestCase):
         self.assertEqual(report["runtime_acceptance"], "not_checked")
         return report
 
+    def test_git_preparation_reports_runtime_guard_before_download(self):
+        from contextlib import redirect_stdout
+        from io import StringIO
+        from unittest import mock
+        spec = importlib.util.spec_from_file_location("dicee_git_preparation_fixture", ROOT / "scripts/prepare-manifest-git.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        for host, version, stage, finding in (
+            ("Linux", (3, 12, 3), "python", "PROJECT_PYTHON_PIN"),
+            ("Darwin", (3, 13, 14), "host", "HOST_UNAVAILABLE"),
+        ):
+            with self.subTest(stage=stage), mock.patch.object(module.platform, "system", return_value=host), \
+                 mock.patch.object(module.platform, "machine", return_value="x86_64"), \
+                 mock.patch.object(module.sys, "version_info", version), \
+                 mock.patch.dict(os.environ, {"GITHUB_ACTIONS": "true", "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64"}), \
+                 mock.patch.object(module, "urlopen", side_effect=AssertionError("guard attempted download")), \
+                 mock.patch.object(module.subprocess, "Popen", side_effect=AssertionError("guard attempted build")):
+                output = StringIO()
+                with redirect_stdout(output):
+                    code = module.entrypoint()
+                self.assertEqual(code, 2)
+                report = json.loads(output.getvalue())
+                self.assertEqual(report["stage"], stage)
+                self.assertEqual(report["finding"], finding)
+                self.assertEqual(report["python_version"], list(version))
+                self.assertEqual(report["expected_python"], [3, 13, 14])
+
     def test_actual_worktree_and_checked_projection(self):
         report = self.run_gate(0, "--status-json")
         self.assertTrue(report["bytes_verified"])

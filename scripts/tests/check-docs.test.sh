@@ -385,6 +385,15 @@ put docs/status.md <<'EOF'
 EOF
 expect_fail 'SYNC: decision gap fails' SYNC --only SYNC
 
+# An explicit prepared interpreter must win over an ambient python3 trap.
+new_repo
+selected_python="${DICEE_MANIFEST_PYTHON:-$(command -v python3)}"
+mkdir -p "$repo/runtime-trap"
+printf '#!/bin/sh\nexit 97\n' >"$repo/runtime-trap/python3"
+chmod +x "$repo/runtime-trap/python3"
+PATH="$repo/runtime-trap:$PATH" DICEE_MANIFEST_PYTHON="$selected_python" \
+    expect_pass 'SYNC: prepared interpreter wins over ambient python3' --only SYNC
+
 # A nested lookalike cannot satisfy the required root status schema.
 new_repo
 printf '\nshadow:\n  local_phase: "fixture phase"\n  as_of: "2026-01-02"\n' >>"$repo/project.yaml"

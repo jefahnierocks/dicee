@@ -797,7 +797,7 @@ function ruleSync({ repo, add }) {
 	let checked = null;
 	try {
 		const output = execFileSync(
-			'python3',
+			process.env.DICEE_MANIFEST_PYTHON || 'python3',
 			['-I', '-S', '-B', join(ROOT, 'scripts/check-project-manifest.py'), '--status-json'],
 			{
 				cwd: ROOT, encoding: 'utf8', timeout: 60000, maxBuffer: 1048576,

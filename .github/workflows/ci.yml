@@ -73,9 +73,20 @@ jobs:
           python-version: 3.13.14
           enable-cache: true
 
+      - name: Prepare manifest Python
+        id: manifest-python
+        run: |
+          uv python install --no-bin "$UV_PYTHON"
+          manifest_python="$(uv python find --no-project --managed-python --no-python-downloads --resolve-links "$UV_PYTHON")"
+          test -f "$manifest_python" && test -x "$manifest_python" && test ! -L "$manifest_python"
+          "$manifest_python" -I -S -B -c 'import json, os, sys; from pathlib import Path; p = Path(sys.executable); root = Path(os.environ["UV_PYTHON_INSTALL_DIR"]).resolve(strict=True); print(json.dumps({"scope": "dicee-manifest-python", "python": str(p), "install_root": str(root), "python_version": list(sys.version_info[:3])})); sys.exit(0 if sys.version_info[:3] == (3, 13, 14) and p == p.resolve(strict=True) and root in p.parents else 2)'
+          printf 'python=%s\n' "$manifest_python" >> "$GITHUB_OUTPUT"
+
       - name: Prepare manifest Git
         id: manifest-git
-        run: python3 -I -S -B scripts/prepare-manifest-git.py
+        env:
+          DICEE_MANIFEST_PYTHON: ${{ steps.manifest-python.outputs.python }}
+        run: '"$DICEE_MANIFEST_PYTHON" -I -S -B scripts/prepare-manifest-git.py'
 
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.15.0 --locked
@@ -87,6 +98,7 @@ jobs:
       - name: Validate repository
         env:
           DICEE_MANIFEST_GIT: ${{ steps.manifest-git.outputs.git }}
+          DICEE_MANIFEST_PYTHON: ${{ steps.manifest-python.outputs.python }}
         run: pnpm validate:ci
 
       - name: Check generated and formatted diff
