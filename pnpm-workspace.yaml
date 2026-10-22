@@ -20,7 +20,7 @@ catalog:
   '@biomejs/biome': 2.5.13
   '@dicebear/collection': 9.4.3
   '@dicebear/core': 9.4.3
-  '@modelcontextprotocol/sdk': 1.31.0
+  '@modelcontextprotocol/sdk': 1.32.0
   '@playwright/test': 1.63.0
   '@supabase/ssr': 0.12.7
   '@supabase/supabase-js': 2.116.0
