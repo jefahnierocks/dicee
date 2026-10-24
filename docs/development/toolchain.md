@@ -47,7 +47,8 @@ When a newest package is less than 24 hours old, keep the newest version that sa
 | `postcss@<8.5.23` -> `8.5.28` | vite 8.1.5 had resolved postcss 8.5.20, which pins `nanoid` 3.3.16 (GHSA-2v37-7h3g-55p8); `pnpm update` does not move this transitive entry | A vite bump resolves postcss 8.5.23 or later on its own |
 | `sharp@<0.35.5` -> `0.35.5` | miniflare 4.x pins `sharp` 0.34.5; 0.35.5 also fixes GHSA-wq5f-xc86-pv6w in librsvg | The pinned miniflare depends on sharp 0.35.5 or later |
 | `source-map-js@<1.2.2` -> `1.2.2` | Named pnpm 11.15.1 updates, including an explicit 1.2.2 selector, retained vulnerable 1.2.1 despite parent ranges allowing the GHSA-68fv-2mgg-jv7q fix | The parent resolution supplies source-map-js 1.2.2 or later without this override |
-| `undici@<7.29.0` -> `7.29.1` | miniflare 4.x pins `undici` 7.28.0 (GHSA-4cwx-7wf7-3272) | The pinned miniflare depends on undici 7.29.0 or later |
+| `undici@>=7.0.0 <7.30.1` -> `7.30.1` | miniflare 4.x pins `undici` 7.28.0; GHSA-xjj6-f33q-929c needs 7.30.1 | The pinned miniflare depends on undici 7.30.1 or later |
+| `undici@>=8.0.0 <8.12.2` -> `8.12.2` | A targeted pnpm update retained jsdom's 8.10.2 despite its compatible range; GHSA-xjj6-f33q-929c needs 8.12.2 | jsdom resolves undici 8.12.2 or later without this override |
 
 ### Wrangler and miniflare hold
 
