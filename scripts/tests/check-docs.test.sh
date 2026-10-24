@@ -61,7 +61,7 @@ new_repo() {
 	"pathScope": ["AGENTS.md", "docs/**"],
 	"pathAllow": [],
 	"rootAllowlist": [".gitignore", "AGENTS.md", "project.yaml"],
-	"docsAllowlist": ["guide.md", "status.md"],
+	"docsAllowlist": ["development/", "guide.md", "status.md"],
 	"budgets": { "AGENTS.md": { "maxLines": 10 }, "docs/status.md": { "maxLines": 40 } },
 	"globBudgets": [{ "glob": ".agents/skills/*/SKILL.md", "maxLinesEach": 10 }],
 	"homeOnlyPatterns": ["\\*\\*Current phase:\\*\\*", "\\*\\*As of:\\*\\*", "^Last (updated|reviewed):", "Active wave", "\\bWave [0-9]\\b"],
@@ -97,6 +97,12 @@ EOF
 ## Setup
 
 Back to [agents](../AGENTS.md#agents).
+EOF
+	# The copied project-owned vendor README links to this activation heading.
+	put docs/development/toolchain.md <<'EOF'
+# Toolchain
+
+## Project activation
 EOF
 	put src/app.ts <<'EOF'
 // @see docs/guide.md#setup
