@@ -42,7 +42,7 @@ development:
       runner: mise
       target: "format"
   environment:
-    owner: direnv
+    owner: mise
     template: "packages/web/.env.example"
     secret_launcher: null
   stacks: {}

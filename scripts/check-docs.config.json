@@ -20,11 +20,21 @@
 		".agents/skills/**",
 		"docs/**"
 	],
-	"pathAllow": [],
+	"pathAllow": [
+		{
+			"file": "docs/development/toolchain.md",
+			"token": ".mise.local.toml",
+			"reason": "Optional ignored local non-secret overrides"
+		},
+		{
+			"file": "docs/development/agent-clients.md",
+			"token": ".mise.local.toml",
+			"reason": "Optional ignored local non-secret overrides"
+		}
+	],
 	"rootAllowlist": [
 		".gitattributes",
 		".editorconfig",
-		".envrc",
 		".gitignore",
 		".mcp.json",
 		".mise.toml",
