@@ -1,5 +1,15 @@
 # Toolchain and dependency policy
 
+## Project activation
+
+Dicee uses native mise; the deprecated direnv bridge is retired. With mise activated in zsh (`eval "$(mise activate zsh)"` for the current session), entering or leaving the project applies or restores its tools and non-secret environment. Host startup hooks remain owned by system-config; project setup needs no direnv approval. See [mise's migration guidance](https://mise.jdx.dev/direnv.html).
+
+`.mise.toml` selects the pinned tools, sets `UV_PYTHON`, and preserves inherited `DICEE_ENV` values `dev`, `staging`, or `prod`; unset, empty, or unsupported values become `dev`. Optional local non-secret overrides belong under `[env]` in ignored `.mise.local.toml`, loaded after the shared config. Migrate any former `.envrc.local.nonsecret` exports to that TOML file; shell statements are not TOML and are no longer sourced. Local overrides take precedence over shared defaults, so use only supported `DICEE_ENV` values there.
+
+Agents and CI use `MISE_EXEC_AUTO_INSTALL=0 mise exec -- pnpm <command>` from the repository root, for example `pnpm lint:docs` or `pnpm validate:ci`. For existing mise tasks use `MISE_TASK_RUN_AUTO_INSTALL=0 mise run <task>`; neither invocation depends on interactive activation. Install declared tools explicitly with `mise install` during setup. Never put secrets, credential lookups, or secret hooks in mise configuration; retain the command-scoped launchers in `scripts/`.
+
+Disabling auto-install does not guarantee missing-tool refusal: mise can warn and fall back to a host executable. Check selected versions with `mise exec -- pnpm toolchain:versions` before running project commands on a new machine.
+
 ## Pinned runtimes
 
 | Tool | Version | Source of truth |

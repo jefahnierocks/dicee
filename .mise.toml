@@ -46,7 +46,8 @@ format_check = "cd packages/engine && env -u RUSTUP_TOOLCHAIN cargo fmt --check 
 quality = "./scripts/quality-gate.sh"
 
 [env]
-DICEE_ENV = "dev"
+# Preserve supported inherited values; normalize unset, empty or invalid values.
+DICEE_ENV = "{% if env.DICEE_ENV | default(value='dev') in ['dev', 'staging', 'prod'] %}{{ env.DICEE_ENV | default(value='dev') }}{% else %}dev{% endif %}"
 # uv otherwise prefers an independently installed interpreter on clean clones.
 # Keep this in sync with tools.python and CI's python-version.
 UV_PYTHON = "3.13.14"

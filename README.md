@@ -37,11 +37,10 @@ supabase/        # Migrations and pgTAP tests
 
 ## Development
 
-Versions: `.mise.toml`; policy: [docs/development/toolchain.md](docs/development/toolchain.md). A clean clone needs local Supabase public values before the web app builds; see [Local limitations](docs/development/toolchain.md#local-limitations).
+Versions: `.mise.toml`; [native mise activation and policy](docs/development/toolchain.md). Enter the project from a zsh session with mise activated. Agents and CI can prefix commands with `MISE_EXEC_AUTO_INSTALL=0 mise exec --`. A clean clone needs local Supabase public values before the web app builds; see [Local limitations](docs/development/toolchain.md#local-limitations).
 
 ```bash
 mise install
-direnv allow
 pnpm install --frozen-lockfile
 pnpm dev:full      # web and Worker dev servers
 pnpm test:agent    # complete test suite with concise output

@@ -16,6 +16,7 @@ pkg/
 !.env.example
 .envrc.local
 .envrc.local.nonsecret
+.mise.local.toml
 .dicee/
 .infisical.json
 .claude/settings.local.json
