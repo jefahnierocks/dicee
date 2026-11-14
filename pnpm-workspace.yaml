@@ -24,7 +24,7 @@ catalog:
   '@playwright/test': 1.63.0
   '@supabase/ssr': 0.12.7
   '@supabase/supabase-js': 2.116.0
-  '@sveltejs/adapter-cloudflare': 7.2.9
+  '@sveltejs/adapter-cloudflare': 7.2.10
   '@sveltejs/kit': 2.70.3
   '@sveltejs/vite-plugin-svelte': 7.3.0
   '@testing-library/jest-dom': 7.0.1
